@@ -1,0 +1,70 @@
+# Site settings
+title: Roger Egito
+email: rogeregitooficial@gmail.com
+url: https://github.com/jeromelachaud/freelancer-theme
+description: "Portfolio of game developer Roger Egito."
+keywords: "portfolio, game, developer, designer, programmer, video, roger, egito"
+skills: "Game Designer | Developer"
+slogan: "Creating games with heart and soul"
+meta_author: Egito Roger
+
+# Google webmaster tools
+google_verify:
+
+# https://ssl.bing.com/webmaster/configure/verify/ownership Option 2 content= goes here
+bing_verify:
+
+# Contact form:
+# - static : pass through formspree.io to validate email sending
+# - disqus : replace contact form by disqus thread
+# - comment the line below if you want to stick with the default PHP contact form
+contact: static
+
+# If you use disqus you need disqus shortname
+# https://help.disqus.com/customer/portal/articles/466208
+disqus_shortname: myshortname
+
+# Color settings (hex-codes without the leading hash-tag)
+color:
+  primary: 181b1e #222222 #80B3FF
+  primary-rgb: "71,121,196" #"128,179,255"
+  secondary:  f1f3f4 #FD6E8A
+  secondary-dark: 2c456b #A2122F
+  bg: 222222
+  txt: f1f3f4
+
+# Footer settings
+footer:
+  copyright: Dr. Henry Jekyll
+  location: Location
+  social: Around the Web
+  credits: Credits
+
+# Social networks usernames (many more available: google-plus, flickr, dribbble, pinterest, instagram, tumblr, linkedin, etc.)
+social:
+  - title: itch-io
+    url: https://egito.itch.io
+  - title: linkedin
+    url: https://www.linkedin.com/in/roger-egito/
+  - title: github
+    url: https://github.com/Roger-Egito
+
+# Postal address (add as many lines as necessary)
+address:
+  - line: Rio de Janeiro,
+  - line: Brazil
+
+# Credits content
+credits: 'Freelancer is a free to use, open source Bootstrap theme created by <a href="http://startbootstrap.com">Start Bootstrap</a>.'
+
+# Build settings
+markdown: kramdown
+permalink: pretty
+
+#for posts
+defaults:
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      permalink: ""

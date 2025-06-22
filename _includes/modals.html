@@ -1,0 +1,61 @@
+<!-- Portfolio Modals -->
+{% for post in site.posts %}
+<div class="portfolio-modal modal fade" id="portfolioModal-{{ post.modal-id }}" tabindex="-1" role="dialog"
+  aria-hidden="true">
+  <div class="modal-content">
+    <div class="close-modal" data-dismiss="modal">
+      <div class="lr">
+        <div class="rl">
+        </div>
+      </div>
+    </div>
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-8 col-lg-offset-1">
+          <div class="modal-body">
+            <h2>{{ post.title }}</h2>
+            <hr class="star-primary">
+            {% if post.video %}
+            <iframe width="560" height="315" src="{{post.video}}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style="margin-bottom: 2em"></iframe>
+            {% else %}
+            <img src="img/portfolio/{{ post.img }}" class="img-responsive img-centered" alt="{{ post.alt }}">
+            {% endif %}
+            {% if post.description %}
+            <p class="description">{{ post.description }}</p>
+            {% endif %}
+                        <ul class="list-inline item-details">
+              {% if post.url-steam %}
+                <li><strong><a href="{{post.url-steam}}" target="_blank" style="color: #{{site.color.txt}}">Link to Steam Page</a></strong></li>
+              {%endif %}
+              {% if post.url-itch-io %}
+                <li><strong><a href="{{post.url-itch-io}}" target="_blank" style="color: #{{site.color.txt}}">Link to itch.io Page</a></strong></li>
+              {%endif %}
+                {% if post.private %}
+                <li><strong>{{post.private}}</strong></li>
+              {%endif %}
+            </ul>
+            <ul class="list-inline item-details">
+              {% if post.client %}
+              <li>Client:
+                <strong>{{ post.client }}</strong>
+              </li>
+              {% endif %}
+              {% if post.project-date %}
+              <li>Date:
+                <strong>{{ post.project-date }}</strong>
+              </li>
+              {% endif %}
+              {% if post.category %}
+              <li>Service:
+                <strong>{{ post.category }}</strong>
+              </li>
+              {% endif %}
+            </ul>
+            <button type="submit" class="btn btn-success btn-lg" data-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}

@@ -1,0 +1,14 @@
+---
+layout: default
+modal-id: 2
+date: 2025-06-18
+img: hotel77.png
+video: https://www.youtube.com/embed/0IuUM-42geA?si=Zg69qmJZot6AWxU_
+alt: image-alt
+project-date: 2024
+client: Ludomancer Studio
+category: Level Designer | Game Developer
+title: Hotel 77
+description: Hotel 77 is a first-person narrative-driven horror game set in a haunted hotel trapped in a temporal loop. Players must navigate shifting corridors, find anomalies and make the correct decision to move time forward.<br><br>This game was made using Unity.
+url-steam: https://store.steampowered.com/app/2960360/Hotel_77/
+---

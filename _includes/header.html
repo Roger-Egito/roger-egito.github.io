@@ -1,0 +1,28 @@
+<!-- Header -->
+<header style="background-image:url('./img/bannertest2.png');background-size:100vw;background-repeat:no-repeat;">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-12">
+        <img class="img-responsive" src="img/profile.png" alt="profile-pic" />
+        <div class="intro-text">
+          <span class="name">{{ site.title }}</span>
+          <span class="skills">{{ site.skills }}</span>
+          <hr class="star-light" />
+          <br>
+          <span class="skills">{{ site.slogan }}</span>
+          <br>
+          <div class="footer-col col-md-4" style="width: 100%; margin: auto; padding-top: 2.5em">
+          <ul class="list-inline" style="padding:0;margin:0">
+            {% for network in site.social %}
+            <li>
+              <a href="{{ network.url }}" class="btn-social btn-outline" style="padding:0;margin:0" ><i
+                  class="fa-brands fa-fw fa-{{ network.title }}"></i></a>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
