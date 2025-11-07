@@ -18,6 +18,18 @@
   {% include footer.html %}
   {% include modals.html %}
   {% include js.html %}
+
+<!-- Forces the YouTube video to stop if the modal is closed -->
+<script>
+  $('.modal').on('hidden.bs.modal', function () {
+    const iframe = $(this).find('iframe');
+    if (iframe.length) {
+      const src = iframe.attr('src');
+      iframe.attr('src', '');
+      iframe.attr('src', src);
+    }
+  });
+</script>
 </body>
 
 </html>

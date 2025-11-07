@@ -2,12 +2,10 @@
 {% for post in site.posts %}
 <div class="portfolio-modal modal fade" id="portfolioModal-{{ post.modal-id }}" tabindex="-1" role="dialog"
   aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
   <div class="modal-content">
     <div class="close-modal" data-dismiss="modal">
-      <div class="lr">
-        <div class="rl">
-        </div>
-      </div>
+    <div class="lr"><div class="rl"></div></div>
     </div>
     <div class="container">
       <div class="row">
@@ -16,9 +14,11 @@
             <h2>{{ post.title }}</h2>
             <hr class="star-primary">
             {% if post.video %}
-            <iframe width="560" height="315" src="{{post.video}}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style="margin-bottom: 2em"></iframe>
+            <div class="embed-responsive embed-responsive-16by9">
+            <iframe class="embed-responsive-item" src="{{post.video}}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style="margin-bottom: 2em"></iframe>
+            </div>
             {% else %}
-            <img src="img/portfolio/{{ post.img }}" class="img-responsive img-centered" alt="{{ post.alt }}">
+            <img src="img/portfolio/{{ post.img }}" class="img-fluid mx-auto d-block mb-4" alt="{{ post.alt }}">
             {% endif %}
             {% if post.description %}
             <p class="description">{{ post.description }}</p>
@@ -51,11 +51,12 @@
               </li>
               {% endif %}
             </ul>
-            <button type="submit" class="btn btn-success btn-lg" data-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-success btn-lg" data-dismiss="modal">Close</button>
           </div>
         </div>
       </div>
     </div>
   </div>
+</div>
 </div>
 {% endfor %}

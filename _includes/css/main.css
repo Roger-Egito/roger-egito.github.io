@@ -425,24 +425,26 @@ footer .footer-below {
     outline: 0;
 }
 
+.embed-responsive {
+    margin-bottom: 2em;
+}
+
 .portfolio-modal .modal-content {
     background-color: #222222;
-    width: 1000px;
+
     height: fit-content;
-    border-style: groove;
-    border-width: 2px;
-    border-style: groove;
+    border: 2px groove;
     border-radius: 25px;    
     background-clip: border-box;
     -webkit-box-shadow: none;
     box-shadow: 15px 15px 10px 5px #00000050;
     text-align: center;
+}
 
-    /* Makes it a centered popup idk */
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+.portfolio-modal .modal-dialog {
+    width: 90vw;
+    max-width: 1000px;
+    margin: auto;
 }
 
 .portfolio-modal .modal-content h2 {
