@@ -175,6 +175,13 @@ header .intro-text .skills {
     border: 0;
 }
 
+.padded-box {
+    padding-top: 30px;
+    padding-bottom: 30px;
+    padding-left: 100px;
+    padding-right: 100px;
+}
+
 section {
     padding: 50px 0;
 }
