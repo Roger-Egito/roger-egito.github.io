@@ -30,8 +30,8 @@ color:
   primary-rgb: "71,121,196" #"128,179,255"
   secondary:  f1f3f4 #FD6E8A
   secondary-dark: 2c456b #A2122F
-  bg: 222222
-  txt: f1f3f4
+  bg: 151515 #0d0d0d #222222
+  txt: dddddd #f1f3f4
 
 # Footer settings
 footer:
@@ -48,6 +48,10 @@ social:
     url: https://www.linkedin.com/in/roger-egito/
   - title: github
     url: https://github.com/Roger-Egito
+ 
+links:
+  - title: file
+    url: https://drive.google.com/file/d/1lo02Jf6f4HeyrA69hVfSCzM6XdIHnFdJ/view?usp=sharing
 
 # Postal address (add as many lines as necessary)
 address:

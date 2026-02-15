@@ -15,7 +15,9 @@
             <iframe class="embed-responsive-item" src="{{post.video}}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style="margin-bottom: 2em"></iframe>
             </div>
             {% else %}
+            <div class="embed-responsive embed-responsive-16by9">
             <img src="img/portfolio/{{ post.img }}" class="img-fluid mx-auto d-block mb-4" alt="{{ post.alt }}">
+            </div>
             {% endif %}
           
             {% if post.description %}
@@ -27,6 +29,9 @@
               {%endif %}
               {% if post.url-itch-io %}
                 <li><strong><a href="{{post.url-itch-io}}" target="_blank" style="color: #{{site.color.txt}}">Link to itch.io Page</a></strong></li>
+              {%endif %}
+              {% if post.url-google-play %}
+                <li><strong><a href="{{post.url-google-play}}" target="_blank" style="color: #{{site.color.txt}}">Link to Google Play Store Page</a></strong></li>
               {%endif %}
                 {% if post.private %}
                 <li><strong>{{post.private}}</strong></li>
