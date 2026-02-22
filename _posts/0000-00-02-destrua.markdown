@@ -7,7 +7,7 @@ video: https://www.youtube.com/embed/4ES0w5O4Tuw?si=B25mBBvQr8LsSOKn
 alt: image-alt
 project-date: 2015
 client: Personal Project
-category: Solo Developer | Game Designer
+category: Game Designer | Game Developer
 title: DESTRUA
 description: DESTRUA (DESTROY) is the last command remembered by a lonely, self-aware robot trapped in a decaying factory. With nothing but a corrupted directive and a malfunctioning fourth-dimensional loop device, the robot tries - again and again - to destroy its surroundings. Every minute, reality resets. Most actions are undone. But the damage remains. And something is very wrong here.<br><br>Why is the factory falling apart? What caused this endless loop? Can you uncover the truth and finally put an end to the robot’s suffering?<br><br>Originally made for a Game Jam, this was my first attempt at creating a conventional game.<br><br>This game was made using RPG Maker VX ACE.
 private: Due to copyrighted content used in the creation of the game, I will not be making the game publicly playable.

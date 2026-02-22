@@ -3,7 +3,6 @@ layout: default
 modal-id: 3
 date: 2025-06-18
 img: covid35.png
-video: https://www.youtube.com/embed/m8m1w9vx168?si=_U0SSyJXtRou7i5M
 alt: image-alt
 project-date: 2025
 client: Ludomancer Studio

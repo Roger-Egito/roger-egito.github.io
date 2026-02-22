@@ -1,9 +1,9 @@
 ---
 layout: default
-modal-id: 5
+modal-id: 6
 date: 2025-06-18
 img: hotel77.png
-video: https://www.youtube.com/embed/0IuUM-42geA?si=Zg69qmJZot6AWxU_
+video: https://www.youtube.com/embed/HW0fq2XMoqw?si=EBGGIz3CYjVRqWRZ
 alt: image-alt
 project-date: 2024
 client: Ludomancer Studio
