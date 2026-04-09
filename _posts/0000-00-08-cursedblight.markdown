@@ -1,6 +1,6 @@
 ---
 layout: default
-modal-id: 7
+modal-id: 8
 date: 2025-06-18
 img: cursedblight2.png
 video: https://www.youtube.com/embed/yELJnqW02LU?si=cLextrdcNpURQhbh

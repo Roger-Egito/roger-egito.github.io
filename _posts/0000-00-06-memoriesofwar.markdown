@@ -1,6 +1,6 @@
 ---
 layout: default
-modal-id: 5
+modal-id: 6
 date: 2025-06-18
 img: memoriesofwar.png
 alt: image-alt

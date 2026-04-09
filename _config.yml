@@ -1,8 +1,8 @@
 # Site settings
 title: Roger Egito
-email: rogeregitooficial@gmail.com
-url: https://github.com/jeromelachaud/freelancer-theme
-description: "Portfolio of game developer Roger Egito."
+email: rogeregito@outlook.com
+url: https://roger-egito.github.io
+description: "Portfolio of game designer and developer Roger Egito."
 keywords: "portfolio, game, developer, designer, programmer, video, roger, egito"
 skills: "Game Designer | Developer"
 slogan: "Creating games with heart and soul"
@@ -51,7 +51,7 @@ social:
  
 links:
   - title: file
-    url: https://drive.google.com/file/d/1osjFiQ9poLFXafQkw_X_kBxM1ybasIgR/view?usp=sharing
+    url: https://drive.google.com/file/d/1hZ3cvIdgSqQ17rHSOdth92TKjoFSWDFk/view?usp=sharing
 
 # Postal address (add as many lines as necessary)
 address:
