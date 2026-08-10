@@ -1,0 +1,32 @@
+---
+// Stylesheet order matters: tokens (palette), then Bootstrap, then main so our
+// own rules win.
+import '../styles/tokens.css';
+import '../styles/vendor/bootstrap.css';
+import '../styles/main.css';
+
+import Head from '../components/Head.astro';
+import Scripts from '../components/Scripts.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** The theme's CSS and scrollspy both expect body.index. */
+  bodyClass?: string;
+}
+
+const { title, description, bodyClass = 'index' } = Astro.props;
+---
+
+<!doctype html>
+<html>
+  <head>
+    <Head title={title} description={description} />
+  </head>
+
+  <body id="page-top" class={bodyClass}>
+    <slot />
+    <Scripts />
+    <slot name="scripts" />
+  </body>
+</html>

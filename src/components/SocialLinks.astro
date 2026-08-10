@@ -1,0 +1,42 @@
+---
+// Social/CV icon row, used by both the header and the footer.
+import { site } from '../config/site';
+
+interface Props {
+  /** Extra styles on the wrapping column; each spot needs slightly different padding. */
+  colStyle?: string;
+}
+
+const { colStyle = '' } = Astro.props;
+
+// Brand icons first, then the solid-style extra links (CV).
+const icons = [
+  ...site.social.map((n) => ({ url: n.url, className: `fa-brands fa-fw fa-${n.icon}` })),
+  ...site.links.map((l) => ({ url: l.url, className: `fas fa-fw fa-${l.icon}` })),
+];
+---
+
+{/* Don't delete the {' '} below. These li's are inline-block, so the space between
+    them is what spaces the icons out. .map() joins with nothing and they end up
+    squashed together. */}
+<div class="footer-col col-md-4" style={colStyle}>
+  <ul class="list-inline" style="padding:0;margin:0">
+    {
+      icons.map((icon) => (
+        <Fragment>
+          <li>
+            <a
+              href={icon.url}
+              target="_blank"
+              class="btn-social btn-outline"
+              style="padding:0;margin:0"
+            >
+              <i class={icon.className} />
+            </a>
+          </li>
+          {' '}
+        </Fragment>
+      ))
+    }
+  </ul>
+</div>

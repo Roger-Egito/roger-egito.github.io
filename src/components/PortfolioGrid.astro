@@ -1,0 +1,43 @@
+---
+import { getCollection } from 'astro:content';
+
+// Highest order first, which matches the order the grid used to show.
+const games = (await getCollection('games')).sort((a, b) => b.data.order - a.data.order);
+---
+
+<section id="portfolio">
+  <div class="container portfolio-flex-grid">
+    <div class="row">
+      <div class="col-lg-12 text-center text-color" style="padding-top:0">
+        <h2>Portfolio</h2>
+        <hr class="star-primary" />
+      </div>
+    </div>
+    <div class="portfolio-flex-row">
+      {
+        games.map((game) => (
+          <div class="portfolio-flex-item portfolio-item">
+            {/* Real href so the link still works with JS off or in a new tab.
+                ModalRouting.astro catches normal clicks and opens the modal. */}
+            <a
+              href={`/games/${game.id}/`}
+              class="portfolio-link"
+              data-modal-target={`#portfolioModal-${game.id}`}
+            >
+              <div class="caption">
+                <div class="caption-content">
+                  <i class="fa fa-search-plus fa-3x" />
+                </div>
+              </div>
+              <img
+                src={`/img/portfolio/${game.data.img}`}
+                class="img-responsive"
+                alt={game.data.alt}
+              />
+            </a>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>
