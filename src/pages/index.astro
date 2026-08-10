@@ -1,0 +1,20 @@
+---
+import Base from '../layouts/Base.astro';
+import Header from '../components/Header.astro';
+import PortfolioGrid from '../components/PortfolioGrid.astro';
+import About from '../components/About.astro';
+import Contact from '../components/Contact.astro';
+import Footer from '../components/Footer.astro';
+import Modals from '../components/Modals.astro';
+import ModalRouting from '../components/ModalRouting.astro';
+---
+
+<Base>
+  <Header />
+  <PortfolioGrid />
+  <About />
+  <Contact />
+  <Footer />
+  <Modals />
+  <ModalRouting slot="scripts" />
+</Base>

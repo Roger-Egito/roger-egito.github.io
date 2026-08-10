@@ -1,0 +1,16 @@
+/*
+ * Site colours. This is the only file to edit to change them - bootstrap.css and
+ * main.css both point at these variables.
+ *
+ * Note the built copy of this ends up inside dist/assets/styles.<hash>.css. Don't
+ * edit that one, it gets overwritten on every build.
+ */
+
+:root {
+  --color-primary: #181b1e;
+  --color-primary-rgb: 71, 121, 196;
+  --color-secondary: #f1f3f4;
+  --color-secondary-dark: #2c456b;
+  --color-bg: #151515;
+  --color-txt: #dddddd;
+}

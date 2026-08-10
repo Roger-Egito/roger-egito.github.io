@@ -1,0 +1,49 @@
+---
+// Standalone page for one game, e.g. /games/hotel-77/. Same URL the modal puts in the
+// address bar, so shared links and search engines get real HTML. Built ahead of time,
+// so it works fine on GitHub Pages.
+import { getCollection, type CollectionEntry } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import GameDetails from '../../components/GameDetails.astro';
+import Footer from '../../components/Footer.astro';
+import { site } from '../../config/site';
+import '../../styles/game-page.css';
+
+export async function getStaticPaths() {
+  const games = await getCollection('games');
+  return games.map((game) => ({ params: { slug: game.id }, props: { game } }));
+}
+
+interface Props {
+  game: CollectionEntry<'games'>;
+}
+
+const { game } = Astro.props;
+
+const plainTitle = game.data.title.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+const plainDescription = (game.data.description ?? site.description)
+  .replace(/<[^>]*>/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim()
+  .slice(0, 200);
+---
+
+<Base title={`${plainTitle} | ${site.title}`} description={plainDescription}>
+  <div class="container game-page-nav">
+    <a href="/#portfolio">&larr; {site.title}</a>
+  </div>
+
+  <section class="game-page">
+    <div class="portfolio-modal">
+      <div class="modal-content">
+        <div class="row">
+          <div class="text-center padded-box">
+            <GameDetails game={game} variant="page" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <Footer />
+</Base>

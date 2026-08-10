@@ -1,0 +1,34 @@
+---
+import { site } from '../config/site';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title = site.title, description = site.description } = Astro.props;
+const canonical = new URL(Astro.url.pathname, site.url).href;
+---
+
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<title>{title}</title>
+<meta name="viewport" content="width=device-width" />
+<meta name="description" content={description} />
+<meta name="keywords" content={site.keywords} />
+<meta name="author" content={site.author} />
+<link rel="canonical" href={canonical} />
+<link rel="alternate" type="application/rss+xml" title="RSS" href="/feed.xml" />
+
+<!-- Custom Fonts -->
+<link rel="stylesheet" href="/css/font-awesome/css/all.min.css" />
+<link
+  href="//fonts.googleapis.com/css?family=Montserrat:400,700"
+  rel="stylesheet"
+  type="text/css"
+/>
+<link
+  href="//fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic"
+  rel="stylesheet"
+  type="text/css"
+/>

@@ -1,0 +1,110 @@
+---
+// Body of a portfolio entry, shared by the homepage modal and the standalone
+// /games/<slug>/ page so there's only one copy of this markup.
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  game: CollectionEntry<'games'>;
+  variant: 'modal' | 'page';
+}
+
+const { game, variant } = Astro.props;
+const d = game.data;
+
+const storeLinks = [
+  d.urlSteam && { url: d.urlSteam, label: 'Link to Steam Page' },
+  d.urlItchIo && { url: d.urlItchIo, label: 'Link to itch.io Page' },
+  d.urlGooglePlay && { url: d.urlGooglePlay, label: 'Link to Google Play Store Page' },
+].filter(Boolean) as { url: string; label: string }[];
+
+const details = [
+  d.client && { label: 'Client:', value: String(d.client) },
+  d.projectDate && { label: 'Date:', value: String(d.projectDate) },
+  d.category && { label: 'Service:', value: String(d.category) },
+].filter(Boolean) as { label: string; value: string }[];
+---
+
+<div class="modal-body">
+  {/* title and description can contain <br>, so render them as HTML */}
+  <h2 set:html={d.title} />
+  <hr class="star-primary" />
+
+  <div class="embed-responsive embed-responsive-16by9">
+    {
+      d.video ? (
+        <iframe
+          class="embed-responsive-item"
+          src={d.video}
+          title="YouTube video player"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          referrerpolicy="strict-origin-when-cross-origin"
+          allowfullscreen
+          style="margin-bottom: 2em"
+        />
+      ) : (
+        <img
+          src={`/img/portfolio/${d.img}`}
+          class="img-fluid mx-auto d-block mb-4"
+          alt={d.alt}
+          style="object-fit: contain; width: 100%; height: auto;"
+        />
+      )
+    }
+  </div>
+
+  {d.description && <p class="description" set:html={d.description} />}
+
+  {/* Same inline-block spacing gotcha as SocialLinks: the {' '} is doing the spacing. */}
+  <ul class="list-inline item-details">
+    {
+      storeLinks.map((link) => (
+        <Fragment>
+          <li>
+            <strong>
+              <a href={link.url} target="_blank" style="color: var(--color-txt)">
+                {link.label}
+              </a>
+            </strong>
+          </li>
+          {' '}
+        </Fragment>
+      ))
+    }
+    {
+      d.private && (
+        <Fragment>
+          <li>
+            <strong>{d.private}</strong>
+          </li>
+          {' '}
+        </Fragment>
+      )
+    }
+  </ul>
+
+  <ul class="list-inline item-details">
+    {
+      details.map((item) => (
+        <Fragment>
+          <li>
+            {item.label} <strong>{item.value}</strong>
+          </li>
+          {' '}
+        </Fragment>
+      ))
+    }
+  </ul>
+
+  {
+    variant === 'modal' ? (
+      <button type="button" class="btn btn-success btn-lg" data-dismiss="modal">
+        Close
+      </button>
+    ) : (
+      <a class="btn btn-success btn-lg" href="/#portfolio">
+        Back to Portfolio
+      </a>
+    )
+  }
+</div>
