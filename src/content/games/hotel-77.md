@@ -1,8 +1,7 @@
 ---
 order: 7
 title: Hotel 77
-img: hotel77.png
-alt: image-alt
+img: ./hotel-77.webp
 video: https://www.youtube.com/embed/HW0fq2XMoqw?si=EBGGIz3CYjVRqWRZ
 projectDate: 2024
 client: Ludomancer Studio

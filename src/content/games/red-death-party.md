@@ -1,8 +1,7 @@
 ---
 order: 3
 title: Red Death Party
-img: rdp.jpg
-alt: image-alt
+img: ./red-death-party.webp
 projectDate: 2025
 client: Ludomancer Studio
 category: Localization | QA

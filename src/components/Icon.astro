@@ -1,0 +1,42 @@
+---
+// Inline SVG icons. Path data comes straight from the Font Awesome packages, which are
+// dev dependencies read at build time, so nothing ships to the browser except the one
+// <svg> each usage needs. That replaced ~530 KB of icon fonts.
+import { faItchIo, faLinkedin, faGithub } from '@fortawesome/free-brands-svg-icons';
+import { faFile, faChevronUp, faGamepad } from '@fortawesome/free-solid-svg-icons';
+
+const ICONS = {
+  'itch-io': faItchIo,
+  linkedin: faLinkedin,
+  github: faGithub,
+  file: faFile,
+  'chevron-up': faChevronUp,
+  gamepad: faGamepad,
+} as const;
+
+export type IconName = keyof typeof ICONS;
+
+interface Props {
+  name: IconName;
+  /** Decorative icons are hidden from screen readers; pass a label if it conveys meaning. */
+  label?: string;
+  class?: string;
+}
+
+const { name, label, class: className } = Astro.props;
+
+const [width, height, , , path] = ICONS[name].icon;
+const d = Array.isArray(path) ? path.join(' ') : path;
+---
+
+<svg
+  class={className}
+  viewBox={`0 0 ${width} ${height}`}
+  xmlns="http://www.w3.org/2000/svg"
+  fill="currentColor"
+  role={label ? 'img' : undefined}
+  aria-label={label}
+  aria-hidden={label ? undefined : 'true'}
+>
+  <path d={d}></path>
+</svg>

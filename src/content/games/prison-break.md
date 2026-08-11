@@ -1,8 +1,7 @@
 ---
 order: 9
 title: "Prison Break<br>Escape Big Sister"
-img: prisonbreak.png
-alt: image-alt
+img: ./prison-break.webp
 video: https://www.youtube.com/embed/iDaMyu6ZXp4?si=JSqPviNJsocbHbmY
 projectDate: 2024
 client: Personal Project

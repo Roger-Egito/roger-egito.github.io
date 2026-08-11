@@ -1,0 +1,212 @@
+/*
+ * Reset, base typography, and the few primitives shared across components.
+ * Anything used by only one component lives in that component's <style> block.
+ *
+ * The sizes and breakpoints here deliberately match what the old Bootstrap build
+ * produced, so the layout is unchanged from the previous version of the site.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth; /* replaces the old jQuery easing scroll */
+}
+
+body {
+  margin: 0;
+  overflow-x: hidden;
+  background-color: var(--color-bg);
+  color: var(--color-txt);
+  font-family: var(--font-body), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: var(--text-base);
+  line-height: var(--line-height);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  color: var(--color-txt);
+  font-family: var(--font-heading), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  line-height: var(--line-height-heading);
+  text-transform: uppercase;
+}
+
+p {
+  margin: 0 0 10px;
+  font-size: var(--text-body);
+}
+
+img,
+svg,
+iframe {
+  max-width: 100%;
+}
+
+img {
+  height: auto;
+}
+
+a {
+  color: var(--color-txt);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-txt);
+  outline-offset: 3px;
+}
+
+/* --- layout --- */
+
+/* Same stepped widths the old grid used, rather than a fluid max-width, so section
+   contents line up exactly where they used to. */
+.container {
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+@media (min-width: 768px) {
+  .container {
+    width: 750px;
+  }
+}
+
+@media (min-width: 992px) {
+  .container {
+    width: 970px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .container {
+    width: 1170px;
+  }
+}
+
+section {
+  padding: 50px 0;
+}
+
+@media (max-width: 767px) {
+  section {
+    padding: 75px 0;
+  }
+}
+
+/* --- section heading + its little divider --- */
+
+.section-heading {
+  margin: 0;
+  font-size: 3em;
+  text-align: center;
+}
+
+/* A rule with the gamepad sitting on top of it, masking the middle. Same trick the
+   old stylesheet used with an ::after pseudo-element. */
+.star-rule {
+  position: relative;
+  height: 0;
+  max-width: 250px;
+  margin: 25px auto 30px;
+  padding: 0;
+  border: 0;
+  border-top: solid 5px var(--color-rule);
+  overflow: visible;
+}
+
+/* Absolutely positioned so it sits on the line without adding any height, which is
+   what the old ::after did. The background masks the rule behind it. */
+.star-rule svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-sizing: content-box;
+  height: 30px;
+  padding: 0 7.5px;
+  color: var(--color-rule);
+  background-color: var(--color-bg);
+}
+
+/* --- buttons --- */
+
+.btn {
+  display: inline-block;
+  padding: 18px 27px;
+  border: 1px solid var(--color-surface);
+  border-radius: 6px;
+  background-color: var(--color-surface);
+  color: #fff;
+  /* <button> doesn't inherit the page font on its own. */
+  font-family: inherit;
+  font-size: 19px;
+  line-height: 1.33;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: filter var(--transition);
+}
+
+.btn:hover,
+.btn:focus-visible {
+  filter: brightness(1.6);
+}
+
+/* Circular outlined icon button, used for the social/CV links. */
+.btn-social {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border: 2px solid var(--color-txt);
+  border-radius: 100%;
+  color: var(--color-txt);
+  transition: color var(--transition), background-color var(--transition);
+}
+
+/* 20px tall with the width following the icon's own aspect ratio, which is how the
+   icon font rendered these at font-size 20px. */
+.btn-social svg {
+  width: auto;
+  height: 20px;
+}
+
+.btn-social:hover,
+.btn-social:focus-visible {
+  background: var(--color-txt);
+  color: var(--color-accent);
+}
+
+/* Row of social buttons. The old markup relied on whitespace between inline-block
+   list items for the spacing; this reproduces the same pitch with real gaps. */
+.social-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12.91px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* --- accessibility --- */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

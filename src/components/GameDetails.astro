@@ -1,14 +1,21 @@
 ---
-// Body of a portfolio entry, shared by the homepage modal and the standalone
+// Body of a portfolio entry, shared by the homepage dialog and the standalone
 // /games/<slug>/ page so there's only one copy of this markup.
+import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
+import StarRule from './StarRule.astro';
 
 interface Props {
   game: CollectionEntry<'games'>;
-  variant: 'modal' | 'page';
+  /**
+   * In the dialog the <iframe> starts with no src, so nine YouTube players don't load
+   * on the homepage. modal.ts fills it in when the dialog opens and clears it on close,
+   * which also stops playback.
+   */
+  deferVideo?: boolean;
 }
 
-const { game, variant } = Astro.props;
+const { game, deferVideo = false } = Astro.props;
 const d = game.data;
 
 const storeLinks = [
@@ -18,93 +25,125 @@ const storeLinks = [
 ].filter(Boolean) as { url: string; label: string }[];
 
 const details = [
-  d.client && { label: 'Client:', value: String(d.client) },
-  d.projectDate && { label: 'Date:', value: String(d.projectDate) },
-  d.category && { label: 'Service:', value: String(d.category) },
+  d.client && { label: 'Client', value: String(d.client) },
+  d.projectDate && { label: 'Date', value: String(d.projectDate) },
+  d.category && { label: 'Service', value: String(d.category) },
 ].filter(Boolean) as { label: string; value: string }[];
+
+const plainTitle = d.title.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 ---
 
-<div class="modal-body">
-  {/* title and description can contain <br>, so render them as HTML */}
-  <h2 set:html={d.title} />
-  <hr class="star-primary" />
+{/* title and description can contain <br>, so render them as HTML */}
+<h2 class="section-heading" set:html={d.title} />
+<StarRule />
 
-  <div class="embed-responsive embed-responsive-16by9">
-    {
-      d.video ? (
-        <iframe
-          class="embed-responsive-item"
-          src={d.video}
-          title="YouTube video player"
-          frameborder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          referrerpolicy="strict-origin-when-cross-origin"
-          allowfullscreen
-          style="margin-bottom: 2em"
-        />
-      ) : (
-        <img
-          src={`/img/portfolio/${d.img}`}
-          class="img-fluid mx-auto d-block mb-4"
-          alt={d.alt}
-          style="object-fit: contain; width: 100%; height: auto;"
-        />
-      )
-    }
-  </div>
-
-  {d.description && <p class="description" set:html={d.description} />}
-
-  {/* Same inline-block spacing gotcha as SocialLinks: the {' '} is doing the spacing. */}
-  <ul class="list-inline item-details">
-    {
-      storeLinks.map((link) => (
-        <Fragment>
-          <li>
-            <strong>
-              <a href={link.url} target="_blank" style="color: var(--color-txt)">
-                {link.label}
-              </a>
-            </strong>
-          </li>
-          {' '}
-        </Fragment>
-      ))
-    }
-    {
-      d.private && (
-        <Fragment>
-          <li>
-            <strong>{d.private}</strong>
-          </li>
-          {' '}
-        </Fragment>
-      )
-    }
-  </ul>
-
-  <ul class="list-inline item-details">
-    {
-      details.map((item) => (
-        <Fragment>
-          <li>
-            {item.label} <strong>{item.value}</strong>
-          </li>
-          {' '}
-        </Fragment>
-      ))
-    }
-  </ul>
-
+<div class="media">
   {
-    variant === 'modal' ? (
-      <button type="button" class="btn btn-success btn-lg" data-dismiss="modal">
-        Close
-      </button>
+    d.video ? (
+      <iframe
+        title={`${plainTitle} trailer`}
+        src={deferVideo ? undefined : d.video}
+        data-video={deferVideo ? d.video : undefined}
+        loading="lazy"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        referrerpolicy="strict-origin-when-cross-origin"
+        allowfullscreen
+      />
     ) : (
-      <a class="btn btn-success btn-lg" href="/#portfolio">
-        Back to Portfolio
-      </a>
+      <Image
+        src={d.img}
+        alt={d.alt ?? `${plainTitle} key art`}
+        widths={[800, 1200]}
+        sizes="(min-width: 64rem) 60rem, 90vw"
+        loading="lazy"
+      />
     )
   }
 </div>
+
+{d.description && <p class="description" set:html={d.description} />}
+
+{
+  (storeLinks.length > 0 || d.private) && (
+    <ul class="links">
+      {storeLinks.map((link) => (
+        <li>
+          <a href={link.url} target="_blank" rel="noopener">
+            {link.label}
+          </a>
+        </li>
+      ))}
+      {d.private && <li class="private">{d.private}</li>}
+    </ul>
+  )
+}
+
+{
+  details.length > 0 && (
+    <dl class="meta">
+      {details.map((item) => (
+        <div>
+          <dt>{item.label}:</dt>
+          <dd>{item.value}</dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
+<slot name="action" />
+
+<style>
+  /* 16:9 box that keeps its shape before the video or image arrives, so nothing
+     jumps around while loading. */
+  .media {
+    aspect-ratio: 16 / 9;
+    margin-bottom: 2em;
+  }
+
+  .media :global(iframe),
+  .media :global(img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    object-fit: contain;
+  }
+
+  .description {
+    text-align: left;
+  }
+
+  .links,
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5em 1.5em;
+    margin: var(--space-gap) 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .links {
+    font-weight: 700;
+  }
+
+  .private {
+    font-weight: 700;
+  }
+
+  .meta div {
+    display: flex;
+    gap: 0.35em;
+  }
+
+  .meta dt {
+    font-weight: 400;
+  }
+
+  .meta dd {
+    margin: 0;
+    font-weight: 700;
+  }
+</style>

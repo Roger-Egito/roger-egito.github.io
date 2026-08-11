@@ -1,13 +1,13 @@
 ---
-// Standalone page for one game, e.g. /games/hotel-77/. Same URL the modal puts in the
+// Standalone page for one game, e.g. /games/hotel-77/. Same URL the dialog puts in the
 // address bar, so shared links and search engines get real HTML. Built ahead of time,
 // so it works fine on GitHub Pages.
 import { getCollection, type CollectionEntry } from 'astro:content';
+import { getImage } from 'astro:assets';
 import Base from '../../layouts/Base.astro';
 import GameDetails from '../../components/GameDetails.astro';
 import Footer from '../../components/Footer.astro';
 import { site } from '../../config/site';
-import '../../styles/game-page.css';
 
 export async function getStaticPaths() {
   const games = await getCollection('games');
@@ -20,30 +20,61 @@ interface Props {
 
 const { game } = Astro.props;
 
-const plainTitle = game.data.title.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-const plainDescription = (game.data.description ?? site.description)
-  .replace(/<[^>]*>/g, ' ')
-  .replace(/\s+/g, ' ')
-  .trim()
-  .slice(0, 200);
+const plain = (s: string) => s.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+const title = plain(game.data.title);
+const description = plain(game.data.description ?? site.description).slice(0, 200);
+
+// Give link previews the game's own art rather than nothing.
+const preview = await getImage({ src: game.data.img, width: 1200, format: 'jpg' });
 ---
 
-<Base title={`${plainTitle} | ${site.title}`} description={plainDescription}>
-  <div class="container game-page-nav">
+<Base title={`${title} | ${site.title}`} description={description} image={preview.src}>
+  <nav class="crumb container">
     <a href="/#portfolio">&larr; {site.title}</a>
-  </div>
+  </nav>
 
-  <section class="game-page">
-    <div class="portfolio-modal">
-      <div class="modal-content">
-        <div class="row">
-          <div class="text-center padded-box">
-            <GameDetails game={game} variant="page" />
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+  <main class="container">
+    <article>
+      <GameDetails game={game}>
+        <a slot="action" class="btn" href="/#portfolio">Back to Portfolio</a>
+      </GameDetails>
+    </article>
+  </main>
 
   <Footer />
 </Base>
+
+<style>
+  .crumb {
+    padding-top: 20px;
+  }
+
+  .crumb a {
+    opacity: 0.7;
+    color: var(--color-txt);
+    font-family: var(--font-heading), sans-serif;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: opacity var(--transition);
+  }
+
+  .crumb a:hover,
+  .crumb a:focus-visible {
+    opacity: 1;
+  }
+
+  main {
+    padding: 30px 0 60px;
+  }
+
+  article {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+    border: 2px groove var(--color-txt);
+    border-radius: 25px;
+    text-align: center;
+  }
+</style>

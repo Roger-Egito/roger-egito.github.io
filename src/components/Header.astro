@@ -1,25 +1,84 @@
 ---
-import { site } from '../config/site';
+import { Image } from 'astro:assets';
 import SocialLinks from './SocialLinks.astro';
+import StarRule from './StarRule.astro';
+import { site } from '../config/site';
+import banner from '../assets/banner.webp';
+import profile from '../assets/profile.webp';
 ---
 
-<header
-  style="background-image:url('/img/bannertest2.png');background-size:100vw;background-repeat:no-repeat;"
->
+<header style={`background-image:url('${banner.src}')`}>
   <div class="container">
-    <div class="row">
-      <div class="col-lg-12">
-        <img class="img-responsive" src="/img/profile.png" alt="profile-pic" />
-        <div class="intro-text">
-          <span class="name">{site.title}</span>
-          <span class="skills">{site.skills}</span>
-          <hr class="star-light" />
-          <br />
-          <span class="skills">{site.slogan}</span>
-          <br />
-          <SocialLinks colStyle="width: 100%; margin: auto; padding-top: 2.5em" />
-        </div>
-      </div>
+    <Image class="profile" src={profile} alt="" width={128} height={128} loading="eager" />
+
+    <div class="intro-text">
+      <h1 class="name">{site.title}</h1>
+      <p class="skills">{site.skills}</p>
+
+      <StarRule />
+      <br />
+
+      <p class="skills">{site.slogan}</p>
+
+      <SocialLinks class="header-social" />
     </div>
   </div>
 </header>
+
+<style>
+  /* Kept as a background-image rather than an <img> so it sizes to the viewport width
+     exactly like it used to. Astro still processes and optimizes the file. */
+  header {
+    background-size: 100vw;
+    background-repeat: no-repeat;
+    background-color: var(--color-bg);
+    color: var(--color-txt);
+    text-align: center;
+  }
+
+  header .container {
+    padding-top: 100px;
+    padding-bottom: 50px;
+  }
+
+  .profile {
+    display: block;
+    margin: 0 auto 20px;
+  }
+
+  .name {
+    display: block;
+    margin: 0;
+    font-size: 2em;
+    /* This was a plain <span> before, so it never picked up the tighter heading
+       line-height. It's an <h1> now for semantics, but it keeps the old spacing. */
+    line-height: var(--line-height);
+  }
+
+  .skills {
+    margin: 0;
+    font-size: 1.25em;
+    font-weight: 300;
+  }
+
+  /* :global because the <ul> is rendered by SocialLinks, so it carries that
+     component's scope id rather than this one's. */
+  :global(.header-social) {
+    padding-top: 2.5em;
+  }
+
+  @media (min-width: 768px) {
+    header .container {
+      padding-top: 200px;
+      padding-bottom: 100px;
+    }
+
+    .name {
+      font-size: 4.75em;
+    }
+
+    .skills {
+      font-size: 1.75em;
+    }
+  }
+</style>

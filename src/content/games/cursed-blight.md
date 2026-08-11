@@ -1,8 +1,7 @@
 ---
 order: 8
 title: Cursed Blight
-img: cursedblight2.png
-alt: image-alt
+img: ./cursed-blight.webp
 video: https://www.youtube.com/embed/yELJnqW02LU?si=cLextrdcNpURQhbh
 projectDate: 2026
 client: Ludomancer Studio

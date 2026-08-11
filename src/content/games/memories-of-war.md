@@ -1,8 +1,7 @@
 ---
 order: 6
 title: Memories of War
-img: memoriesofwar.png
-alt: image-alt
+img: ./memories-of-war.webp
 projectDate: 2026
 client: YouGo Games
 category: Game Designer | Game Developer
