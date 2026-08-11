@@ -5,7 +5,23 @@ import StarRule from './StarRule.astro';
 
 // Highest order first, which matches the order the grid used to show.
 const games = (await getCollection('games')).sort((a, b) => b.data.order - a.data.order);
+
+// A game gets a hover preview just by having <slug>.mp4 sitting next to its markdown.
+// No front matter needed: drop the file in and it works, remove it and the card goes
+// back to a plain still. Vite hashes the URL for us.
+const previews = import.meta.glob<string>('../content/games/*.mp4', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+
+const previewFor = (slug: string) =>
+  previews[`../content/games/${slug}.mp4`] as string | undefined;
 ---
+
+<script>
+  import '../scripts/hover-preview';
+</script>
 
 <section id="portfolio">
   <div class="container">
@@ -20,7 +36,7 @@ const games = (await getCollection('games')).sort((a, b) => b.data.order - a.dat
                 modal.ts catches normal clicks and opens the dialog instead. */}
             <a
               href={`/games/${game.id}/`}
-              class="card"
+              class:list={['card', previewFor(game.id) && 'has-preview']}
               data-game={game.id}
               aria-haspopup="dialog"
             >
@@ -31,6 +47,18 @@ const games = (await getCollection('games')).sort((a, b) => b.data.order - a.dat
                 sizes="(min-width: 60rem) 32vw, (min-width: 40rem) 49vw, 100vw"
                 loading={i < 3 ? 'eager' : 'lazy'}
               />
+              {previewFor(game.id) && (
+                <video
+                  class="preview"
+                  data-src={previewFor(game.id)}
+                  muted
+                  loop
+                  playsinline
+                  preload="none"
+                  aria-hidden="true"
+                  tabindex="-1"
+                />
+              )}
             </a>
           </li>
         ))
@@ -92,6 +120,39 @@ const games = (await getCollection('games')).sort((a, b) => b.data.order - a.dat
     display: block;
     width: 100%;
     height: auto;
+  }
+
+  /* The clip sits exactly on top of the still and the two cross-fade. The still stays
+     in the flow so the card keeps its height whether or not there's a preview. */
+  .preview {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity var(--transition);
+  }
+
+  /* The transition belongs on the base rule, not inside the previewing state,
+     otherwise the image fades out on the way in and snaps back on the way out. */
+  .card :global(img) {
+    transition: opacity var(--transition);
+  }
+
+  /* Deliberately the same :hover / :focus-visible condition that scales the card up,
+     so the clip and the zoom are always in the same state. On a touch screen the
+     browser keeps :hover applied after you lift your finger, which means the clip
+     stays up too, and both drop together when you touch somewhere else.
+     .has-preview keeps cards with no clip from fading their still into nothing. */
+  .card.has-preview:hover .preview,
+  .card.has-preview:focus-visible .preview {
+    opacity: 1;
+  }
+
+  .card.has-preview:hover :global(img),
+  .card.has-preview:focus-visible :global(img) {
+    opacity: 0;
   }
 
   .card:hover,

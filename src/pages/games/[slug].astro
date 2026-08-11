@@ -7,6 +7,7 @@ import { getImage } from 'astro:assets';
 import Base from '../../layouts/Base.astro';
 import GameDetails from '../../components/GameDetails.astro';
 import Footer from '../../components/Footer.astro';
+import StructuredData from '../../components/StructuredData.astro';
 import { site } from '../../config/site';
 
 export async function getStaticPaths() {
@@ -26,6 +27,17 @@ const description = plain(game.data.description ?? site.description).slice(0, 20
 
 // Give link previews the game's own art rather than nothing.
 const preview = await getImage({ src: game.data.img, width: 1200, format: 'jpg' });
+
+const work = {
+  '@type': 'CreativeWork',
+  name: title,
+  description,
+  url: new URL(`/games/${game.id}/`, site.url).href,
+  image: new URL(preview.src, site.url).href,
+  author: { '@id': `${site.url}/#person` },
+  ...(game.data.projectDate && { dateCreated: String(game.data.projectDate) }),
+  ...(game.data.client && { publisher: { '@type': 'Organization', name: game.data.client } }),
+};
 ---
 
 <Base title={`${title} | ${site.title}`} description={description} image={preview.src}>
@@ -42,6 +54,7 @@ const preview = await getImage({ src: game.data.img, width: 1200, format: 'jpg' 
   </main>
 
   <Footer />
+  <StructuredData extra={work} />
 </Base>
 
 <style>

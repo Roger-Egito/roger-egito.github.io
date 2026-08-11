@@ -44,6 +44,26 @@ if the image path is wrong, so a typo can't reach the live site.
 Save source images as WebP around 1920px wide. Astro generates the smaller responsive
 versions itself, so there's no need to resize anything by hand.
 
+### Hover previews
+
+A card can fade from its still image into a short clip while the mouse is over it. To
+give a game one, put `<slug>.mp4` next to its markdown. Nothing goes in the front
+matter, and deleting the file goes back to a plain still.
+
+Don't commit a GIF. A five second GIF runs about 30 MB; the same clip as MP4 is under
+1 MB and decodes on the GPU instead of the CPU. Convert it first (needs ffmpeg):
+
+```bash
+npm run preview:make -- "C:/path/to/clip.gif" cursed-blight
+```
+
+It plays on hover with a mouse, on focus with a keyboard, and on press-and-hold on a
+phone. Holding doesn't also open the game when you let go.
+
+The clip isn't downloaded until someone actually asks for it, so the page still costs
+nothing extra to load, and it's skipped entirely for anyone who has asked their system
+to reduce motion.
+
 ### How the popups work
 
 Clicking a game opens a native `<dialog>` over the homepage and changes the URL to

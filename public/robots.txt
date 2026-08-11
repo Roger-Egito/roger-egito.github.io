@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://roger-egito.github.io/sitemap-index.xml
