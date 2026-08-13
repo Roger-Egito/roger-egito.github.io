@@ -46,7 +46,7 @@ function open(dialog: HTMLDialogElement) {
       ownsEntry = true;
     }
   }
-  document.title = `${dialog.dataset.title} | ${baseTitle}`;
+  document.title = dialog.dataset.title ?? baseTitle;
 }
 
 function closeOpenDialog() {

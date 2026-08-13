@@ -10,13 +10,14 @@ import GameDialogs from '../components/GameDialogs.astro';
 import ScrollTop from '../components/ScrollTop.astro';
 import StructuredData from '../components/StructuredData.astro';
 import banner from '../assets/banner.webp';
+import { pageTitle } from '../config/site';
 
 // Preview card for when the homepage link gets shared. 1200x630 is the size
 // LinkedIn, Facebook and X all crop to.
 const preview = await getImage({ src: banner, width: 1200, height: 630, format: 'jpg' });
 ---
 
-<Base image={preview.src}>
+<Base title={pageTitle('Portfolio')} image={preview.src}>
   <Header />
   <PortfolioGrid />
   <About />

@@ -39,3 +39,13 @@ export const site = {
 
 /** Only icon shown above the contact form. */
 export const contactSocial = site.social[1];
+
+/**
+ * Browser tab / search result title. "Roger Egito - Portfolio" on the homepage,
+ * "Roger Egito - Hotel 77" on a game. Kept here so every page builds it the same way.
+ */
+export const pageTitle = (section: string) => `${site.title} - ${section}`;
+
+/** Strips the inline HTML some titles carry, e.g. the <br> in Prison Break. */
+export const plainText = (value: string) =>
+  value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();

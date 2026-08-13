@@ -8,7 +8,7 @@ import Base from '../../layouts/Base.astro';
 import GameDetails from '../../components/GameDetails.astro';
 import Footer from '../../components/Footer.astro';
 import StructuredData from '../../components/StructuredData.astro';
-import { site } from '../../config/site';
+import { site, pageTitle, plainText } from '../../config/site';
 
 export async function getStaticPaths() {
   const games = await getCollection('games');
@@ -21,9 +21,8 @@ interface Props {
 
 const { game } = Astro.props;
 
-const plain = (s: string) => s.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-const title = plain(game.data.title);
-const description = plain(game.data.description ?? site.description).slice(0, 200);
+const title = plainText(game.data.title);
+const description = plainText(game.data.description ?? site.description).slice(0, 200);
 
 // Give link previews the game's own art rather than nothing.
 const preview = await getImage({ src: game.data.img, width: 1200, format: 'jpg' });
@@ -40,7 +39,7 @@ const work = {
 };
 ---
 
-<Base title={`${title} | ${site.title}`} description={description} image={preview.src}>
+<Base title={pageTitle(title)} description={description} image={preview.src}>
   <nav class="crumb container">
     <a href="/#portfolio">&larr; {site.title}</a>
   </nav>

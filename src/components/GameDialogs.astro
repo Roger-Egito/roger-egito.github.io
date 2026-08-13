@@ -4,12 +4,16 @@
 // Bootstrap's modal plugin was doing.
 import { getCollection } from 'astro:content';
 import GameDetails from './GameDetails.astro';
+import { pageTitle, plainText } from '../config/site';
 
 const games = (await getCollection('games')).sort((a, b) => b.data.order - a.data.order);
 ---
 
-{/* Astro bundles this and hoists it into <head> as a deferred module, so the
-    behavior ships with the markup that needs it. */}
+{/* data-title carries the whole tab title, so opening a dialog reads the same as the
+    game's own page. Built here rather than assembled in JS, to keep one source of truth.
+
+    The script below is bundled by Astro and hoisted into <head> as a deferred module,
+    so the behavior ships with the markup that needs it. */}
 <script>
   import '../scripts/modal';
 </script>
@@ -19,8 +23,8 @@ const games = (await getCollection('games')).sort((a, b) => b.data.order - a.dat
     <dialog
       id={`game-${game.id}`}
       data-url={`/games/${game.id}/`}
-      data-title={game.data.title.replace(/<[^>]*>/g, ' ').trim()}
-      aria-label={game.data.title.replace(/<[^>]*>/g, ' ').trim()}
+      data-title={pageTitle(plainText(game.data.title))}
+      aria-label={plainText(game.data.title)}
     >
       <div class="sheet">
         <div class="panel">
