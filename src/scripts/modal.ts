@@ -7,8 +7,10 @@
  * dialog and restore the URL.
  *
  * <dialog> handles the focus trap and Esc itself, so what's left here is the history
- * juggling and loading the trailer lazily.
+ * juggling, loading the trailer lazily, and asking before dropping a running build.
  */
+
+import { isGameLoaded, pauseGame, resumeGame, showDefault, unloadMedia } from './game-tabs';
 
 // Whether we're responsible for the current history entry. This has to be tracked
 // explicitly rather than worked out from location.pathname: history.back() applies
@@ -23,18 +25,61 @@ let syncingFromHistory = false;
 // Refreshed on every page load, since the view transition router swaps the title.
 let baseTitle = document.title;
 
-const videoFrame = (dialog: HTMLDialogElement) =>
-  dialog.querySelector<HTMLIFrameElement>('iframe[data-video]');
+const openDialog = () =>
+  document.querySelector<HTMLDialogElement>('dialog[open]:not(#confirm-close)');
+
+/**
+ * Closing unloads the build, so check first. Resolves true if it's fine to go ahead.
+ * Esc and clicking outside the confirmation both count as "No", which is the
+ * non-destructive answer.
+ *
+ * The build is frozen while the question is up, so nothing carries on happening in a
+ * game nobody is looking at, and picks up again if the answer is "No".
+ */
+function confirmLosingGame(dialog: HTMLDialogElement): Promise<boolean> {
+  const box = document.getElementById('confirm-close');
+  if (!(box instanceof HTMLDialogElement)) return Promise.resolve(true);
+
+  pauseGame(dialog);
+
+  return new Promise((resolve) => {
+    const finish = (answer: boolean) => {
+      box.removeEventListener('click', onClick);
+      box.removeEventListener('cancel', onCancel);
+      box.close();
+      if (!answer) resumeGame(dialog);
+      resolve(answer);
+    };
+
+    const onClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target === box) return finish(false); // clicked the backdrop
+      const button = target?.closest<HTMLElement>('[data-confirm]');
+      if (button) finish(button.dataset.confirm === 'yes');
+    };
+
+    const onCancel = () => finish(false);
+
+    box.addEventListener('click', onClick);
+    box.addEventListener('cancel', onCancel);
+    box.showModal();
+    box.querySelector<HTMLElement>('[data-confirm="no"]')?.focus();
+  });
+}
 
 function open(dialog: HTMLDialogElement) {
-  // The src is left empty in the HTML so the homepage doesn't boot up a YouTube
-  // player for every game. Fill it in the first time the dialog is opened.
-  const frame = videoFrame(dialog);
-  if (frame && !frame.getAttribute('src')) {
-    frame.src = frame.dataset.video ?? '';
-  }
+  // Frames are left with no src in the HTML so the homepage doesn't boot up a YouTube
+  // player for every game. This picks the opening tab and fills in whichever one of
+  // them the visitor is about to look at.
+  showDefault(dialog);
 
   dialog.showModal();
+
+  // Focus the card rather than whatever happens to be focusable first, which is the
+  // YouTube iframe — and focus inside a cross-origin frame sends Esc to that frame,
+  // so the dialog never gets its cancel event. The autofocus attribute only works the
+  // first time an element is focused, so reopening needs this done explicitly.
+  dialog.querySelector<HTMLElement>('.sheet')?.focus();
 
   const url = dialog.dataset.url;
   if (url) {
@@ -50,16 +95,13 @@ function open(dialog: HTMLDialogElement) {
 }
 
 function closeOpenDialog() {
-  const dialog = document.querySelector<HTMLDialogElement>('dialog[open]');
+  const dialog = openDialog();
   if (!dialog) return;
   syncingFromHistory = true;
   dialog.close();
   syncingFromHistory = false;
 }
 
-// Capture phase on purpose. The view transition router also listens for clicks on
-// document, and it bails out if the event was already default-prevented — capture
-// runs first, so this wins and a card click opens the dialog instead of navigating.
 document.addEventListener(
   'click',
   (event) => {
@@ -80,37 +122,68 @@ document.addEventListener(
       return;
     }
 
-    if (target.closest('[data-close]')) {
-      target.closest('dialog')?.close();
+    // Close button. Guarded here rather than in the close handler because by then
+    // the dialog has already gone.
+    const closer = target.closest('[data-close]');
+    if (closer) {
+      const dialog = closer.closest('dialog');
+      if (!(dialog instanceof HTMLDialogElement)) return;
+      if (!isGameLoaded(dialog)) return dialog.close();
+      confirmLosingGame(dialog).then((ok) => ok && dialog.close());
     }
   },
   true
 );
 
 window.addEventListener('popstate', () => {
+  const dialog = openDialog();
+
+  if (dialog && isGameLoaded(dialog)) {
+    const url = dialog.dataset.url;
+    confirmLosingGame(dialog).then((ok) => {
+      if (ok) {
+        ownsEntry = false;
+        closeOpenDialog();
+        return;
+      }
+      // Staying put, so put the URL back where it was.
+      if (url) {
+        history.pushState({ gameDialog: true }, '', url);
+        ownsEntry = true;
+      }
+    });
+    return;
+  }
+
   ownsEntry = false;
   closeOpenDialog();
 });
 
-// Runs on the first load and again after every client-side navigation. The dialogs
-// are fresh elements each time, so their listeners have to be reattached; the
-// document-level ones above are registered once and survive.
-document.addEventListener('astro:page-load', () => {
+// Astro serves this as a deferred module, so the document is already parsed by the
+// time it runs and the dialogs are all present.
+{
   baseTitle = document.title;
-  ownsEntry = false;
 
   for (const dialog of document.querySelectorAll<HTMLDialogElement>('dialog[data-url]')) {
     // The dialog element is the full-screen overlay, so a click reported against it
     // is a click outside the card.
     dialog.addEventListener('click', (event) => {
-      if (event.target === dialog) dialog.close();
+      if (event.target !== dialog) return;
+      if (!isGameLoaded(dialog)) return dialog.close();
+      confirmLosingGame(dialog).then((ok) => ok && dialog.close());
     });
 
-    // Every way of closing (button, Esc, click-outside) ends up here.
+    // Esc. Cancelled while a build is running so the confirmation can be shown first.
+    dialog.addEventListener('cancel', (event) => {
+      if (!isGameLoaded(dialog)) return;
+      event.preventDefault();
+      confirmLosingGame(dialog).then((ok) => ok && dialog.close());
+    });
+
+    // Every way of closing ends up here.
     dialog.addEventListener('close', () => {
-      // Dropping the src stops playback, which is what the old jQuery snippet was
-      // doing by reassigning it.
-      videoFrame(dialog)?.removeAttribute('src');
+      // Dropping both frames stops whatever was playing; opening again starts fresh.
+      unloadMedia(dialog);
       document.title = baseTitle;
 
       if (syncingFromHistory || !ownsEntry) return;
@@ -119,4 +192,4 @@ document.addEventListener('astro:page-load', () => {
       history.back();
     });
   }
-});
+}

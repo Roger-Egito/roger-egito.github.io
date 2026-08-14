@@ -18,6 +18,16 @@ const games = (await getCollection('games')).sort((a, b) => b.data.order - a.dat
   import '../scripts/modal';
 </script>
 
+{/* Asked before a running build gets dropped, since closing unloads it and any
+    progress goes with it. modal.ts drives this. */}
+<dialog id="confirm-close" class="confirm" aria-labelledby="confirm-close-text">
+  <p id="confirm-close-text">Close the game?</p>
+  <div class="confirm-actions">
+    <button type="button" class="btn" data-confirm="yes">Yes</button>
+    <button type="button" class="btn btn-quiet" data-confirm="no">No</button>
+  </div>
+</dialog>
+
 {
   games.map((game) => (
     <dialog
@@ -26,7 +36,13 @@ const games = (await getCollection('games')).sort((a, b) => b.data.order - a.dat
       data-title={pageTitle(plainText(game.data.title))}
       aria-label={plainText(game.data.title)}
     >
-      <div class="sheet">
+      {/*
+        autofocus so opening the dialog lands here rather than on the first focusable
+        thing inside it, which is the YouTube iframe. Focus inside a cross-origin frame
+        sends Esc to that frame's document, and the dialog never gets its cancel event
+        — so Esc silently stopped closing anything.
+      */}
+      <div class="sheet" tabindex="-1" autofocus>
         <div class="panel">
           <GameDetails game={game} deferVideo>
             <button slot="action" type="button" class="btn" data-close>
@@ -43,7 +59,7 @@ const games = (await getCollection('games')).sort((a, b) => b.data.order - a.dat
   /* The dialog is the full-screen overlay, not the card. It's the thing that scrolls,
      so the card itself never gets its own scrollbar and can run from the top of the
      screen off the bottom, the way the old Bootstrap modal did. */
-  dialog {
+  dialog[data-url] {
     width: 100vw;
     max-width: 100vw;
     height: 100dvh;
@@ -57,13 +73,15 @@ const games = (await getCollection('games')).sort((a, b) => b.data.order - a.dat
     overscroll-behavior: contain;
   }
 
-  dialog::backdrop {
+  dialog[data-url]::backdrop {
     background: rgb(0 0 0 / 0.5);
   }
 
   .sheet {
     width: min(90vw, 1000px);
     margin: 0 auto;
+    /* It only holds focus so Esc keeps working; it isn't an interactive control. */
+    outline: none;
     border: 2px groove var(--color-txt);
     border-radius: 25px;
     background-color: var(--color-bg);
@@ -77,10 +95,48 @@ const games = (await getCollection('games')).sort((a, b) => b.data.order - a.dat
     text-align: center;
   }
 
+  /* Sits on top of the game dialog, so it needs its own box rather than the
+     full-screen overlay treatment above. */
+  .confirm {
+    width: min(90vw, 28rem);
+    margin: auto;
+    padding: var(--space-gap);
+    border: 2px groove var(--color-txt);
+    border-radius: 25px;
+    background-color: var(--color-bg);
+    color: var(--color-txt);
+    text-align: center;
+  }
+
+  .confirm::backdrop {
+    background: rgb(0 0 0 / 0.6);
+  }
+
+  .confirm p {
+    margin: 0 0 var(--space-gap);
+    font-family: var(--font-heading), sans-serif;
+    font-size: 1.5em;
+    text-transform: uppercase;
+  }
+
+  .confirm-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1em;
+  }
+
+  /* "No" is the safe option, so it reads as secondary rather than a second button
+     competing with "Yes". */
+  .confirm .btn-quiet {
+    border-color: var(--color-txt);
+    background: none;
+    color: var(--color-txt);
+  }
+
   /* Fade in, with the card sliding down like the old modal did. @starting-style is
      what lets an element animate in from display:none. */
-  dialog,
-  dialog::backdrop {
+  dialog[data-url],
+  dialog[data-url]::backdrop {
     transition: opacity 0.3s ease, overlay 0.3s allow-discrete, display 0.3s allow-discrete;
   }
 
@@ -88,22 +144,22 @@ const games = (await getCollection('games')).sort((a, b) => b.data.order - a.dat
     transition: transform 0.3s ease-out;
   }
 
-  dialog:not([open]),
-  dialog:not([open])::backdrop {
+  dialog[data-url]:not([open]),
+  dialog[data-url]:not([open])::backdrop {
     opacity: 0;
   }
 
-  dialog:not([open]) .sheet {
+  dialog[data-url]:not([open]) .sheet {
     transform: translateY(-25%);
   }
 
   @starting-style {
-    dialog[open],
-    dialog[open]::backdrop {
+    dialog[data-url][open],
+    dialog[data-url][open]::backdrop {
       opacity: 0;
     }
 
-    dialog[open] .sheet {
+    dialog[data-url][open] .sheet {
       transform: translateY(-25%);
     }
   }

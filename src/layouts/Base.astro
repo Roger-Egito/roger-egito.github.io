@@ -1,5 +1,4 @@
 ---
-import { ClientRouter } from 'astro:transitions';
 import '../styles/tokens.css';
 import '../styles/global.css';
 import Head from '../components/Head.astro';
@@ -16,8 +15,13 @@ const { title, description, image } = Astro.props;
 <!doctype html>
 <html lang="en">
   <head>
+    {/*
+      No <ClientRouter />. View transitions took over the Back button, and cancelling
+      one only downgrades it to a full page reload rather than stopping it — which
+      wiped out the dialog before "Close the game?" could be answered, taking the
+      running build with it. The animation wasn't worth 16 KB or that behaviour.
+    */}
     <Head title={title} description={description} image={image} />
-    <ClientRouter />
   </head>
 
   <body id="page-top">

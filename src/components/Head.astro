@@ -1,6 +1,7 @@
 ---
 import { Font } from 'astro:assets';
 import { site } from '../config/site';
+import { pageBackground } from '../config/theme';
 
 interface Props {
   title?: string;
@@ -29,7 +30,7 @@ const preview = image ? new URL(image, site.url).href : undefined;
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 <link rel="manifest" href="/site.webmanifest" />
-<meta name="theme-color" content="#151515" />
+<meta name="theme-color" content={pageBackground} />
 
 <link rel="alternate" type="application/rss+xml" title="RSS" href="/feed.xml" />
 

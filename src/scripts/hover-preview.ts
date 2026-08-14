@@ -69,7 +69,5 @@ document.addEventListener('pointerdown', (event) => {
   }
 });
 
-// Re-runs after client-side navigations, where the cards are new elements.
-document.addEventListener('astro:page-load', () => {
-  document.querySelectorAll<HTMLElement>('.card').forEach(wire);
-});
+// Deferred module, so the cards are already in the document.
+document.querySelectorAll<HTMLElement>('.card').forEach(wire);
