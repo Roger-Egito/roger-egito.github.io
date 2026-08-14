@@ -2,6 +2,7 @@
 order: 4
 title: Covid 35
 img: ./covid-35.webp
+video: https://www.youtube.com/embed/m8m1w9vx168?si=ajOqsKGKszcYuS7S
 projectDate: 2025
 client: Ludomancer Studio
 category: Game Developer

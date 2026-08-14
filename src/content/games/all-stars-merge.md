@@ -2,6 +2,7 @@
 order: 5
 title: All Stars Merge
 img: ./all-stars-merge.webp
+video: https://www.youtube.com/embed/RQ0IyogkOHE?si=JFQXMyRD6ZPqVErC
 projectDate: 2025
 client: Ludomancer Studio
 category: Game Developer

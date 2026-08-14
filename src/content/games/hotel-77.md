@@ -2,7 +2,7 @@
 order: 7
 title: Hotel 77
 img: ./hotel-77.webp
-video: https://www.youtube.com/embed/HW0fq2XMoqw?si=EBGGIz3CYjVRqWRZ
+video: https://www.youtube.com/embed/s3v9tAh8GnM?si=wPh1Nl-ceR_vYxvI
 projectDate: 2024
 client: Ludomancer Studio
 category: Level Designer | Game Developer

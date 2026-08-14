@@ -54,8 +54,13 @@ Don't commit a GIF. A five second GIF runs about 30 MB; the same clip as MP4 is 
 1 MB and decodes on the GPU instead of the CPU. Convert it first (needs ffmpeg):
 
 ```bash
-npm run preview:make -- "C:/path/to/clip.gif" cursed-blight
+npm run preview:make -- "C:/path/to/clip.mp4" cursed-blight
 ```
+
+The second argument is the game's slug and decides where the file lands, so the source
+file can be called anything. An optional third argument sets the CRF (quality): lower
+looks better and weighs more, higher is smaller, 26 is the default. Raise it to about
+30 for long or high-motion footage that comes out oversized.
 
 It plays on hover with a mouse, on focus with a keyboard, and on press-and-hold on a
 phone. Holding doesn't also open the game when you let go.
