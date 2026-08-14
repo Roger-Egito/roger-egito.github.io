@@ -1,14 +1,22 @@
 ---
-// Body of a portfolio entry, shared by the homepage modal and the standalone
+// Body of a portfolio entry, shared by the homepage dialog and the standalone
 // /games/<slug>/ page so there's only one copy of this markup.
+import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
+import Icon from './Icon.astro';
+import StarRule from './StarRule.astro';
 
 interface Props {
   game: CollectionEntry<'games'>;
-  variant: 'modal' | 'page';
+  /**
+   * In the dialog the <iframe> starts with no src, so nine YouTube players don't load
+   * on the homepage. modal.ts fills it in when the dialog opens and clears it on close,
+   * which also stops playback.
+   */
+  deferVideo?: boolean;
 }
 
-const { game, variant } = Astro.props;
+const { game, deferVideo = false } = Astro.props;
 const d = game.data;
 
 const storeLinks = [
@@ -18,93 +26,405 @@ const storeLinks = [
 ].filter(Boolean) as { url: string; label: string }[];
 
 const details = [
-  d.client && { label: 'Client:', value: String(d.client) },
-  d.projectDate && { label: 'Date:', value: String(d.projectDate) },
-  d.category && { label: 'Service:', value: String(d.category) },
+  d.client && { label: 'Client', value: String(d.client) },
+  d.projectDate && { label: 'Date', value: String(d.projectDate) },
+  d.category && { label: 'Service', value: String(d.category) },
 ].filter(Boolean) as { label: string; value: string }[];
+
+const plainTitle = d.title.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+
+// enablejsapi lets game-tabs.ts postMessage the player to pause it when you switch
+// to the Game tab. Without it a cross-origin YouTube frame ignores everything.
+const videoSrc = d.video
+  ? (() => {
+      const url = new URL(d.video);
+      url.searchParams.set('enablejsapi', '1');
+      return url.href;
+    })()
+  : undefined;
+
+// An entry with a build but no trailer falls back to its key art, so calling that tab
+// "Video" would be a lie.
+// One tab per thing there is to look at. Every entry has key art, so the last one is
+// always there; a single tab isn't worth a tablist, so an entry with nothing but its
+// cover just shows the cover.
+const tabs = [
+  d.game && { name: 'game', label: 'Game' },
+  d.video && { name: 'video', label: 'Video' },
+  { name: 'cover', label: 'Cover' },
+].filter(Boolean) as { name: string; label: string }[];
+
+// A phone never gets a playable build, so it may be left with one tab even when a
+// desktop has two. The CSS uses this to drop the tablist in that case.
+const mobileTabs = tabs.filter((tab) => tab.name !== 'game').length;
+
+// A build takes the opening tab, so on an entry that has one the trailer starts out
+// hidden — and a YouTube player that boots inside a hidden panel measures itself as
+// nothing and keeps the postage-stamp poster it picked, which is why the trailer came
+// out soft on a game's own page. So where there's a build, the trailer waits for its
+// tab and is created while it can actually be seen, exactly as it is inside a dialog.
+const deferredVideo = deferVideo || !!d.game;
+
+// What's showing as served: never the build, since that would mean a phone or a
+// browser with no JS staring at an empty frame, and never a trailer that's waiting to
+// be asked for either. game-tabs.ts upgrades to the Game tab on a desktop, before
+// anything is painted.
+const shown = d.game ? 'cover' : d.video ? 'video' : 'cover';
 ---
 
-<div class="modal-body">
-  {/* title and description can contain <br>, so render them as HTML */}
-  <h2 set:html={d.title} />
-  <hr class="star-primary" />
+{/* Drives the Game / Video tabs. Imported here rather than from the dialog, so a
+    game's own page gets it too. Astro bundles it once however many times this
+    component is rendered. */}
+<script>
+  import '../scripts/game-tabs';
+</script>
 
-  <div class="embed-responsive embed-responsive-16by9">
-    {
-      d.video ? (
+{/* title and description can contain <br>, so render them as HTML */}
+<h2 class="section-heading" set:html={d.title} />
+<StarRule />
+
+{/* data-shown says which panel is up. game-tabs.ts moves it and the CSS below does the
+    rest, so the served page is already showing something sensible. */}
+<div class="group" data-media-group data-shown={shown}>
+  {
+    tabs.length > 1 && (
+      <div
+        class="tabs"
+        role="tablist"
+        aria-label={`${plainTitle} media`}
+        data-mobile-tabs={mobileTabs}
+      >
+        {tabs.map((tab) => (
+          <button
+            type="button"
+            class="tab"
+            role="tab"
+            id={`${game.id}-tab-${tab.name}`}
+            aria-controls={`${game.id}-panel-${tab.name}`}
+            aria-selected={tab.name === shown ? 'true' : 'false'}
+            data-tab={tab.name}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+    )
+  }
+
+  {
+    d.game && (
+      <div
+        class="media game-panel"
+        id={`${game.id}-panel-game`}
+        role="tabpanel"
+        aria-labelledby={`${game.id}-tab-game`}
+        style={`--game-w: ${d.game.width}; --game-h: ${d.game.height}`}
+      >
+        {/* Nothing is fetched until this is pressed — these builds are tens of MB, and
+            landing on the Game tab shouldn't mean landing on a download. */}
+        <button type="button" class="game-start" data-play>
+          <Image
+            src={d.img}
+            alt=""
+            widths={[800, 1200]}
+            sizes="(min-width: 64rem) 60rem, 90vw"
+            loading="lazy"
+          />
+          <span class="play">
+            <Icon name="play" class="play-icon" />
+            Play it right here
+          </span>
+        </button>
         <iframe
-          class="embed-responsive-item"
-          src={d.video}
-          title="YouTube video player"
-          frameborder="0"
+          title={`Play ${plainTitle}`}
+          data-game-src={d.game.src}
+          allow="autoplay; fullscreen; gamepad; keyboard-map; xr-spatial-tracking"
+          allowfullscreen
+        />
+      </div>
+    )
+  }
+
+  {d.game && d.gameDescription && <p class="game-note" set:html={d.gameDescription} />}
+
+  {
+    d.video && (
+      <div
+        class="media video-panel"
+        id={`${game.id}-panel-video`}
+        role={tabs.length > 1 ? 'tabpanel' : undefined}
+        aria-labelledby={tabs.length > 1 ? `${game.id}-tab-video` : undefined}
+      >
+        <iframe
+          title={`${plainTitle} trailer`}
+          src={deferredVideo ? undefined : videoSrc}
+          data-video={deferredVideo ? videoSrc : undefined}
+          loading="lazy"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           referrerpolicy="strict-origin-when-cross-origin"
           allowfullscreen
-          style="margin-bottom: 2em"
         />
-      ) : (
-        <img
-          src={`/img/portfolio/${d.img}`}
-          class="img-fluid mx-auto d-block mb-4"
-          alt={d.alt}
-          style="object-fit: contain; width: 100%; height: auto;"
-        />
-      )
-    }
-  </div>
-
-  {d.description && <p class="description" set:html={d.description} />}
-
-  {/* Same inline-block spacing gotcha as SocialLinks: the {' '} is doing the spacing. */}
-  <ul class="list-inline item-details">
-    {
-      storeLinks.map((link) => (
-        <Fragment>
-          <li>
-            <strong>
-              <a href={link.url} target="_blank" style="color: var(--color-txt)">
-                {link.label}
-              </a>
-            </strong>
-          </li>
-          {' '}
-        </Fragment>
-      ))
-    }
-    {
-      d.private && (
-        <Fragment>
-          <li>
-            <strong>{d.private}</strong>
-          </li>
-          {' '}
-        </Fragment>
-      )
-    }
-  </ul>
-
-  <ul class="list-inline item-details">
-    {
-      details.map((item) => (
-        <Fragment>
-          <li>
-            {item.label} <strong>{item.value}</strong>
-          </li>
-          {' '}
-        </Fragment>
-      ))
-    }
-  </ul>
-
-  {
-    variant === 'modal' ? (
-      <button type="button" class="btn btn-success btn-lg" data-dismiss="modal">
-        Close
-      </button>
-    ) : (
-      <a class="btn btn-success btn-lg" href="/#portfolio">
-        Back to Portfolio
-      </a>
+      </div>
     )
   }
+
+  <div
+    class="media cover-panel"
+    id={`${game.id}-panel-cover`}
+    role={tabs.length > 1 ? 'tabpanel' : undefined}
+    aria-labelledby={tabs.length > 1 ? `${game.id}-tab-cover` : undefined}
+  >
+    <Image
+      src={d.img}
+      alt={d.alt ?? `${plainTitle} key art`}
+      widths={[800, 1200]}
+      sizes="(min-width: 64rem) 60rem, 90vw"
+      loading="lazy"
+    />
+  </div>
 </div>
+
+{d.description && <p class="description" set:html={d.description} />}
+
+{
+  (storeLinks.length > 0 || d.private) && (
+    <ul class="links">
+      {storeLinks.map((link) => (
+        <li>
+          <a href={link.url} target="_blank" rel="noopener">
+            {link.label}
+          </a>
+        </li>
+      ))}
+      {d.private && <li class="private">{d.private}</li>}
+    </ul>
+  )
+}
+
+{
+  details.length > 0 && (
+    <dl class="meta">
+      {details.map((item) => (
+        <div>
+          <dt>{item.label}:</dt>
+          <dd>{item.value}</dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
+<slot name="action" />
+
+<style>
+  /* Game / Video switch. Same uppercase Montserrat as the headings so it reads as
+     part of the design rather than a browser control. */
+  .tabs {
+    display: flex;
+    justify-content: center;
+    gap: 0.5em;
+    margin-bottom: 1.5em;
+  }
+
+  .tab {
+    padding: 0.5em 1.5em;
+    border: 2px solid var(--color-txt);
+    border-radius: var(--radius);
+    background: none;
+    color: var(--color-txt);
+    font-family: var(--font-heading), sans-serif;
+    font-size: 1em;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    opacity: 0.55;
+    transition: opacity var(--transition), background-color var(--transition),
+      color var(--transition);
+  }
+
+  .tab:hover,
+  .tab:focus-visible {
+    opacity: 1;
+  }
+
+  .tab[aria-selected='true'] {
+    background: var(--color-txt);
+    color: var(--color-bg);
+    opacity: 1;
+  }
+
+  /* 16:9 box that keeps its shape before the video or image arrives, so nothing
+     jumps around while loading. The game panel overrides this inline with the ratio
+     itch reported for that particular build. */
+  .media {
+    aspect-ratio: 16 / 9;
+    margin-bottom: 2em;
+  }
+
+  /* Which panel is up. Everything that isn't the one named by data-shown goes away. */
+  .group:not([data-shown='game']) :is(.game-panel, .game-note),
+  .group:not([data-shown='video']) .video-panel,
+  .group:not([data-shown='cover']) .cover-panel {
+    display: none;
+  }
+
+  /* Frozen while "Close the game?" is up. A frame that isn't being rendered stops
+     getting requestAnimationFrame, which halts the loop without dropping the build.
+     Only the frame is hidden, so the panel keeps its size and nothing reflows. */
+  .group[data-paused] .game-panel :global(iframe) {
+    display: none;
+  }
+
+  .game-note {
+    margin: -1em 0 2em;
+    text-align: left;
+  }
+
+  /* A playable build needs a pointer and a keyboard, and the builds are far too heavy
+     for a phone connection, so below tablet width the Game tab isn't offered and the
+     iframe never gets a src. If that leaves a single tab, drop the tablist too. */
+  @media (max-width: 47.99rem) {
+    .tab[data-tab='game'] {
+      display: none;
+    }
+
+    .tabs[data-mobile-tabs='1'] {
+      display: none;
+    }
+
+    .group .game-panel,
+    .group .game-note {
+      display: none !important;
+    }
+  }
+
+  .video-panel :global(iframe),
+  .cover-panel :global(img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    object-fit: contain;
+  }
+
+  /* itch serves a build at a fixed pixel size and doesn't scale it, so a frame any
+     narrower than that simply crops the game. The frame is given the build's real
+     size and scaled down to fit instead; game-tabs.ts works out the factor. Capping
+     the panel at the build's own width keeps that factor at or below 1, so a small
+     build is never blown up into a blurry one. */
+  .game-panel {
+    position: relative;
+    max-width: calc(var(--game-w) * 1px);
+    margin-inline: auto;
+    aspect-ratio: var(--game-w) / var(--game-h);
+    overflow: hidden;
+  }
+
+  .game-panel :global(iframe) {
+    display: block;
+    /* The global iframe reset would clamp this back to the panel's width, which is
+       the crop we're getting rid of. It's the transform that does the fitting here. */
+    width: calc(var(--game-w) * 1px);
+    max-width: none;
+    height: calc(var(--game-h) * 1px);
+    border: 0;
+    transform: scale(var(--game-scale, 1));
+    transform-origin: 0 0;
+  }
+
+  /* Cover art standing in for the build until someone asks for it. */
+  .game-start {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-txt);
+    cursor: pointer;
+  }
+
+  .game-start :global(img) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.4;
+    transition: opacity var(--transition);
+  }
+
+  .game-start:hover :global(img),
+  .game-start:focus-visible :global(img) {
+    opacity: 0.6;
+  }
+
+  .play {
+    display: flex;
+    z-index: 1;
+    gap: 0.6em;
+    align-items: center;
+    padding: 0.6em 1.4em;
+    border: 2px solid var(--color-txt);
+    border-radius: var(--radius);
+    background-color: var(--color-bg);
+    font-family: var(--font-heading), sans-serif;
+    font-size: 1.1em;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  /* :global because the <svg> is rendered by Icon.astro, so it carries that
+     component's scope attribute rather than this one's. */
+  .play :global(.play-icon) {
+    width: 0.8em;
+    height: 0.8em;
+  }
+
+  /* Once it's running the cover has nothing left to do. No :global inside :has() —
+     Astro leaves it in the output as-is and the whole rule gets thrown away. */
+  .game-panel:has(iframe[src]) .game-start {
+    display: none;
+  }
+
+  .description {
+    text-align: left;
+  }
+
+  .links,
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5em 1.5em;
+    margin: var(--space-gap) 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .links {
+    font-weight: 700;
+  }
+
+  .private {
+    font-weight: 700;
+  }
+
+  .meta div {
+    display: flex;
+    gap: 0.35em;
+  }
+
+  .meta dt {
+    font-weight: 400;
+  }
+
+  .meta dd {
+    margin: 0;
+    font-weight: 700;
+  }
+</style>

@@ -1,0 +1,36 @@
+---
+// Back-to-top button. Only worth showing on narrow screens, where the page is long.
+// `scroll-behavior: smooth` in global.css does the animation, so there's no JS here.
+import Icon from './Icon.astro';
+---
+
+<a href="#page-top" class="scroll-top" aria-label="Back to top">
+  <Icon name="chevron-up" />
+</a>
+
+<style>
+  .scroll-top {
+    display: grid;
+    place-items: center;
+    position: fixed;
+    right: 2%;
+    bottom: 2%;
+    z-index: 10;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: var(--color-accent);
+    color: var(--color-surface);
+  }
+
+  .scroll-top :global(svg) {
+    width: 20px;
+    height: 20px;
+  }
+
+  @media (min-width: 62rem) {
+    .scroll-top {
+      display: none;
+    }
+  }
+</style>

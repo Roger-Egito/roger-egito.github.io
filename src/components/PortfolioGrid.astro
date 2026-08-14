@@ -1,43 +1,164 @@
 ---
+import { Image } from 'astro:assets';
 import { getCollection } from 'astro:content';
+import StarRule from './StarRule.astro';
 
 // Highest order first, which matches the order the grid used to show.
 const games = (await getCollection('games')).sort((a, b) => b.data.order - a.data.order);
+
+// A game gets a hover preview just by having <slug>.mp4 sitting next to its markdown.
+// No front matter needed: drop the file in and it works, remove it and the card goes
+// back to a plain still. Vite hashes the URL for us.
+const previews = import.meta.glob<string>('../content/games/*.mp4', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+
+const previewFor = (slug: string) =>
+  previews[`../content/games/${slug}.mp4`] as string | undefined;
 ---
 
+<script>
+  import '../scripts/hover-preview';
+</script>
+
 <section id="portfolio">
-  <div class="container portfolio-flex-grid">
-    <div class="row">
-      <div class="col-lg-12 text-center text-color" style="padding-top:0">
-        <h2>Portfolio</h2>
-        <hr class="star-primary" />
-      </div>
-    </div>
-    <div class="portfolio-flex-row">
+  <div class="container">
+    <h2 class="section-heading">Portfolio</h2>
+    <StarRule />
+
+    <ul class="grid">
       {
-        games.map((game) => (
-          <div class="portfolio-flex-item portfolio-item">
+        games.map((game, i) => (
+          <li>
             {/* Real href so the link still works with JS off or in a new tab.
-                ModalRouting.astro catches normal clicks and opens the modal. */}
+                modal.ts catches normal clicks and opens the dialog instead. */}
             <a
               href={`/games/${game.id}/`}
-              class="portfolio-link"
-              data-modal-target={`#portfolioModal-${game.id}`}
+              class:list={['card', previewFor(game.id) && 'has-preview']}
+              data-game={game.id}
+              aria-haspopup="dialog"
             >
-              <div class="caption">
-                <div class="caption-content">
-                  <i class="fa fa-search-plus fa-3x" />
-                </div>
-              </div>
-              <img
-                src={`/img/portfolio/${game.data.img}`}
-                class="img-responsive"
-                alt={game.data.alt}
+              <Image
+                src={game.data.img}
+                alt={game.data.alt ?? `${game.data.title.replace(/<[^>]*>/g, ' ')} key art`}
+                widths={[400, 800]}
+                sizes="(min-width: 60rem) 32vw, (min-width: 40rem) 49vw, 100vw"
+                loading={i < 3 ? 'eager' : 'lazy'}
               />
+              {previewFor(game.id) && (
+                <video
+                  class="preview"
+                  data-src={previewFor(game.id)}
+                  muted
+                  loop
+                  playsinline
+                  preload="none"
+                  aria-hidden="true"
+                  tabindex="-1"
+                />
+              )}
             </a>
-          </div>
+          </li>
         ))
       }
-    </div>
+    </ul>
   </div>
 </section>
+
+<style>
+  /* Same flex percentages and breakpoints the old grid used, so the columns break
+     at exactly the widths they used to. */
+  .grid {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .grid > li {
+    margin: 0 0 15px;
+  }
+
+  @media (min-width: 640px) {
+    .grid {
+      display: flex;
+      flex-flow: row wrap;
+      align-items: stretch;
+      justify-content: space-between;
+    }
+
+    .grid > li {
+      flex: 1 0 49%;
+      max-width: 49%;
+    }
+  }
+
+  @media (min-width: 767px) {
+    .grid > li {
+      margin: 0 0 30px;
+    }
+  }
+
+  @media (min-width: 960px) {
+    .grid > li {
+      flex: 1 0 32%;
+      max-width: 32%;
+    }
+  }
+
+  .card {
+    display: block;
+    position: relative;
+    max-width: 400px;
+    margin: 0 auto;
+    opacity: 0.5;
+    transition: transform 0.6s ease, opacity 1s ease;
+  }
+
+  .card :global(img) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  /* The clip sits exactly on top of the still and the two cross-fade. The still stays
+     in the flow so the card keeps its height whether or not there's a preview. */
+  .preview {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity var(--transition);
+  }
+
+  /* The transition belongs on the base rule, not inside the previewing state,
+     otherwise the image fades out on the way in and snaps back on the way out. */
+  .card :global(img) {
+    transition: opacity var(--transition);
+  }
+
+  /* Deliberately the same :hover / :focus-visible condition that scales the card up,
+     so the clip and the zoom are always in the same state. On a touch screen the
+     browser keeps :hover applied after you lift your finger, which means the clip
+     stays up too, and both drop together when you touch somewhere else.
+     .has-preview keeps cards with no clip from fading their still into nothing. */
+  .card.has-preview:hover .preview,
+  .card.has-preview:focus-visible .preview {
+    opacity: 1;
+  }
+
+  .card.has-preview:hover :global(img),
+  .card.has-preview:focus-visible :global(img) {
+    opacity: 0;
+  }
+
+  .card:hover,
+  .card:focus-visible {
+    transform: scale(1.1);
+    opacity: 1;
+    z-index: 1;
+  }
+</style>

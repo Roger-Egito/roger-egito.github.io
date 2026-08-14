@@ -1,16 +1,48 @@
 /*
- * Site colours. This is the only file to edit to change them - bootstrap.css and
- * main.css both point at these variables.
+ * Design tokens. Change a value here and it applies everywhere.
  *
- * Note the built copy of this ends up inside dist/assets/styles.<hash>.css. Don't
- * edit that one, it gets overwritten on every build.
+ * Colors came from the old _config.yml palette. Fonts are self-hosted and wired up
+ * in astro.config.mjs, which sets --font-heading and --font-body for us.
  */
 
 :root {
-  --color-primary: #181b1e;
-  --color-primary-rgb: 71, 121, 196;
-  --color-secondary: #f1f3f4;
-  --color-secondary-dark: #2c456b;
+  /* color */
   --color-bg: #151515;
   --color-txt: #dddddd;
+  --color-surface: #181b1e; /* footer bar, buttons */
+  --color-accent: #f1f3f4; /* inverted button fill */
+  --color-rule: #dddddd;
+
+  /* type. 15px base keeps the original proportions; everything else scales off it. */
+  --text-base: 0.9375rem;
+  --text-body: 20px;
+  --line-height: 1.42857143;
+  --line-height-heading: 1.1;
+
+  /* spacing */
+  --space-section: 3.125rem; /* 50px */
+  --space-gap: 1.875rem; /* 30px */
+
+  /* layout */
+  --container: 73.125rem; /* 1170px, matches the old grid's widest step */
+  --radius: 0.25rem;
+
+  /* motion */
+  --transition: 0.3s ease-in-out;
+}
+
+/* Anyone who's asked their OS to calm animations down gets a still site. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition: 0s;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

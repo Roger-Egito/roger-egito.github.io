@@ -1,8 +1,7 @@
 ---
 order: 2
 title: DESTRUA
-img: destrua.png
-alt: image-alt
+img: ./destrua.webp
 video: https://www.youtube.com/embed/4ES0w5O4Tuw?si=B25mBBvQr8LsSOKn
 projectDate: 2015
 client: Personal Project

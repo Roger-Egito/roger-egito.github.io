@@ -7,3 +7,6 @@ dist/
 
 # dependencies
 node_modules/
+
+# raw recordings; only the converted previews in src/content/games/ get committed
+videos-to-convert/

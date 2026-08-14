@@ -1,0 +1,32 @@
+---
+// schema.org JSON-LD. Search engines read this to understand that Roger is a person
+// with a job and that these are works he made, rather than guessing from the text.
+// It renders nothing on screen. https://schema.org/Person
+import { site } from '../config/site';
+
+interface Props {
+  /** Extra schema objects to merge in, e.g. the CreativeWork for a game page. */
+  extra?: Record<string, unknown>;
+}
+
+const { extra } = Astro.props;
+
+const person = {
+  '@type': 'Person',
+  '@id': `${site.url}/#person`,
+  name: site.author,
+  url: site.url,
+  jobTitle: 'Game Designer and Developer',
+  description: site.description,
+  sameAs: site.social.map((s) => s.url),
+};
+
+const graph = extra ? [person, extra] : [person];
+---
+
+{/* is:inline because this is data for crawlers, not a script for Astro to bundle. */}
+<script
+  is:inline
+  type="application/ld+json"
+  set:html={JSON.stringify({ '@context': 'https://schema.org', '@graph': graph })}
+/>

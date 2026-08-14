@@ -1,8 +1,7 @@
 ---
 order: 1
 title: The Art of Videogames
-img: taov.png
-alt: image-alt
+img: ./the-art-of-videogames.webp
 video: https://www.youtube.com/embed/jmcXMFhv-Rk?si=hVjol0YHjgkTYJy3
 projectDate: 2015
 client: Personal Project

@@ -1,20 +1,29 @@
 ---
+import { getImage } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import Header from '../components/Header.astro';
 import PortfolioGrid from '../components/PortfolioGrid.astro';
 import About from '../components/About.astro';
 import Contact from '../components/Contact.astro';
 import Footer from '../components/Footer.astro';
-import Modals from '../components/Modals.astro';
-import ModalRouting from '../components/ModalRouting.astro';
+import GameDialogs from '../components/GameDialogs.astro';
+import ScrollTop from '../components/ScrollTop.astro';
+import StructuredData from '../components/StructuredData.astro';
+import banner from '../assets/banner.webp';
+import { pageTitle } from '../config/site';
+
+// Preview card for when the homepage link gets shared. 1200x630 is the size
+// LinkedIn, Facebook and X all crop to.
+const preview = await getImage({ src: banner, width: 1200, height: 630, format: 'jpg' });
 ---
 
-<Base>
+<Base title={pageTitle('Portfolio')} image={preview.src}>
   <Header />
   <PortfolioGrid />
   <About />
   <Contact />
   <Footer />
-  <Modals />
-  <ModalRouting slot="scripts" />
+  <ScrollTop />
+  <GameDialogs />
+  <StructuredData />
 </Base>

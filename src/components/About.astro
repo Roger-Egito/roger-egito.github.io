@@ -1,46 +1,61 @@
 ---
 // About copy lives directly in here.
+import StarRule from './StarRule.astro';
 ---
 
-<section class="success" id="about">
+<section id="about">
   <div class="container">
-    <div class="row">
-      <div class="col-lg-12 text-center">
-        <h2>About</h2>
-        <hr class="star-light" />
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-lg-4">
-        <p>
-          I'm Roger Egito, a developer with a strong focus on building meaningful,
-          high-quality games and digital experiences.
-          <br /><br />
-          I approach every project with deep care and a drive to deliver work that's both
-          functional and thoughtful. I always look to understand the purpose behind the project
-          and deliver something I'm proud to stand behind.
-        </p>
-      </div>
-      <div class="col-lg-4">
-        <p>
-          I like building games that have meaning, fun mechanics, tell stories, and engage
-          people. I consider games to be an art medium that can genuinely help people.
-          <br /><br />
-          Whether I'm designing gameplay mechanics, creating immersive interfaces, writing
-          narratives or developing backend solutions, I enjoy the process and I'm always willing
-          to give it my all.
-        </p>
-      </div>
-      <div class="col-lg-4">
-        <p>
-          When I'm not programming or designing games, I enjoy playing video games, watching
-          anime, GM'ing RPGs and spending time with family and friends.
-          <br /><br />
-          If you're looking for a developer who genuinely cares about the product and is ready to
-          bring strong technical skills, creative problem-solving, and a user-centered mindset to
-          your team, let's talk.
-        </p>
-      </div>
+    <h2 class="section-heading">About</h2>
+    <StarRule />
+
+    <div class="columns">
+      <p>
+        I'm Roger Egito, a developer with a strong focus on building meaningful,
+        high-quality games and digital experiences.
+        <br /><br />
+        I approach every project with deep care and a drive to deliver work that's both
+        functional and thoughtful. I always look to understand the purpose behind the project
+        and deliver something I'm proud to stand behind.
+      </p>
+      <p>
+        I like building games that have meaning, fun mechanics, tell stories, and engage
+        people. I consider games to be an art medium that can genuinely help people.
+        <br /><br />
+        Whether I'm designing gameplay mechanics, creating immersive interfaces, writing
+        narratives or developing backend solutions, I enjoy the process and I'm always willing
+        to give it my all.
+      </p>
+      <p>
+        When I'm not programming or designing games, I enjoy playing video games, watching
+        anime, GM'ing RPGs and spending time with family and friends.
+        <br /><br />
+        If you're looking for a developer who genuinely cares about the product and is ready to
+        bring strong technical skills, creative problem-solving, and a user-centered mindset to
+        your team, let's talk.
+      </p>
     </div>
   </div>
 </section>
+
+<style>
+  /* The old grid only split this into columns at 1200px and up; below that the
+     paragraphs stacked full width. Negative margins reproduce the gutters. */
+  .columns {
+    display: grid;
+    /* Without this the columns all stretch to the tallest one, which the old float
+       layout didn't do. */
+    align-items: start;
+    margin: 0 -15px;
+  }
+
+  .columns p {
+    margin-top: 0;
+    padding: 0 15px;
+  }
+
+  @media (min-width: 1200px) {
+    .columns {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+</style>
