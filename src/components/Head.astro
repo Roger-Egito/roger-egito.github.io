@@ -42,3 +42,9 @@ const preview = image ? new URL(image, site.url).href : undefined;
 <meta property="og:url" content={canonical} />
 {preview && <meta property="og:image" content={preview} />}
 <meta name="twitter:card" content={preview ? 'summary_large_image' : 'summary'} />
+
+{/* Pageview counter. is:inline keeps Astro's hands off it, so the data- attribute it
+    looks itself up by survives. It skips anything served from localhost on its own, so
+    working on the site doesn't show up in the numbers. */}
+<script is:inline async data-goatcounter={site.analytics} src="https://gc.zgo.at/count.js"
+></script>
