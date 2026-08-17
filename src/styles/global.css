@@ -111,19 +111,46 @@ section {
 
 /* A rule with the gamepad sitting on top of it, masking the middle. Same trick the
    old stylesheet used with an ::after pseudo-element. */
+/* 5px tall rather than the 0 it used to be, because the line is drawn by the two
+   pseudo-elements below instead of by a border-top on this element — and an absolutely
+   positioned line contributes no height. Same 5px on the page either way. */
 .star-rule {
   position: relative;
-  height: 0;
+  height: 5px;
   max-width: 250px;
   margin: 25px auto 30px;
   padding: 0;
   border: 0;
-  border-top: solid 5px var(--color-rule);
   overflow: visible;
 }
 
+/* Two halves with a real gap between them, rather than one unbroken line with the
+   gamepad painted over the middle. That used to mean giving the icon an opaque
+   background the color of the page, which is invisible against a flat backdrop but
+   shows up as a solid block the moment there's video behind it.
+
+   26.25px is half the space the icon used to mask: 37.5px wide at 30px tall, plus the
+   7.5px it sat clear of the line on each side. */
+.star-rule::before,
+.star-rule::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  height: 5px;
+  width: calc(50% - 26.25px);
+  background-color: var(--color-rule);
+}
+
+.star-rule::before {
+  left: 0;
+}
+
+.star-rule::after {
+  right: 0;
+}
+
 /* Absolutely positioned so it sits on the line without adding any height, which is
-   what the old ::after did. The background masks the rule behind it. */
+   what the old ::after did. */
 .star-rule svg {
   position: absolute;
   top: 50%;
@@ -133,7 +160,6 @@ section {
   height: 30px;
   padding: 0 7.5px;
   color: var(--color-rule);
-  background-color: var(--color-bg);
 }
 
 /* --- buttons --- */

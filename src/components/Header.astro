@@ -1,13 +1,38 @@
 ---
 import { Image } from 'astro:assets';
+import Icon from './Icon.astro';
 import SocialLinks from './SocialLinks.astro';
 import StarRule from './StarRule.astro';
 import { site } from '../config/site';
-import banner from '../assets/banner.webp';
 import profile from '../assets/profile.webp';
+
+// The clips the grid already uses for its hover previews, played full-screen behind
+// the hero. Same deal as over there: a game joins in just by having <slug>.mp4 next to
+// its markdown. To swap in bigger, hero-only versions later, point this glob at the
+// folder holding them — nothing else needs to change.
+const previews = import.meta.glob<string>('../content/games/*.mp4', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+
+const clips = Object.entries(previews)
+  .filter(([path]) => !site.heroExcludes.includes(path.split('/').pop()!.replace('.mp4', '')))
+  .map(([, url]) => url);
 ---
 
-<header style={`background-image:url('${banner.src}')`}>
+<script>
+  import '../scripts/hero-reel';
+</script>
+
+<header class="hero">
+  {/* Decorative: the clips are the portfolio's own footage, shown again below with
+      names attached, so there's nothing here for a screen reader to announce. */}
+  <div class="reel" data-reel data-clips={JSON.stringify(clips)} aria-hidden="true">
+    <video muted playsinline preload="none"></video>
+    <video muted playsinline preload="none"></video>
+  </div>
+
   <div class="container">
     <Image class="profile" src={profile} alt="" width={128} height={128} loading="eager" />
 
@@ -23,27 +48,87 @@ import profile from '../assets/profile.webp';
       <SocialLinks class="header-social" />
     </div>
   </div>
+
+  {/* A full-screen hero hides the fact that there's a page under it. */}
+  <a class="scroll-cue" href="#portfolio" aria-label="Skip to the portfolio">
+    <Icon name="chevron-down" class="cue-icon" />
+  </a>
 </header>
 
 <style>
-  /* Kept as a background-image rather than an <img> so it sizes to the viewport width
-     exactly like it used to. Astro still processes and optimizes the file. */
-  header {
-    background-size: 100vw;
+  /* Fills the first screen and no more, so the portfolio starts the moment you scroll.
+     min-height rather than height so a short landscape phone can still grow to fit the
+     text instead of clipping it. */
+  .hero {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: hidden;
+    /* Keeps the negative z-index of the layers below from escaping behind the page. */
+    isolation: isolate;
+    /* The still that shows before the first clip is ready, and stays put for anyone
+       who won't be getting clips at all. Sized as it always was. */
+    background-image: url(../assets/banner.webp);
     background-repeat: no-repeat;
+    background-size: 100vw;
     background-color: var(--color-bg);
     color: var(--color-txt);
     text-align: center;
   }
 
-  header .container {
-    padding-top: 100px;
+  .reel {
+    position: absolute;
+    z-index: -2;
+    inset: 0;
+  }
+
+  /* Both clips are stacked; only the one with data-active is visible, and the swap
+     between them is this fade. FADE_MS in hero-reel.ts has to match. */
+  .reel video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 1s ease;
+  }
+
+  .reel video[data-active] {
+    opacity: 1;
+  }
+
+  /* Holds the text legible over whatever happens to be on screen, and lands on solid
+     background by the bottom so the hero doesn't end on a visible edge. */
+  .hero::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--color-bg) 60%, transparent) 0%,
+      color-mix(in srgb, var(--color-bg) 72%, transparent) 55%,
+      var(--color-bg) 100%
+    );
+  }
+
+  .container {
+    padding-top: 50px;
     padding-bottom: 50px;
   }
 
+  /* Enough of a rim to keep the photo from dissolving into a bright frame. */
   .profile {
     display: block;
     margin: 0 auto 20px;
+    border-radius: 50%;
+    box-shadow:
+      0 0 0 3px color-mix(in srgb, var(--color-bg) 80%, transparent),
+      0 8px 30px rgb(0 0 0 / 0.55);
   }
 
   .name {
@@ -61,18 +146,66 @@ import profile from '../assets/profile.webp';
     font-weight: 300;
   }
 
+  .name,
+  .skills {
+    text-shadow: 0 2px 12px rgb(0 0 0 / 0.6);
+  }
+
   /* :global because the <ul> is rendered by SocialLinks, so it carries that
      component's scope id rather than this one's. */
   :global(.header-social) {
     padding-top: 2.5em;
   }
 
-  @media (min-width: 768px) {
-    header .container {
-      padding-top: 200px;
-      padding-bottom: 100px;
+  .scroll-cue {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 50%;
+    translate: -50% 0;
+    padding: 0.75rem;
+    color: var(--color-txt);
+    opacity: 0.6;
+    transition: opacity var(--transition);
+    animation: nudge 2.5s ease-in-out infinite;
+  }
+
+  .scroll-cue:hover,
+  .scroll-cue:focus-visible {
+    opacity: 1;
+  }
+
+  /* :global because the <svg> is rendered by Icon.astro, so it carries that
+     component's scope id rather than this one's. Without it the icon gets no size
+     at all and the cue is an invisible 24px of padding. */
+  .scroll-cue :global(.cue-icon) {
+    display: block;
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  @keyframes nudge {
+    0%,
+    100% {
+      translate: -50% 0;
+    }
+    50% {
+      translate: -50% 0.4rem;
+    }
+  }
+
+  /* Someone who asked for less motion gets no clips (hero-reel.ts bails) and no
+     bobbing arrow either — but keeps the link, which is the part that does something. */
+  @media (prefers-reduced-motion: reduce) {
+    .scroll-cue {
+      animation: none;
     }
 
+    .reel video {
+      transition: none;
+    }
+  }
+
+  @media (min-width: 768px) {
     .name {
       font-size: 4.75em;
     }

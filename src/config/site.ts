@@ -17,6 +17,15 @@ export const site = {
   skills: 'Game Designer | Developer',
   slogan: 'Creating games with heart and soul',
 
+  /**
+   * Games whose preview clip should stay out of the hero rotation, by slug (the
+   * markdown filename — 'cursed-blight.md' is 'cursed-blight'). The clip still plays
+   * as a hover preview on its portfolio card either way; this only pulls it from the
+   * full-screen reel, for a game whose footage doesn't read well blown up that big, or
+   * spoils too much, or whatever the reason.
+   */
+  heroExcludes: [] as string[],
+
   /** Where the contact form posts to. */
   contactAction: 'https://formspree.io/f/xldnwyla',
 
