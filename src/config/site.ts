@@ -20,6 +20,13 @@ export const site = {
   /** Where the contact form posts to. */
   contactAction: 'https://formspree.io/f/xldnwyla',
 
+  /**
+   * GoatCounter's endpoint for this site. Counts pageviews and referrers, sets no
+   * cookies and collects nothing personal, so there's no consent banner to put up.
+   * Stats are at https://roger-egito.goatcounter.com.
+   */
+  analytics: 'https://roger-egito.goatcounter.com/count',
+
   footerNote: 'Games developed by Roger Egito (fully or partially), not restricted by NDA.',
 
   social: [
