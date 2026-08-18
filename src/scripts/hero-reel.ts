@@ -159,11 +159,12 @@ function run(reel: HTMLElement) {
   });
 
   // Clicking the footage opens that game, by way of the card that already knows how.
-  // Anything with its own job — a link, a button — is left to get on with it.
+  // Only the bare backdrop counts: the panel behind the text is a barrier, so a click
+  // anywhere on it — selecting the email, say — stays where it landed.
   const hero = reel.closest<HTMLElement>('.hero');
   hero?.addEventListener('click', (event) => {
-    const target = event.target as HTMLElement | null;
-    if (target?.closest('a, button')) return;
+    const target = event.target as Node | null;
+    if (target !== hero && !reel.contains(target)) return;
     if (!window.getSelection()?.isCollapsed) return; // they were selecting text
     const slug = reel.dataset.slug;
     if (slug) document.querySelector<HTMLElement>(`a[data-game="${CSS.escape(slug)}"]`)?.click();
@@ -222,11 +223,8 @@ function wireNav() {
     if (key.dataset.pad === 'up') setOpen(!(nav && 'open' in nav.dataset));
   });
 
-  // Following a link in it is a good moment to put it away again.
-  nav?.addEventListener('click', (event) => {
-    if ((event.target as HTMLElement | null)?.closest('a')) setOpen(false);
-  });
-
+  // It stays put when a link in it is followed — the sections are all on one page, so
+  // closing it would mean pressing Up again for every jump.
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && nav && 'open' in nav.dataset) setOpen(false);
   });

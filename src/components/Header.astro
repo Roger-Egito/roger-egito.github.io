@@ -1,11 +1,13 @@
 ---
-import { Image } from 'astro:assets';
 import Icon from './Icon.astro';
 import SocialLinks from './SocialLinks.astro';
 import StarRule from './StarRule.astro';
 import { getCollection } from 'astro:content';
 import { site, plainText } from '../config/site';
-import profile from '../assets/profile.webp';
+// Same idea as Icon.astro: the file comes from a package and is inlined at build time,
+// so one flag ships as markup and nothing is fetched for it. Windows has no country
+// flag glyphs, so the 🇧🇷 emoji would just read "BR" for most desktop visitors.
+import brazilFlag from 'flag-icons/flags/4x3/br.svg?raw';
 
 // The clips the grid already uses for its hover previews, played full-screen behind
 // the hero. Same deal as over there: a game joins in just by having <slug>.mp4 next to
@@ -27,10 +29,10 @@ const clips = Object.entries(previews)
   .filter(({ slug }) => !site.heroExcludes.includes(slug))
   .map(({ slug, src }) => {
     const game = games.find((entry) => entry.id === slug);
-    // "Game Designer | Game Developer" reads as a list, so it becomes one. A game can
-    // override the whole thing with heroRole when the roles aren't what it needs.
+    // Always "<roles> for <game>". Every game states its own roles; a new one that
+    // hasn't yet falls back to reading `category` as a list so the line still forms.
     const roles =
-      game?.data.heroRole ??
+      game?.data.roles ??
       listing.format((game?.data.category ?? '').split('|').map((role) => role.trim()).filter(Boolean));
     return { src, slug, credit: `${roles} for ${plainText(game?.data.title ?? slug)}` };
   });
@@ -49,28 +51,41 @@ const clips = Object.entries(previews)
   </div>
 
   <div class="container">
-    <Image class="profile" src={profile} alt="" width={128} height={128} loading="eager" />
-
     <div class="intro-text">
       <div class="dpad">
-        <button type="button" class="key" data-pad="up" aria-label="Show the menu">
+        <button type="button" class="key" data-pad="up" data-tip="Navbar" aria-label="Show the menu">
           <Icon name="caret-up" class="key-icon" />
         </button>
-        <button type="button" class="key" data-pad="prev" aria-label="Previous game">
+        <button type="button" class="key" data-pad="prev" data-tip="Previous Game" aria-label="Previous game">
           <Icon name="caret-left" class="key-icon" />
         </button>
-        <button type="button" class="key" data-pad="next" aria-label="Next game">
+        <button type="button" class="key" data-pad="next" data-tip="Next Game" aria-label="Next game">
           <Icon name="caret-right" class="key-icon" />
         </button>
-        <button type="button" class="key" data-pad="down" aria-label="Go to the portfolio">
+        <button type="button" class="key" data-pad="down" data-tip="Portfolio" aria-label="Go to the portfolio">
           <Icon name="caret-down" class="key-icon" />
         </button>
       </div>
 
-      <h1 class="name">{site.title}</h1>
+      {/* The name is the way into the about copy, which is a dialog now rather than a
+          section further down the page. A button inside the h1 keeps the heading a
+          heading while giving the click something real to land on. */}
+      <h1 class="name">
+        <button type="button" class="name-button" data-opens="#about-dialog">
+          {site.title}
+        </button>
+      </h1>
       <p class="skills">{site.skills}</p>
 
-      <StarRule />
+      <p class="meta">
+        <span class="flag" role="img" aria-label="Brazil" set:html={brazilFlag} />
+        {site.location} | {site.timezone}
+      </p>
+      <p class="meta">
+        Contact: <a href={`mailto:${site.email}`}>{site.email}</a>
+      </p>
+
+      <!--<StarRule /> -->
       <br />
 
       {/* Replaced with the credit for whichever game is playing, as soon as the reel
@@ -78,7 +93,7 @@ const clips = Object.entries(previews)
           clips means no game to credit. */}
       <p class="skills" data-hero-credit>{site.slogan}</p>
 
-      <SocialLinks class="header-social" />
+      <SocialLinks class="header-social" tips />
     </div>
   </div>
 
@@ -97,6 +112,11 @@ const clips = Object.entries(previews)
     --key: 50px;
     --key-gap: 8px;
     --pad-gap: 2rem;
+    /* Insets of the face plate from the text block's own box. Tuned so it clears the
+       pads and the credit line without spreading over the footage. */
+    --plate-top: 22px;
+    --plate-side: 73px;
+    --plate-bottom: 66px;
     position: relative;
     display: flex;
     flex-direction: column;
@@ -147,14 +167,10 @@ const clips = Object.entries(previews)
     cursor: pointer;
   }
 
+  /* Text stays selectable; only the bare backdrop opens a game (see hero-reel.ts,
+     which acts on clicks that land on the hero or the reel and nothing else). */
   .hero .container {
-    pointer-events: none;
-  }
-
-  .hero :global(a),
-  .hero :global(button) {
-    pointer-events: auto;
-    cursor: pointer;
+    cursor: auto;
   }
 
   .hero::after {
@@ -176,14 +192,22 @@ const clips = Object.entries(previews)
     padding-bottom: 50px;
   }
 
-  /* Enough of a rim to keep the photo from dissolving into a bright frame. */
-  .profile {
-    display: block;
-    margin: 0 auto 20px;
-    border-radius: 50%;
-    box-shadow:
-      0 0 0 3px color-mix(in srgb, var(--color-bg) 80%, transparent),
-      0 8px 30px rgb(0 0 0 / 0.55);
+  .name-button {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    /* Not covered by `font: inherit` — the UA sheet sets text-transform: none on form
+       controls, so without this the name loses the uppercase it gets from h1. */
+    text-transform: inherit;
+    cursor: pointer;
+  }
+
+  .name-button:hover,
+  .name-button:focus-visible {
+    color: var(--color-accent);
   }
 
   .name {
@@ -201,8 +225,42 @@ const clips = Object.entries(previews)
     font-weight: 300;
   }
 
+  /* A step down again from .skills, so the stack reads name, role, then details. */
+  .meta {
+    margin: 0.35em 0 0;
+    font-size: 1em;
+    font-weight: 300;
+  }
+
+  .meta a {
+    color: inherit;
+    text-decoration-color: color-mix(in srgb, currentcolor 45%, transparent);
+    text-underline-offset: 0.25em;
+  }
+
+  .meta a:hover,
+  .meta a:focus-visible {
+    color: var(--color-accent);
+  }
+
+  .flag {
+    display: inline-block;
+    width: 1.15em;
+    margin-right: 0.4em;
+    border-radius: 2px;
+    vertical-align: -0.15em;
+  }
+
+  .flag :global(svg) {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 2px;
+  }
+
   .name,
-  .skills {
+  .skills,
+  .meta {
     text-shadow: 0 2px 12px rgb(0 0 0 / 0.6);
   }
 
@@ -255,6 +313,37 @@ const clips = Object.entries(previews)
       margin-top: 22px;
     }
 
+    /* Name, role, location and contact ride up together as one block, so the foot of
+       ROGER EGITO lands level with the middle of the up key — and with the itch.io
+       button, which sits at the same height on the other side.
+       translate rather than a margin: it moves them without touching the flow, so the
+       star-rule, the credit and the two pads stay exactly where they are, and the
+       spacing within the group is untouched because they all shift by the same amount. */
+    .intro-text > .name,
+    .intro-text > .skills,
+    .intro-text > .meta,
+    .intro-text > :global(.star-rule) {
+      translate: 0 -64px;
+    }
+
+    /* The face plate. Sits behind everything in the block and reaches just past the
+       two pads, so the whole thing reads as one object over the footage instead of
+       loose text floating on it. It's also the barrier: because it's a real element
+       under the pointer, a click on it isn't a click on the backdrop, so selecting
+       and copying the contact line doesn't fire the game underneath.
+
+       Not literally gamepad-shaped — faGamepad is about 5:4 and this box is nearer
+       5:2, so masking to it would either squash the icon or crop the text. The wide
+       radius gets at the same idea without distorting anything. */
+    .intro-text::before {
+      content: '';
+      position: absolute;
+      z-index: -1;
+      inset: var(--plate-top) var(--plate-side) var(--plate-bottom);
+      border-radius: 120px / 72px;
+      /*background: rgb(0 0 0 / 0.42);*/
+    }
+
     /* Spans the whole grid rather than sitting in the middle column. The credit
        changes with every clip and some are longer than the name; in the auto-sized
        middle column that would widen the column, and the pads — which hang off the
@@ -268,7 +357,11 @@ const clips = Object.entries(previews)
        links leaving the flow makes the block shorter, and since the hero centres its
        contents, the name would drift down the screen — the one thing it mustn't do. */
     .intro-text {
-      padding-bottom: 88px;
+      /* The photo used to hold this space above the name. Keeping most of it is what
+         stops the pads riding up the screen now that it's gone — they stay exactly
+         where they were, and the name lifts only slightly. */
+      padding-top: 116px;
+      padding-bottom: 32px;
     }
 
     /* Both end lines are spelled out. For an absolutely positioned grid child an
@@ -280,7 +373,7 @@ const clips = Object.entries(previews)
       position: absolute;
       top: 50%;
       display: grid;
-      grid-row: 1 / 2;
+      grid-row: 1 / 3;
       grid-template-columns: repeat(3, var(--key));
       grid-template-rows: repeat(3, var(--key));
       gap: var(--key-gap);
@@ -346,6 +439,40 @@ const clips = Object.entries(previews)
       opacity: 1;
     }
 
+    /* Hover label. Same uppercase Montserrat as everything else, and pointer-events
+       off so it can never sit between the cursor and the button it belongs to. */
+    .intro-text :global([data-tip]) {
+      position: relative;
+    }
+
+    .intro-text :global([data-tip])::after {
+      content: attr(data-tip);
+      position: absolute;
+      z-index: 2;
+      top: calc(100% + 0.5em);
+      left: 50%;
+      translate: -50% 0;
+      padding: 0.35em 0.7em;
+      border: 2px solid var(--color-txt);
+      border-radius: var(--radius);
+      background-color: var(--color-bg);
+      color: var(--color-txt);
+      font-family: var(--font-heading), sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition);
+    }
+
+    .intro-text :global([data-tip]:hover)::after,
+    .intro-text :global([data-tip]:focus-visible)::after {
+      opacity: 1;
+    }
+
     .key :global(.key-icon) {
       width: auto;
       height: 18px;
@@ -407,6 +534,10 @@ const clips = Object.entries(previews)
 
     .skills {
       font-size: 1.75em;
+    }
+
+    .meta {
+      font-size: 1.15em;
     }
   }
 </style>

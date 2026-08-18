@@ -229,6 +229,82 @@ section {
   list-style: none;
 }
 
+/* --- modal dialogs ---
+   Shared by the game dialogs and the about one. Global rather than scoped to a
+   component because more than one component opens a dialog of this shape, and a
+   scoped copy in each would be the same forty lines twice. Opt in with
+   <dialog class="overlay">. */
+
+/* The dialog is the full-screen overlay, not the card. It's the thing that scrolls,
+   so the card itself never gets its own scrollbar and can run from the top of the
+   screen off the bottom, the way the old Bootstrap modal did. */
+dialog.overlay {
+  width: 100vw;
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-txt);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+dialog.overlay::backdrop {
+  background: rgb(0 0 0 / 0.5);
+}
+
+.sheet {
+  width: min(90vw, 1000px);
+  margin: 0 auto;
+  /* It only holds focus so Esc keeps working; it isn't an interactive control. */
+  outline: none;
+  border: 2px groove var(--color-txt);
+  border-radius: 25px;
+  background-color: var(--color-bg);
+  box-shadow: 15px 15px 10px 5px rgb(0 0 0 / 0.31);
+}
+
+.panel {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+  text-align: center;
+}
+
+/* Fade in, with the card sliding down like the old modal did. @starting-style is
+   what lets an element animate in from display:none. */
+dialog.overlay,
+dialog.overlay::backdrop {
+  transition: opacity 0.3s ease, overlay 0.3s allow-discrete, display 0.3s allow-discrete;
+}
+
+.sheet {
+  transition: transform 0.3s ease-out;
+}
+
+dialog.overlay:not([open]),
+dialog.overlay:not([open])::backdrop {
+  opacity: 0;
+}
+
+dialog.overlay:not([open]) .sheet {
+  transform: translateY(-25%);
+}
+
+@starting-style {
+  dialog.overlay[open],
+  dialog.overlay[open]::backdrop {
+    opacity: 0;
+  }
+
+  dialog.overlay[open] .sheet {
+    transform: translateY(-25%);
+  }
+}
+
 /* --- accessibility --- */
 
 .visually-hidden {

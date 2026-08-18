@@ -122,6 +122,19 @@ document.addEventListener(
       return;
     }
 
+    // Plain dialogs that aren't a game — the about one. No URL to keep in step, so
+    // opening is all there is to it.
+    const opener = target.closest<HTMLElement>('[data-opens]');
+    if (opener) {
+      const dialog = document.querySelector(opener.dataset.opens ?? '');
+      if (dialog instanceof HTMLDialogElement) {
+        event.preventDefault();
+        dialog.showModal();
+        dialog.querySelector<HTMLElement>('.sheet')?.focus();
+        return;
+      }
+    }
+
     // Close button. Guarded here rather than in the close handler because by then
     // the dialog has already gone.
     const closer = target.closest('[data-close]');
@@ -163,6 +176,16 @@ window.addEventListener('popstate', () => {
 // time it runs and the dialogs are all present.
 {
   baseTitle = document.title;
+
+  // Overlay dialogs with no URL behind them still close on a click outside the card.
+  // Esc is the browser's own doing and needs nothing here.
+  for (const dialog of document.querySelectorAll<HTMLDialogElement>(
+    'dialog.overlay:not([data-url])'
+  )) {
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+  }
 
   for (const dialog of document.querySelectorAll<HTMLDialogElement>('dialog[data-url]')) {
     // The dialog element is the full-screen overlay, so a click reported against it

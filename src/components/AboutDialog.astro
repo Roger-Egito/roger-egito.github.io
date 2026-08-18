@@ -1,0 +1,66 @@
+---
+// The about copy, as a dialog opened from the name in the hero rather than a section
+// you scroll past. Same overlay and card as the game dialogs — those styles are in
+// global.css so both can share them.
+import StarRule from './StarRule.astro';
+---
+
+<dialog class="overlay" id="about-dialog" aria-label="About Roger Egito">
+  <div class="sheet" tabindex="-1">
+    <div class="panel">
+      <h2 class="section-heading">About</h2>
+      <StarRule />
+
+      <div class="columns">
+        <p>
+          I'm Roger Egito, a developer with a strong focus on building meaningful,
+          high-quality games and digital experiences.
+          <br /><br />
+          I approach every project with deep care and a drive to deliver work that's both
+          functional and thoughtful. I always look to understand the purpose behind the
+          project and deliver something I'm proud to stand behind.
+        </p>
+        <p>
+          I like building games that have meaning, fun mechanics, tell stories, and engage
+          people. I consider games to be an art medium that can genuinely help people.
+          <br /><br />
+          Whether I'm designing gameplay mechanics, creating immersive interfaces, writing
+          narratives or developing backend solutions, I enjoy the process and I'm always
+          willing to give it my all.
+        </p>
+        <p>
+          When I'm not programming or designing games, I enjoy playing video games, watching
+          anime, GM'ing RPGs and spending time with family and friends.
+          <br /><br />
+          If you're looking for a developer who genuinely cares about the product and is
+          ready to bring strong technical skills, creative problem-solving, and a
+          user-centered mindset to your team, let's talk.
+        </p>
+      </div>
+
+      <button type="button" class="btn" data-close>Close</button>
+    </div>
+  </div>
+</dialog>
+
+<style>
+  /* Three columns on a wide screen, stacked below that — the same shape the About
+     section used, kept so the copy reads the way it always did. */
+  .columns {
+    display: grid;
+    gap: var(--space-gap);
+    margin-bottom: var(--space-gap);
+    text-align: left;
+  }
+
+  .columns p {
+    margin: 0;
+  }
+
+  @media (min-width: 768px) {
+    .columns {
+      grid-template-columns: repeat(3, 1fr);
+      align-items: start;
+    }
+  }
+</style>

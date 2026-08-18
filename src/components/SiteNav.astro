@@ -1,19 +1,25 @@
 ---
 // Hidden until asked for. The up key on the hero's d-pad is what reveals it, so it
 // stays out of the way of a page that has never needed navigation to work.
-const sections = [
+import { site } from '../config/site';
+
+// About is a dialog rather than a section now, and there's no contact section left to
+// jump to, so that one goes straight to the mail client.
+const links = [
   { href: '#portfolio', label: 'Portfolio' },
-  { href: '#about', label: 'About' },
-  { href: '#contact', label: 'Contact' },
+  { href: '#about-dialog', label: 'About', opens: '#about-dialog' },
+  { href: `mailto:${site.email}`, label: 'Contact' },
 ];
 ---
 
 <nav id="site-nav" class="site-nav" aria-label="Sections" hidden>
   <ul>
     {
-      sections.map((section) => (
+      links.map((link) => (
         <li>
-          <a href={section.href}>{section.label}</a>
+          <a href={link.href} data-opens={link.opens}>
+            {link.label}
+          </a>
         </li>
       ))
     }

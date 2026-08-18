@@ -84,11 +84,11 @@ const games = defineCollection({
       client: z.string().optional(),
       category: z.string().optional(),
       /**
-       * What the hero says while this game's clip is playing, as the part before
-       * "for <title>" — so 'Sole Developer' reads "Sole Developer for DESTRUA".
-       * Leave it out and the roles in `category` are used instead.
+       * What you did on it, as the part before "for <title>" — so 'Sole Developer'
+       * reads "Sole Developer for DESTRUA" in the hero. Every game sets this; leave it
+       * off a new one and the roles in `category` stand in until you write it.
        */
-      heroRole: z.string().optional(),
+      roles: z.string().optional(),
       /** Can contain <br><br>. */
       description: z.string().optional(),
       urlSteam: z.string().optional(),

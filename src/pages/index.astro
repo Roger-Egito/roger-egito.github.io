@@ -3,10 +3,9 @@ import { getImage } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import Header from '../components/Header.astro';
 import PortfolioGrid from '../components/PortfolioGrid.astro';
-import About from '../components/About.astro';
-import Contact from '../components/Contact.astro';
 import Footer from '../components/Footer.astro';
 import GameDialogs from '../components/GameDialogs.astro';
+import AboutDialog from '../components/AboutDialog.astro';
 import ScrollTop from '../components/ScrollTop.astro';
 import SiteNav from '../components/SiteNav.astro';
 import StructuredData from '../components/StructuredData.astro';
@@ -22,10 +21,9 @@ const preview = await getImage({ src: banner, width: 1200, height: 630, format: 
   <SiteNav />
   <Header />
   <PortfolioGrid />
-  <About />
-  <Contact />
   <Footer />
   <ScrollTop />
   <GameDialogs />
+  <AboutDialog />
   <StructuredData />
 </Base>

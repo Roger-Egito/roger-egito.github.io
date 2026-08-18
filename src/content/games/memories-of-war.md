@@ -7,6 +7,7 @@ gameDescription: "Click inside the window to start playing. The game runs right 
 projectDate: 2026
 client: YouGo Games
 category: Game Designer | Game Developer
+roles: "Game Designer and Game Developer"
 description: "Memories of War is a squad-based, grid tactical strategy game built around shared action economy, chess-inspired movement, and meaningful positioning.<br><br>I designed the levels, obstacles, allies and enemies stats, and changed the game to use simple, low numbers for its stat system. I was also the one responsible for developing the entire game.<br><br>This game was made using Unity."
 urlItchIo: https://yougogames.itch.io/memories-of-war
 ---
