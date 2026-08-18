@@ -83,6 +83,12 @@ const games = defineCollection({
       projectDate: z.union([z.string(), z.number()]).optional(),
       client: z.string().optional(),
       category: z.string().optional(),
+      /**
+       * What the hero says while this game's clip is playing, as the part before
+       * "for <title>" — so 'Sole Developer' reads "Sole Developer for DESTRUA".
+       * Leave it out and the roles in `category` are used instead.
+       */
+      heroRole: z.string().optional(),
       /** Can contain <br><br>. */
       description: z.string().optional(),
       urlSteam: z.string().optional(),

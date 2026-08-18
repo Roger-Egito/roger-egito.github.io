@@ -1,13 +1,16 @@
 /**
- * Plays the game clips behind the hero, one after another, forever.
+ * Plays the game clips behind the hero, and everything that hangs off which one is up:
+ * the line of credit under the name, clicking through to that game, and the d-pad.
  *
  * Two <video> elements take turns. One is on screen; the other quietly loads the clip
  * that's coming up and is faded in over the top just before the current one runs out,
  * so there's never a black frame or a stall between games. Then they swap roles.
  *
- * Which clip is next comes from a shuffled queue rather than a fresh random pick, so
- * every game gets shown once before any of them comes round again — and the shuffle
- * won't hand you the same clip twice across the seam between two passes.
+ * The running order is shuffled once, on load, and then repeats unchanged — so the
+ * sequence is a surprise the first time and predictable afterwards, and the d-pad has
+ * something stable to step through. Position counts forwards and backwards without
+ * limit and wraps into the order, so Back always has somewhere to go: past the start
+ * it simply carries on into the previous pass.
  *
  * What it deliberately doesn't do:
  *
@@ -17,8 +20,14 @@
  *     it's needed, not at the start
  *   - keep running once you've scrolled past, or once the tab is in the background
  *   - run at all for someone who asked for less motion, or who's on a metered
- *     connection — they keep the still, and nothing is downloaded
+ *     connection — they keep the still, the slogan and no download
  */
+
+interface Clip {
+  src: string;
+  slug: string;
+  credit: string;
+}
 
 /** Seconds left on the current clip when the next one starts downloading. */
 const PRELOAD_AT = 6;
@@ -33,7 +42,7 @@ const HANDOVER_AT = 1.2;
  */
 const MAX_SHOWTIME = 10;
 
-/** Must match the opacity transition on .clip in Header.astro. */
+/** Must match the opacity transition on .reel video in Header.astro. */
 const FADE_MS = 1000;
 
 const reel = document.querySelector<HTMLElement>('[data-reel]');
@@ -44,91 +53,125 @@ const wantsLessMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const savingData =
   (navigator as { connection?: { saveData?: boolean } }).connection?.saveData === true;
 
+wireNav();
+
 if (reel && !wantsLessMotion && !savingData) run(reel);
 
 function run(reel: HTMLElement) {
-  const clips: string[] = JSON.parse(reel.dataset.clips ?? '[]');
+  const clips: Clip[] = JSON.parse(reel.dataset.clips ?? '[]');
   const [a, b] = reel.querySelectorAll('video');
   if (!clips.length || !a || !b) return;
 
-  // Nothing to rotate through, so just loop the one clip.
-  if (clips.length === 1) {
-    a.loop = true;
-    startWhenVisible(reel, () => begin(a, clips[0]));
-    return;
-  }
+  // Shuffled once and then left alone, so every pass runs in the same order.
+  const order = shuffle(clips.length);
+  const at = (position: number) => order[((position % order.length) + order.length) % order.length];
 
   let front = a;
   let back = b;
 
-  /** Indices still to be shown this time round. */
-  let queue: number[] = [];
-  let showing = -1;
+  let position = 0; // counts freely in both directions; at() wraps it into the order
   let queued = -1; // index currently loaded into `back`
   let handedOver = false;
   let onScreen = false;
 
-  const take = () => {
-    if (!queue.length) queue = shuffle(clips.length, showing);
-    return queue.shift() as number;
+  const credit = document.querySelector<HTMLElement>('[data-hero-credit]');
+
+  /** Everything that has to follow the clip on screen. */
+  const announce = (clip: Clip) => {
+    reel.dataset.slug = clip.slug;
+    if (credit) credit.textContent = clip.credit;
   };
 
-  /** Fetch the next clip, a little ahead of needing it. */
-  const prime = () => {
-    if (queued !== -1) return;
-    queued = take();
-    back.src = clips[queued];
+  /** Fetch a clip into the back element, a little ahead of needing it. */
+  const prime = (index: number) => {
+    if (queued === index) return;
+    queued = index;
+    back.src = clips[index].src;
     back.load();
   };
 
-  /** Bring the loaded clip up over the one that's ending. */
-  const handover = () => {
+  /**
+   * Bring the loaded clip up over the one on screen. `step` is which way we're moving
+   * through the order — the auto-advance and the d-pad both come through here, so a
+   * skip behaves exactly like a clip ending early.
+   */
+  const handover = (step: number) => {
     if (handedOver) return;
-    prime(); // a clip shorter than PRELOAD_AT never got the chance
+    const target = at(position + step);
+    prime(target); // a clip shorter than PRELOAD_AT never got the chance
     handedOver = true;
 
     const outgoing = front;
+    announce(clips[target]);
+
     back
       .play()
       .then(() => {
         back.dataset.active = '';
         delete outgoing.dataset.active;
+
+        // Roles change over only once the fade has finished, so the old clip keeps
+        // rendering until it's genuinely invisible. Hung off playback actually
+        // starting rather than a bare timer: pressing Right early asks for a clip
+        // that hasn't downloaded yet, and on a fixed delay the swap would happen
+        // while the incoming video was still black.
+        window.setTimeout(() => {
+          outgoing.pause();
+          outgoing.currentTime = 0;
+          [front, back] = [back, outgoing];
+          position += step;
+          queued = -1;
+          handedOver = false;
+        }, FADE_MS);
       })
       .catch(() => {
-        // Couldn't start, so stay on the clip we have and try again next time round.
+        // Couldn't start, so stay on the clip we have and let the next press retry.
         handedOver = false;
         queued = -1;
+        announce(clips[at(position)]);
       });
-
-    // Hand the roles over once the fade has finished, so the old clip keeps rendering
-    // until it's genuinely invisible.
-    window.setTimeout(() => {
-      if (!handedOver) return;
-      outgoing.pause();
-      outgoing.currentTime = 0;
-      [front, back] = [back, outgoing];
-      showing = queued;
-      queued = -1;
-      handedOver = false;
-    }, FADE_MS);
   };
 
   for (const clip of [a, b]) {
     clip.addEventListener('timeupdate', () => {
-      if (clip !== front || !onScreen) return;
+      if (clip !== front || !onScreen || handedOver) return;
       if (!Number.isFinite(clip.duration)) return;
 
       // A game's turn ends when its clip runs out or when it's had its ten seconds,
       // whichever comes first.
       const left = Math.min(clip.duration, MAX_SHOWTIME) - clip.currentTime;
 
-      if (left <= PRELOAD_AT) prime();
-      if (left <= HANDOVER_AT) handover();
+      if (left <= PRELOAD_AT) prime(at(position + 1));
+      if (left <= HANDOVER_AT) handover(1);
     });
 
     // Safety net: timeupdate stops firing if a clip is cut short or stalls at the end.
-    clip.addEventListener('ended', () => clip === front && handover());
+    clip.addEventListener('ended', () => clip === front && handover(1));
   }
+
+  // --- the d-pad -----------------------------------------------------------------
+  // Left and Right are the reel's, so they live here where the running order does.
+  document.addEventListener('click', (event) => {
+    const key = (event.target as HTMLElement | null)?.closest<HTMLElement>('[data-pad]');
+    if (!key) return;
+    if (key.dataset.pad === 'next') handover(1);
+    if (key.dataset.pad === 'prev') handover(-1);
+  });
+
+  // Clicking the footage opens that game, by way of the card that already knows how.
+  // Anything with its own job — a link, a button — is left to get on with it.
+  const hero = reel.closest<HTMLElement>('.hero');
+  hero?.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('a, button')) return;
+    if (!window.getSelection()?.isCollapsed) return; // they were selecting text
+    const slug = reel.dataset.slug;
+    if (slug) document.querySelector<HTMLElement>(`a[data-game="${CSS.escape(slug)}"]`)?.click();
+  });
+
+  // Say who we're about to show before the first frame arrives, so the slogan the page
+  // was served with is never the thing anyone reads.
+  announce(clips[at(0)]);
 
   startWhenVisible(reel, (visible) => {
     onScreen = visible;
@@ -137,12 +180,8 @@ function run(reel: HTMLElement) {
       b.pause();
       return;
     }
-    if (!front.getAttribute('src')) {
-      showing = take();
-      begin(front, clips[showing]);
-    } else {
-      front.play().catch(() => {});
-    }
+    if (!front.getAttribute('src')) begin(front, clips[at(position)].src);
+    else front.play().catch(() => {});
   });
 }
 
@@ -157,6 +196,40 @@ function begin(video: HTMLVideoElement, src: string) {
     .catch(() => {
       // Autoplay refused. The still banner is already behind us, so leave it be.
     });
+}
+
+/** Down jumps to the portfolio; Up brings the nav bar in and out. */
+function wireNav() {
+  const nav = document.getElementById('site-nav');
+
+  const setOpen = (open: boolean) => {
+    if (!nav) return;
+    if (open) {
+      nav.hidden = false;
+      // Next frame, so the browser has a closed state to animate away from.
+      requestAnimationFrame(() => (nav.dataset.open = ''));
+    } else {
+      delete nav.dataset.open;
+    }
+  };
+
+  document.addEventListener('click', (event) => {
+    const key = (event.target as HTMLElement | null)?.closest<HTMLElement>('[data-pad]');
+    if (!key) return;
+    if (key.dataset.pad === 'down') {
+      document.getElementById('portfolio')?.scrollIntoView({ behavior: 'smooth' });
+    }
+    if (key.dataset.pad === 'up') setOpen(!(nav && 'open' in nav.dataset));
+  });
+
+  // Following a link in it is a good moment to put it away again.
+  nav?.addEventListener('click', (event) => {
+    if ((event.target as HTMLElement | null)?.closest('a')) setOpen(false);
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && nav && 'open' in nav.dataset) setOpen(false);
+  });
 }
 
 /**
@@ -176,16 +249,12 @@ function startWhenVisible(el: Element, onChange: (visible: boolean) => void) {
   document.addEventListener('visibilitychange', settle);
 }
 
-/**
- * A fresh running order. `avoid` is the clip that just played, kept out of first place
- * so the seam between two passes doesn't show the same game twice in a row.
- */
-function shuffle(length: number, avoid: number) {
+/** One running order, drawn once and then kept. */
+function shuffle(length: number) {
   const order = [...Array(length).keys()];
   for (let i = order.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [order[i], order[j]] = [order[j], order[i]];
   }
-  if (order.length > 1 && order[0] === avoid) [order[0], order[1]] = [order[1], order[0]];
   return order;
 }

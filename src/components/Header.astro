@@ -3,7 +3,8 @@ import { Image } from 'astro:assets';
 import Icon from './Icon.astro';
 import SocialLinks from './SocialLinks.astro';
 import StarRule from './StarRule.astro';
-import { site } from '../config/site';
+import { getCollection } from 'astro:content';
+import { site, plainText } from '../config/site';
 import profile from '../assets/profile.webp';
 
 // The clips the grid already uses for its hover previews, played full-screen behind
@@ -16,9 +17,23 @@ const previews = import.meta.glob<string>('../content/games/*.mp4', {
   import: 'default',
 });
 
+// Each clip carries what the hero has to say and do while it's up: the line of credit
+// under the name, and which game a click on the footage should open.
+const games = await getCollection('games');
+const listing = new Intl.ListFormat('en', { style: 'long', type: 'conjunction' });
+
 const clips = Object.entries(previews)
-  .filter(([path]) => !site.heroExcludes.includes(path.split('/').pop()!.replace('.mp4', '')))
-  .map(([, url]) => url);
+  .map(([path, src]) => ({ slug: path.split('/').pop()!.replace('.mp4', ''), src }))
+  .filter(({ slug }) => !site.heroExcludes.includes(slug))
+  .map(({ slug, src }) => {
+    const game = games.find((entry) => entry.id === slug);
+    // "Game Designer | Game Developer" reads as a list, so it becomes one. A game can
+    // override the whole thing with heroRole when the roles aren't what it needs.
+    const roles =
+      game?.data.heroRole ??
+      listing.format((game?.data.category ?? '').split('|').map((role) => role.trim()).filter(Boolean));
+    return { src, slug, credit: `${roles} for ${plainText(game?.data.title ?? slug)}` };
+  });
 ---
 
 <script>
@@ -37,13 +52,31 @@ const clips = Object.entries(previews)
     <Image class="profile" src={profile} alt="" width={128} height={128} loading="eager" />
 
     <div class="intro-text">
+      <div class="dpad">
+        <button type="button" class="key" data-pad="up" aria-label="Show the menu">
+          <Icon name="caret-up" class="key-icon" />
+        </button>
+        <button type="button" class="key" data-pad="prev" aria-label="Previous game">
+          <Icon name="caret-left" class="key-icon" />
+        </button>
+        <button type="button" class="key" data-pad="next" aria-label="Next game">
+          <Icon name="caret-right" class="key-icon" />
+        </button>
+        <button type="button" class="key" data-pad="down" aria-label="Go to the portfolio">
+          <Icon name="caret-down" class="key-icon" />
+        </button>
+      </div>
+
       <h1 class="name">{site.title}</h1>
       <p class="skills">{site.skills}</p>
 
       <StarRule />
       <br />
 
-      <p class="skills">{site.slogan}</p>
+      {/* Replaced with the credit for whichever game is playing, as soon as the reel
+          knows which that is. The slogan is what's left if the reel never runs — no
+          clips means no game to credit. */}
+      <p class="skills" data-hero-credit>{site.slogan}</p>
 
       <SocialLinks class="header-social" />
     </div>
@@ -60,6 +93,10 @@ const clips = Object.entries(previews)
      min-height rather than height so a short landscape phone can still grow to fit the
      text instead of clipping it. */
   .hero {
+    /* One key = one social button, so the two pads read as the same object. */
+    --key: 50px;
+    --key-gap: 8px;
+    --pad-gap: 2rem;
     position: relative;
     display: flex;
     flex-direction: column;
@@ -103,8 +140,26 @@ const clips = Object.entries(previews)
 
   /* Holds the text legible over whatever happens to be on screen, and lands on solid
      background by the bottom so the hero doesn't end on a visible edge. */
+  /* The whole hero is a shortcut into whichever game is playing, so the scrim and the
+     text block have to let clicks through to it. Everything with a job of its own —
+     the links, the d-pad — takes its clicks back. */
+  .hero {
+    cursor: pointer;
+  }
+
+  .hero .container {
+    pointer-events: none;
+  }
+
+  .hero :global(a),
+  .hero :global(button) {
+    pointer-events: auto;
+    cursor: pointer;
+  }
+
   .hero::after {
     content: '';
+    pointer-events: none;
     position: absolute;
     z-index: -1;
     inset: 0;
@@ -155,6 +210,146 @@ const clips = Object.entries(previews)
      component's scope id rather than this one's. */
   :global(.header-social) {
     padding-top: 2.5em;
+  }
+
+  /* The d-pad is only ever the desktop layout's half of the pair, so it stays out of
+     the way entirely until the grid below turns on. */
+  .dpad {
+    display: none;
+  }
+
+  /* --- controller layout ---------------------------------------------------------
+     Wide enough to put a pad either side of the name without either one running into
+     the edge of the container. Below this the header is exactly as it was: no pads,
+     and the links back under the slogan.
+
+     The name must not move, so the two pads are taken out of flow and hung in the
+     outer columns. A grid track of 1fr on each side keeps the middle column — and so
+     the name — dead centre, and because the pads are absolutely positioned they can
+     be taller than the name without pushing anything down. */
+  @media (min-width: 64rem) {
+    .intro-text {
+      position: relative;
+      display: grid;
+      /* Not justify-items: center — that shrink-wraps every item, and the star-rule
+         draws its line with absolutely positioned pseudo-elements, so shrink-wrapping
+         collapses it to nothing. Letting items stretch to the column keeps it at its
+         own max-width, centred by its auto margins as before. */
+      grid-template-columns: 1fr auto 1fr;
+    }
+
+    /* :global on the child, or Astro scopes it to `*[data-astro-cid-header]` and the
+       star-rule — which comes from StarRule.astro and carries its own id — silently
+       auto-places itself into the third column instead. */
+    .intro-text > :global(*) {
+      grid-column: 2;
+    }
+
+    /* The <br> that spaced the slogan would become a grid item of its own. Hidden
+       here, with its 22px line box put back as a margin so nothing shifts. */
+    .intro-text br {
+      display: none;
+    }
+
+    .intro-text > p.skills:last-of-type {
+      margin-top: 22px;
+    }
+
+    /* Spans the whole grid rather than sitting in the middle column. The credit
+       changes with every clip and some are longer than the name; in the auto-sized
+       middle column that would widen the column, and the pads — which hang off the
+       columns either side of it — would shuffle sideways on every change. Across all
+       three columns its length costs nothing, and it's centred text either way. */
+    .intro-text > p[data-hero-credit] {
+      grid-column: 1 / -1;
+    }
+
+    /* Holds the block the height it was with the links still in it. Without this the
+       links leaving the flow makes the block shorter, and since the hero centres its
+       contents, the name would drift down the screen — the one thing it mustn't do. */
+    .intro-text {
+      padding-bottom: 88px;
+    }
+
+    /* Both end lines are spelled out. For an absolutely positioned grid child an
+       `auto` end line means the container's padding edge rather than a one-track span,
+       so `grid-row: 1` alone would hand each pad a box as tall as the whole intro
+       block and centre it against that — level with the star-rule, not the name. */
+    .dpad,
+    .intro-text > :global(.header-social) {
+      position: absolute;
+      top: 50%;
+      display: grid;
+      grid-row: 1 / 2;
+      grid-template-columns: repeat(3, var(--key));
+      grid-template-rows: repeat(3, var(--key));
+      gap: var(--key-gap);
+      translate: 0 -50%;
+    }
+
+    .dpad {
+      grid-column: 1 / 2;
+      right: var(--pad-gap);
+    }
+
+    /* Selected through .intro-text so it outweighs the `> *` rule above, which would
+       otherwise drop it back into the middle column. */
+    .intro-text > :global(.header-social) {
+      grid-column: 3 / 4;
+      left: var(--pad-gap);
+      /* Overrides the row spacing it uses everywhere else. */
+      padding-top: 0;
+    }
+
+    /* Four keys around a centre, the way a controller lays them out: one up, one
+       either side, one down. Source order is that same reading order. */
+    .key:nth-child(1),
+    :global(.header-social li:nth-child(1)) {
+      grid-area: 1 / 2;
+    }
+
+    .key:nth-child(2),
+    :global(.header-social li:nth-child(2)) {
+      grid-area: 2 / 1;
+    }
+
+    .key:nth-child(3),
+    :global(.header-social li:nth-child(3)) {
+      grid-area: 2 / 3;
+    }
+
+    .key:nth-child(4),
+    :global(.header-social li:nth-child(4)) {
+      grid-area: 3 / 2;
+    }
+
+    .key {
+      display: grid;
+      place-items: center;
+      width: var(--key);
+      height: var(--key);
+      padding: 0;
+      border: 2px solid var(--color-txt);
+      border-radius: 8px;
+      background: none;
+      color: var(--color-txt);
+      opacity: 0.55;
+      cursor: pointer;
+      transition: opacity var(--transition), background-color var(--transition),
+        color var(--transition);
+    }
+
+    .key:hover,
+    .key:focus-visible {
+      background: var(--color-txt);
+      color: var(--color-accent);
+      opacity: 1;
+    }
+
+    .key :global(.key-icon) {
+      width: auto;
+      height: 18px;
+    }
   }
 
   .scroll-cue {

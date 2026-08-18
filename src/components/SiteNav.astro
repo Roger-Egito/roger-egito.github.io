@@ -1,0 +1,72 @@
+---
+// Hidden until asked for. The up key on the hero's d-pad is what reveals it, so it
+// stays out of the way of a page that has never needed navigation to work.
+const sections = [
+  { href: '#portfolio', label: 'Portfolio' },
+  { href: '#about', label: 'About' },
+  { href: '#contact', label: 'Contact' },
+];
+---
+
+<nav id="site-nav" class="site-nav" aria-label="Sections" hidden>
+  <ul>
+    {
+      sections.map((section) => (
+        <li>
+          <a href={section.href}>{section.label}</a>
+        </li>
+      ))
+    }
+  </ul>
+</nav>
+
+<style>
+  .site-nav {
+    position: fixed;
+    z-index: 20;
+    top: 0;
+    left: 0;
+    width: 100%;
+    border-bottom: 2px groove var(--color-txt);
+    background-color: var(--color-bg);
+    /* Slides out of sight rather than disappearing, so opening and closing reads as
+       one movement. [hidden] is dropped the moment it's asked for; the transform is
+       what actually animates. */
+    translate: 0 -100%;
+    transition: translate 0.3s ease;
+  }
+
+  .site-nav[data-open] {
+    translate: 0 0;
+  }
+
+  .site-nav ul {
+    display: flex;
+    justify-content: center;
+    gap: 2.5em;
+    margin: 0;
+    padding: 1.1em 0;
+    list-style: none;
+  }
+
+  .site-nav a {
+    color: var(--color-txt);
+    font-family: var(--font-heading), sans-serif;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: color var(--transition);
+  }
+
+  .site-nav a:hover,
+  .site-nav a:focus-visible {
+    color: var(--color-accent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .site-nav {
+      transition: none;
+    }
+  }
+</style>

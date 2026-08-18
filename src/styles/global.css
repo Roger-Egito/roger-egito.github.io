@@ -117,6 +117,11 @@ section {
 .star-rule {
   position: relative;
   height: 5px;
+  /* Explicit width, not just a max: the line is drawn by absolutely positioned
+     pseudo-elements, so this box has no content of its own. In normal flow `auto`
+     filled the container and the max-width capped it, but as a grid item `auto` plus
+     auto margins means shrink-to-fit — which is zero, and the rule vanishes. */
+  width: 100%;
   max-width: 250px;
   margin: 25px auto 30px;
   padding: 0;
