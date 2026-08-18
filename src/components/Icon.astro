@@ -3,7 +3,17 @@
 // dev dependencies read at build time, so nothing ships to the browser except the one
 // <svg> each usage needs. That replaced ~530 KB of icon fonts.
 import { faItchIo, faLinkedin, faGithub } from '@fortawesome/free-brands-svg-icons';
-import { faFile, faChevronUp, faGamepad, faPlay } from '@fortawesome/free-solid-svg-icons';
+import {
+  faFile,
+  faChevronUp,
+  faChevronDown,
+  faGamepad,
+  faPlay,
+  faCaretUp,
+  faCaretDown,
+  faCaretLeft,
+  faCaretRight,
+} from '@fortawesome/free-solid-svg-icons';
 
 const ICONS = {
   'itch-io': faItchIo,
@@ -11,8 +21,13 @@ const ICONS = {
   github: faGithub,
   file: faFile,
   'chevron-up': faChevronUp,
+  'chevron-down': faChevronDown,
   gamepad: faGamepad,
   play: faPlay,
+  'caret-up': faCaretUp,
+  'caret-down': faCaretDown,
+  'caret-left': faCaretLeft,
+  'caret-right': faCaretRight,
 } as const;
 
 export type IconName = keyof typeof ICONS;

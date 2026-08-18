@@ -1,49 +1,213 @@
 ---
-import { Image } from 'astro:assets';
+import Icon from './Icon.astro';
 import SocialLinks from './SocialLinks.astro';
 import StarRule from './StarRule.astro';
-import { site } from '../config/site';
-import banner from '../assets/banner.webp';
-import profile from '../assets/profile.webp';
+import { getCollection } from 'astro:content';
+import { site, plainText } from '../config/site';
+// Same idea as Icon.astro: the file comes from a package and is inlined at build time,
+// so one flag ships as markup and nothing is fetched for it. Windows has no country
+// flag glyphs, so the 🇧🇷 emoji would just read "BR" for most desktop visitors.
+import brazilFlag from 'flag-icons/flags/4x3/br.svg?raw';
+
+// The clips the grid already uses for its hover previews, played full-screen behind
+// the hero. Same deal as over there: a game joins in just by having <slug>.mp4 next to
+// its markdown. To swap in bigger, hero-only versions later, point this glob at the
+// folder holding them — nothing else needs to change.
+const previews = import.meta.glob<string>('../content/games/*.mp4', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+
+// Each clip carries what the hero has to say and do while it's up: the line of credit
+// under the name, and which game a click on the footage should open.
+const games = await getCollection('games');
+const listing = new Intl.ListFormat('en', { style: 'long', type: 'conjunction' });
+
+const clips = Object.entries(previews)
+  .map(([path, src]) => ({ slug: path.split('/').pop()!.replace('.mp4', ''), src }))
+  .filter(({ slug }) => !site.heroExcludes.includes(slug))
+  .map(({ slug, src }) => {
+    const game = games.find((entry) => entry.id === slug);
+    // Always "<roles> for <game>". Every game states its own roles; a new one that
+    // hasn't yet falls back to reading `category` as a list so the line still forms.
+    const roles =
+      game?.data.roles ??
+      listing.format((game?.data.category ?? '').split('|').map((role) => role.trim()).filter(Boolean));
+    return { src, slug, credit: `${roles} for ${plainText(game?.data.title ?? slug)}` };
+  });
 ---
 
-<header style={`background-image:url('${banner.src}')`}>
-  <div class="container">
-    <Image class="profile" src={profile} alt="" width={128} height={128} loading="eager" />
+<script>
+  import '../scripts/hero-reel';
+</script>
 
+<header class="hero">
+  {/* Decorative: the clips are the portfolio's own footage, shown again below with
+      names attached, so there's nothing here for a screen reader to announce. */}
+  <div class="reel" data-reel data-clips={JSON.stringify(clips)} aria-hidden="true">
+    <video muted playsinline preload="none"></video>
+    <video muted playsinline preload="none"></video>
+  </div>
+
+  <div class="container">
     <div class="intro-text">
-      <h1 class="name">{site.title}</h1>
+      <div class="dpad">
+        <button type="button" class="key" data-pad="up" data-tip="Navbar" aria-label="Show the menu">
+          <Icon name="caret-up" class="key-icon" />
+        </button>
+        <button type="button" class="key" data-pad="prev" data-tip="Previous Game" aria-label="Previous game">
+          <Icon name="caret-left" class="key-icon" />
+        </button>
+        <button type="button" class="key" data-pad="next" data-tip="Next Game" aria-label="Next game">
+          <Icon name="caret-right" class="key-icon" />
+        </button>
+        <button type="button" class="key" data-pad="down" data-tip="Portfolio" aria-label="Go to the portfolio">
+          <Icon name="caret-down" class="key-icon" />
+        </button>
+      </div>
+
+      {/* The name is the way into the about copy, which is a dialog now rather than a
+          section further down the page. A button inside the h1 keeps the heading a
+          heading while giving the click something real to land on. */}
+      <h1 class="name">
+        <button type="button" class="name-button" data-opens="#about-dialog">
+          {site.title}
+        </button>
+      </h1>
       <p class="skills">{site.skills}</p>
 
-      <StarRule />
+      <p class="meta">
+        <span class="flag" role="img" aria-label="Brazil" set:html={brazilFlag} />
+        {site.location} | {site.timezone}
+      </p>
+      <p class="meta">
+        Contact: <a href={`mailto:${site.email}`}>{site.email}</a>
+      </p>
+
+      <!--<StarRule /> -->
       <br />
 
-      <p class="skills">{site.slogan}</p>
+      {/* Replaced with the credit for whichever game is playing, as soon as the reel
+          knows which that is. The slogan is what's left if the reel never runs — no
+          clips means no game to credit. */}
+      <p class="skills" data-hero-credit>{site.slogan}</p>
 
-      <SocialLinks class="header-social" />
+      <SocialLinks class="header-social" tips />
     </div>
   </div>
+
+  {/* A full-screen hero hides the fact that there's a page under it. */}
+  <a class="scroll-cue" href="#portfolio" aria-label="Skip to the portfolio">
+    <Icon name="chevron-down" class="cue-icon" />
+  </a>
 </header>
 
 <style>
-  /* Kept as a background-image rather than an <img> so it sizes to the viewport width
-     exactly like it used to. Astro still processes and optimizes the file. */
-  header {
-    background-size: 100vw;
+  /* Fills the first screen and no more, so the portfolio starts the moment you scroll.
+     min-height rather than height so a short landscape phone can still grow to fit the
+     text instead of clipping it. */
+  .hero {
+    /* One key = one social button, so the two pads read as the same object. */
+    --key: 50px;
+    --key-gap: 8px;
+    --pad-gap: 2rem;
+    /* Insets of the face plate from the text block's own box. Tuned so it clears the
+       pads and the credit line without spreading over the footage. */
+    --plate-top: 22px;
+    --plate-side: 73px;
+    --plate-bottom: 66px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: hidden;
+    /* Keeps the negative z-index of the layers below from escaping behind the page. */
+    isolation: isolate;
+    /* The still that shows before the first clip is ready, and stays put for anyone
+       who won't be getting clips at all. Sized as it always was. */
+    background-image: url(../assets/banner.webp);
     background-repeat: no-repeat;
+    background-size: 100vw;
     background-color: var(--color-bg);
     color: var(--color-txt);
     text-align: center;
   }
 
-  header .container {
-    padding-top: 100px;
+  .reel {
+    position: absolute;
+    z-index: -2;
+    inset: 0;
+  }
+
+  /* Both clips are stacked; only the one with data-active is visible, and the swap
+     between them is this fade. FADE_MS in hero-reel.ts has to match. */
+  .reel video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 1s ease;
+  }
+
+  .reel video[data-active] {
+    opacity: 1;
+  }
+
+  /* Holds the text legible over whatever happens to be on screen, and lands on solid
+     background by the bottom so the hero doesn't end on a visible edge. */
+  /* The whole hero is a shortcut into whichever game is playing, so the scrim and the
+     text block have to let clicks through to it. Everything with a job of its own —
+     the links, the d-pad — takes its clicks back. */
+  .hero {
+    cursor: pointer;
+  }
+
+  /* Text stays selectable; only the bare backdrop opens a game (see hero-reel.ts,
+     which acts on clicks that land on the hero or the reel and nothing else). */
+  .hero .container {
+    cursor: auto;
+  }
+
+  .hero::after {
+    content: '';
+    pointer-events: none;
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--color-bg) 60%, transparent) 0%,
+      color-mix(in srgb, var(--color-bg) 72%, transparent) 55%,
+      var(--color-bg) 100%
+    );
+  }
+
+  .container {
+    padding-top: 50px;
     padding-bottom: 50px;
   }
 
-  .profile {
-    display: block;
-    margin: 0 auto 20px;
+  .name-button {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    /* Not covered by `font: inherit` — the UA sheet sets text-transform: none on form
+       controls, so without this the name loses the uppercase it gets from h1. */
+    text-transform: inherit;
+    cursor: pointer;
+  }
+
+  .name-button:hover,
+  .name-button:focus-visible {
+    color: var(--color-accent);
   }
 
   .name {
@@ -61,24 +225,319 @@ import profile from '../assets/profile.webp';
     font-weight: 300;
   }
 
+  /* A step down again from .skills, so the stack reads name, role, then details. */
+  .meta {
+    margin: 0.35em 0 0;
+    font-size: 1em;
+    font-weight: 300;
+  }
+
+  .meta a {
+    color: inherit;
+    text-decoration-color: color-mix(in srgb, currentcolor 45%, transparent);
+    text-underline-offset: 0.25em;
+  }
+
+  .meta a:hover,
+  .meta a:focus-visible {
+    color: var(--color-accent);
+  }
+
+  .flag {
+    display: inline-block;
+    width: 1.15em;
+    margin-right: 0.4em;
+    border-radius: 2px;
+    vertical-align: -0.15em;
+  }
+
+  .flag :global(svg) {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 2px;
+  }
+
+  .name,
+  .skills,
+  .meta {
+    text-shadow: 0 2px 12px rgb(0 0 0 / 0.6);
+  }
+
   /* :global because the <ul> is rendered by SocialLinks, so it carries that
      component's scope id rather than this one's. */
   :global(.header-social) {
     padding-top: 2.5em;
   }
 
-  @media (min-width: 768px) {
-    header .container {
-      padding-top: 200px;
-      padding-bottom: 100px;
+  /* The d-pad is only ever the desktop layout's half of the pair, so it stays out of
+     the way entirely until the grid below turns on. */
+  .dpad {
+    display: none;
+  }
+
+  /* --- controller layout ---------------------------------------------------------
+     Wide enough to put a pad either side of the name without either one running into
+     the edge of the container. Below this the header is exactly as it was: no pads,
+     and the links back under the slogan.
+
+     The name must not move, so the two pads are taken out of flow and hung in the
+     outer columns. A grid track of 1fr on each side keeps the middle column — and so
+     the name — dead centre, and because the pads are absolutely positioned they can
+     be taller than the name without pushing anything down. */
+  @media (min-width: 64rem) {
+    .intro-text {
+      position: relative;
+      display: grid;
+      /* Not justify-items: center — that shrink-wraps every item, and the star-rule
+         draws its line with absolutely positioned pseudo-elements, so shrink-wrapping
+         collapses it to nothing. Letting items stretch to the column keeps it at its
+         own max-width, centred by its auto margins as before. */
+      grid-template-columns: 1fr auto 1fr;
     }
 
+    /* :global on the child, or Astro scopes it to `*[data-astro-cid-header]` and the
+       star-rule — which comes from StarRule.astro and carries its own id — silently
+       auto-places itself into the third column instead. */
+    .intro-text > :global(*) {
+      grid-column: 2;
+    }
+
+    /* The <br> that spaced the slogan would become a grid item of its own. Hidden
+       here, with its 22px line box put back as a margin so nothing shifts. */
+    .intro-text br {
+      display: none;
+    }
+
+    .intro-text > p.skills:last-of-type {
+      margin-top: 22px;
+    }
+
+    /* Name, role, location and contact ride up together as one block, so the foot of
+       ROGER EGITO lands level with the middle of the up key — and with the itch.io
+       button, which sits at the same height on the other side.
+       translate rather than a margin: it moves them without touching the flow, so the
+       star-rule, the credit and the two pads stay exactly where they are, and the
+       spacing within the group is untouched because they all shift by the same amount. */
+    .intro-text > .name,
+    .intro-text > .skills,
+    .intro-text > .meta,
+    .intro-text > :global(.star-rule) {
+      translate: 0 -64px;
+    }
+
+    /* The face plate. Sits behind everything in the block and reaches just past the
+       two pads, so the whole thing reads as one object over the footage instead of
+       loose text floating on it. It's also the barrier: because it's a real element
+       under the pointer, a click on it isn't a click on the backdrop, so selecting
+       and copying the contact line doesn't fire the game underneath.
+
+       Not literally gamepad-shaped — faGamepad is about 5:4 and this box is nearer
+       5:2, so masking to it would either squash the icon or crop the text. The wide
+       radius gets at the same idea without distorting anything. */
+    .intro-text::before {
+      content: '';
+      position: absolute;
+      z-index: -1;
+      inset: var(--plate-top) var(--plate-side) var(--plate-bottom);
+      border-radius: 120px / 72px;
+      /*background: rgb(0 0 0 / 0.42);*/
+    }
+
+    /* Spans the whole grid rather than sitting in the middle column. The credit
+       changes with every clip and some are longer than the name; in the auto-sized
+       middle column that would widen the column, and the pads — which hang off the
+       columns either side of it — would shuffle sideways on every change. Across all
+       three columns its length costs nothing, and it's centred text either way. */
+    .intro-text > p[data-hero-credit] {
+      grid-column: 1 / -1;
+    }
+
+    /* Holds the block the height it was with the links still in it. Without this the
+       links leaving the flow makes the block shorter, and since the hero centres its
+       contents, the name would drift down the screen — the one thing it mustn't do. */
+    .intro-text {
+      /* The photo used to hold this space above the name. Keeping most of it is what
+         stops the pads riding up the screen now that it's gone — they stay exactly
+         where they were, and the name lifts only slightly. */
+      padding-top: 116px;
+      padding-bottom: 32px;
+    }
+
+    /* Both end lines are spelled out. For an absolutely positioned grid child an
+       `auto` end line means the container's padding edge rather than a one-track span,
+       so `grid-row: 1` alone would hand each pad a box as tall as the whole intro
+       block and centre it against that — level with the star-rule, not the name. */
+    .dpad,
+    .intro-text > :global(.header-social) {
+      position: absolute;
+      top: 50%;
+      display: grid;
+      grid-row: 1 / 3;
+      grid-template-columns: repeat(3, var(--key));
+      grid-template-rows: repeat(3, var(--key));
+      gap: var(--key-gap);
+      translate: 0 -50%;
+    }
+
+    .dpad {
+      grid-column: 1 / 2;
+      right: var(--pad-gap);
+    }
+
+    /* Selected through .intro-text so it outweighs the `> *` rule above, which would
+       otherwise drop it back into the middle column. */
+    .intro-text > :global(.header-social) {
+      grid-column: 3 / 4;
+      left: var(--pad-gap);
+      /* Overrides the row spacing it uses everywhere else. */
+      padding-top: 0;
+    }
+
+    /* Four keys around a centre, the way a controller lays them out: one up, one
+       either side, one down. Source order is that same reading order. */
+    .key:nth-child(1),
+    :global(.header-social li:nth-child(1)) {
+      grid-area: 1 / 2;
+    }
+
+    .key:nth-child(2),
+    :global(.header-social li:nth-child(2)) {
+      grid-area: 2 / 1;
+    }
+
+    .key:nth-child(3),
+    :global(.header-social li:nth-child(3)) {
+      grid-area: 2 / 3;
+    }
+
+    .key:nth-child(4),
+    :global(.header-social li:nth-child(4)) {
+      grid-area: 3 / 2;
+    }
+
+    .key {
+      display: grid;
+      place-items: center;
+      width: var(--key);
+      height: var(--key);
+      padding: 0;
+      border: 2px solid var(--color-txt);
+      border-radius: 8px;
+      background: none;
+      color: var(--color-txt);
+      opacity: 0.55;
+      cursor: pointer;
+      transition: opacity var(--transition), background-color var(--transition),
+        color var(--transition);
+    }
+
+    .key:hover,
+    .key:focus-visible {
+      background: var(--color-txt);
+      color: var(--color-accent);
+      opacity: 1;
+    }
+
+    /* Hover label. Same uppercase Montserrat as everything else, and pointer-events
+       off so it can never sit between the cursor and the button it belongs to. */
+    .intro-text :global([data-tip]) {
+      position: relative;
+    }
+
+    .intro-text :global([data-tip])::after {
+      content: attr(data-tip);
+      position: absolute;
+      z-index: 2;
+      top: calc(100% + 0.5em);
+      left: 50%;
+      translate: -50% 0;
+      padding: 0.35em 0.7em;
+      border: 2px solid var(--color-txt);
+      border-radius: var(--radius);
+      background-color: var(--color-bg);
+      color: var(--color-txt);
+      font-family: var(--font-heading), sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition);
+    }
+
+    .intro-text :global([data-tip]:hover)::after,
+    .intro-text :global([data-tip]:focus-visible)::after {
+      opacity: 1;
+    }
+
+    .key :global(.key-icon) {
+      width: auto;
+      height: 18px;
+    }
+  }
+
+  .scroll-cue {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 50%;
+    translate: -50% 0;
+    padding: 0.75rem;
+    color: var(--color-txt);
+    opacity: 0.6;
+    transition: opacity var(--transition);
+    animation: nudge 2.5s ease-in-out infinite;
+  }
+
+  .scroll-cue:hover,
+  .scroll-cue:focus-visible {
+    opacity: 1;
+  }
+
+  /* :global because the <svg> is rendered by Icon.astro, so it carries that
+     component's scope id rather than this one's. Without it the icon gets no size
+     at all and the cue is an invisible 24px of padding. */
+  .scroll-cue :global(.cue-icon) {
+    display: block;
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  @keyframes nudge {
+    0%,
+    100% {
+      translate: -50% 0;
+    }
+    50% {
+      translate: -50% 0.4rem;
+    }
+  }
+
+  /* Someone who asked for less motion gets no clips (hero-reel.ts bails) and no
+     bobbing arrow either — but keeps the link, which is the part that does something. */
+  @media (prefers-reduced-motion: reduce) {
+    .scroll-cue {
+      animation: none;
+    }
+
+    .reel video {
+      transition: none;
+    }
+  }
+
+  @media (min-width: 768px) {
     .name {
       font-size: 4.75em;
     }
 
     .skills {
       font-size: 1.75em;
+    }
+
+    .meta {
+      font-size: 1.15em;
     }
   }
 </style>

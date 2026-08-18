@@ -83,6 +83,12 @@ const games = defineCollection({
       projectDate: z.union([z.string(), z.number()]).optional(),
       client: z.string().optional(),
       category: z.string().optional(),
+      /**
+       * What you did on it, as the part before "for <title>" — so 'Sole Developer'
+       * reads "Sole Developer for DESTRUA" in the hero. Every game sets this; leave it
+       * off a new one and the roles in `category` stand in until you write it.
+       */
+      roles: z.string().optional(),
       /** Can contain <br><br>. */
       description: z.string().optional(),
       urlSteam: z.string().optional(),

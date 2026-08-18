@@ -111,19 +111,51 @@ section {
 
 /* A rule with the gamepad sitting on top of it, masking the middle. Same trick the
    old stylesheet used with an ::after pseudo-element. */
+/* 5px tall rather than the 0 it used to be, because the line is drawn by the two
+   pseudo-elements below instead of by a border-top on this element — and an absolutely
+   positioned line contributes no height. Same 5px on the page either way. */
 .star-rule {
   position: relative;
-  height: 0;
+  height: 5px;
+  /* Explicit width, not just a max: the line is drawn by absolutely positioned
+     pseudo-elements, so this box has no content of its own. In normal flow `auto`
+     filled the container and the max-width capped it, but as a grid item `auto` plus
+     auto margins means shrink-to-fit — which is zero, and the rule vanishes. */
+  width: 100%;
   max-width: 250px;
   margin: 25px auto 30px;
   padding: 0;
   border: 0;
-  border-top: solid 5px var(--color-rule);
   overflow: visible;
 }
 
+/* Two halves with a real gap between them, rather than one unbroken line with the
+   gamepad painted over the middle. That used to mean giving the icon an opaque
+   background the color of the page, which is invisible against a flat backdrop but
+   shows up as a solid block the moment there's video behind it.
+
+   26.25px is half the space the icon used to mask: 37.5px wide at 30px tall, plus the
+   7.5px it sat clear of the line on each side. */
+.star-rule::before,
+.star-rule::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  height: 5px;
+  width: calc(50% - 26.25px);
+  background-color: var(--color-rule);
+}
+
+.star-rule::before {
+  left: 0;
+}
+
+.star-rule::after {
+  right: 0;
+}
+
 /* Absolutely positioned so it sits on the line without adding any height, which is
-   what the old ::after did. The background masks the rule behind it. */
+   what the old ::after did. */
 .star-rule svg {
   position: absolute;
   top: 50%;
@@ -133,7 +165,6 @@ section {
   height: 30px;
   padding: 0 7.5px;
   color: var(--color-rule);
-  background-color: var(--color-bg);
 }
 
 /* --- buttons --- */
@@ -196,6 +227,82 @@ section {
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/* --- modal dialogs ---
+   Shared by the game dialogs and the about one. Global rather than scoped to a
+   component because more than one component opens a dialog of this shape, and a
+   scoped copy in each would be the same forty lines twice. Opt in with
+   <dialog class="overlay">. */
+
+/* The dialog is the full-screen overlay, not the card. It's the thing that scrolls,
+   so the card itself never gets its own scrollbar and can run from the top of the
+   screen off the bottom, the way the old Bootstrap modal did. */
+dialog.overlay {
+  width: 100vw;
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-txt);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+dialog.overlay::backdrop {
+  background: rgb(0 0 0 / 0.5);
+}
+
+.sheet {
+  width: min(90vw, 1000px);
+  margin: 0 auto;
+  /* It only holds focus so Esc keeps working; it isn't an interactive control. */
+  outline: none;
+  border: 2px groove var(--color-txt);
+  border-radius: 25px;
+  background-color: var(--color-bg);
+  box-shadow: 15px 15px 10px 5px rgb(0 0 0 / 0.31);
+}
+
+.panel {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+  text-align: center;
+}
+
+/* Fade in, with the card sliding down like the old modal did. @starting-style is
+   what lets an element animate in from display:none. */
+dialog.overlay,
+dialog.overlay::backdrop {
+  transition: opacity 0.3s ease, overlay 0.3s allow-discrete, display 0.3s allow-discrete;
+}
+
+.sheet {
+  transition: transform 0.3s ease-out;
+}
+
+dialog.overlay:not([open]),
+dialog.overlay:not([open])::backdrop {
+  opacity: 0;
+}
+
+dialog.overlay:not([open]) .sheet {
+  transform: translateY(-25%);
+}
+
+@starting-style {
+  dialog.overlay[open],
+  dialog.overlay[open]::backdrop {
+    opacity: 0;
+  }
+
+  dialog.overlay[open] .sheet {
+    transform: translateY(-25%);
+  }
 }
 
 /* --- accessibility --- */

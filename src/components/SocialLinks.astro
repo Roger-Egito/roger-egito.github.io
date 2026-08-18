@@ -1,15 +1,17 @@
 ---
 // Social/CV icon row, used by the header and the footer.
 import Icon from './Icon.astro';
-import { site } from '../config/site';
+import { site, type Link } from '../config/site';
 
 interface Props {
   class?: string;
+  /** Show the hover label. Only the hero asks for it; the footer stays quiet. */
+  tips?: boolean;
 }
 
-const { class: className } = Astro.props;
+const { class: className, tips = false } = Astro.props;
 
-const links = [...site.social, ...site.links];
+const links: Link[] = [...site.social, ...site.links];
 ---
 
 <ul class:list={['social-row', className]}>
@@ -22,6 +24,7 @@ const links = [...site.social, ...site.links];
           rel="noopener"
           class="btn-social"
           aria-label={link.label}
+          data-tip={tips ? (link.tip ?? link.label) : undefined}
         >
           <Icon name={link.icon} />
         </a>

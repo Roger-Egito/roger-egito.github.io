@@ -2,10 +2,12 @@
 // CSS can use them directly.
 import type { IconName } from '../components/Icon.astro';
 
-interface Link {
+export interface Link {
   icon: IconName;
   /** Read out by screen readers, since the icon on its own says nothing. */
   label: string;
+  /** Shorter wording for the hover label, where space is tight. Defaults to label. */
+  tip?: string;
   url: string;
 }
 
@@ -14,8 +16,22 @@ export const site = {
   url: 'https://roger-egito.github.io',
   description: 'Portfolio of game designer and developer Roger Egito.',
   author: 'Roger Egito',
-  skills: 'Game Designer | Developer',
+  skills: 'Technical Game Designer | Developer',
+
+  /** Shown under the job title in the hero. The offset is Brasília time, no DST. */
+  location: 'RJ, Brazil',
+  timezone: 'UTC-03:00',
+  email: 'rogeregito@outlook.com',
   slogan: 'Creating games with heart and soul',
+
+  /**
+   * Games whose preview clip should stay out of the hero rotation, by slug (the
+   * markdown filename — 'cursed-blight.md' is 'cursed-blight'). The clip still plays
+   * as a hover preview on its portfolio card either way; this only pulls it from the
+   * full-screen reel, for a game whose footage doesn't read well blown up that big, or
+   * spoils too much, or whatever the reason.
+   */
+  heroExcludes: [] as string[],
 
   /** Where the contact form posts to. */
   contactAction: 'https://formspree.io/f/xldnwyla',
@@ -39,6 +55,7 @@ export const site = {
     {
       icon: 'file',
       label: 'Curriculum vitae',
+      tip: 'CV',
       url: 'https://drive.google.com/file/d/1hZ3cvIdgSqQ17rHSOdth92TKjoFSWDFk/view?usp=sharing',
     },
   ] satisfies Link[],

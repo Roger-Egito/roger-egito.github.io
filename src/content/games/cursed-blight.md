@@ -8,6 +8,7 @@ gameDescription: "Click inside the window to start playing. The game runs right 
 projectDate: 2026
 client: Ludomancer Studio
 category: Game Designer | Game Developer
+roles: "Game Designer, Game Developer, and Art Director"
 description: "Cursed Blight is a short, single-player, old-school dungeon-crawling adventure steeped in unforgiving darkness.<br><br>I designed the gameplay, progression, narrative, art direction, menus, level, audio, thumbnail, trailer, and was the one responsible for developing the game.<br><br>This game was made using Unity."
 urlItchIo: https://ludomancerstudio.itch.io/cursed-blight
 ---
