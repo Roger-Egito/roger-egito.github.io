@@ -31,7 +31,7 @@ export const site = {
    * full-screen reel, for a game whose footage doesn't read well blown up that big, or
    * spoils too much, or whatever the reason.
    */
-  heroExcludes: [] as string[],
+  heroExcludes: ["covid-35"] as string[],
 
   /** Where the contact form posts to. */
   contactAction: 'https://formspree.io/f/xldnwyla',
