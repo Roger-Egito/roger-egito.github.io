@@ -317,3 +317,39 @@ dialog.overlay:not([open]) .sheet {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* --- hover labels --- */
+
+/* One shared element that tips.ts moves to the pointer. In the top layer via popover,
+   so the hero's overflow can't crop it and nothing on the page can paint over it. */
+.tip {
+  position: fixed;
+  /* Only matters where popover isn't supported and the label stays in normal flow;
+     with popover it's in the top layer and z-index doesn't come into it. */
+  z-index: 100;
+  margin: 0;
+  padding: 0.35em 0.7em;
+  border: 2px solid var(--color-txt);
+  border-radius: var(--radius);
+  background-color: var(--color-bg);
+  color: var(--color-txt);
+  font-family: var(--font-heading), sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition);
+}
+
+.tip[data-on] {
+  opacity: 1;
+}
+
+/* The popover UA styles would otherwise re-centre it and draw their own border. */
+.tip:popover-open {
+  inset: auto;
+  overflow: visible;
+}

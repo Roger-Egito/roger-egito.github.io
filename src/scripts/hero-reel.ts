@@ -71,7 +71,8 @@ function run(reel: HTMLElement) {
 
   let position = 0; // counts freely in both directions; at() wraps it into the order
   let queued = -1; // index currently loaded into `back`
-  let handedOver = false;
+  let moving = false; // a handover is under way
+  let generation = 0; // bumped per command, so a superseded one bows out
   let onScreen = false;
 
   const credit = document.querySelector<HTMLElement>('[data-hero-credit]');
@@ -90,51 +91,84 @@ function run(reel: HTMLElement) {
     back.load();
   };
 
+  // The tail of a fade that hasn't finished yet, and the timer waiting to run it.
+  // Kept as a value so a fresh command can run it early instead of waiting.
+  let settle: (() => void) | null = null;
+  let settleTimer = 0;
+
+  /** Finish the fade in progress right now, if there is one. */
+  const cutFade = () => {
+    if (!settle) return;
+    window.clearTimeout(settleTimer);
+    const run = settle;
+    settle = null;
+    run();
+  };
+
   /**
    * Bring the loaded clip up over the one on screen. `step` is which way we're moving
    * through the order — the auto-advance and the d-pad both come through here, so a
    * skip behaves exactly like a clip ending early.
+   *
+   * `pressed` marks a command from the d-pad. Those are never dropped: they cut short
+   * whatever fade is running and start their own, so holding Next steps briskly
+   * through the reel instead of ignoring every press that lands mid-transition. The
+   * automatic advance yields instead, since two of them at once is just a bug.
    */
-  const handover = (step: number) => {
-    if (handedOver) return;
+  const handover = (step: number, pressed = false) => {
+    if (moving && !pressed) return;
+    cutFade();
+
+    // Anything already waiting on a clip to become playable is abandoned here, so an
+    // older command can't complete after a newer one and walk the position twice.
+    const mine = ++generation;
+    moving = true;
+
     const target = at(position + step);
     prime(target); // a clip shorter than PRELOAD_AT never got the chance
-    handedOver = true;
-
-    const outgoing = front;
     announce(clips[target]);
 
-    back
-      .play()
-      .then(() => {
-        back.dataset.active = '';
-        delete outgoing.dataset.active;
+    const begin = () => {
+      if (mine !== generation) return; // superseded while it was loading
+      const outgoing = front;
 
-        // Roles change over only once the fade has finished, so the old clip keeps
-        // rendering until it's genuinely invisible. Hung off playback actually
-        // starting rather than a bare timer: pressing Right early asks for a clip
-        // that hasn't downloaded yet, and on a fixed delay the swap would happen
-        // while the incoming video was still black.
-        window.setTimeout(() => {
-          outgoing.pause();
-          outgoing.currentTime = 0;
-          [front, back] = [back, outgoing];
-          position += step;
-          queued = -1;
-          handedOver = false;
-        }, FADE_MS);
-      })
-      .catch(() => {
-        // Couldn't start, so stay on the clip we have and let the next press retry.
-        handedOver = false;
+      back.play().catch(() => {});
+      back.dataset.active = '';
+      delete outgoing.dataset.active;
+
+      // Roles change over only once the fade has finished, so the old clip keeps
+      // rendering until it's genuinely invisible — unless a press cuts in, in which
+      // case cutFade runs this early and the crossfade becomes a straight cut.
+      settle = () => {
+        outgoing.pause();
+        outgoing.currentTime = 0;
+        [front, back] = [back, outgoing];
+        position += step;
         queued = -1;
-        announce(clips[at(position)]);
-      });
+        moving = false;
+      };
+      settleTimer = window.setTimeout(cutFade, FADE_MS);
+    };
+
+    // Waiting for the frame to exist avoids fading up a black rectangle; pressing
+    // Next early asks for a clip that hasn't arrived yet.
+    if (back.readyState >= 2) begin();
+    else {
+      back.addEventListener('canplay', begin, { once: true });
+      // If it never becomes playable, don't leave the reel stuck for good.
+      back.addEventListener(
+        'error',
+        () => {
+          if (mine === generation) moving = false;
+        },
+        { once: true }
+      );
+    }
   };
 
   for (const clip of [a, b]) {
     clip.addEventListener('timeupdate', () => {
-      if (clip !== front || !onScreen || handedOver) return;
+      if (clip !== front || !onScreen || moving) return;
       if (!Number.isFinite(clip.duration)) return;
 
       // A game's turn ends when its clip runs out or when it's had its ten seconds,
@@ -154,8 +188,8 @@ function run(reel: HTMLElement) {
   document.addEventListener('click', (event) => {
     const key = (event.target as HTMLElement | null)?.closest<HTMLElement>('[data-pad]');
     if (!key) return;
-    if (key.dataset.pad === 'next') handover(1);
-    if (key.dataset.pad === 'prev') handover(-1);
+    if (key.dataset.pad === 'next') handover(1, true);
+    if (key.dataset.pad === 'prev') handover(-1, true);
   });
 
   // Clicking the footage opens that game, by way of the card that already knows how.

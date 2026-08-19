@@ -28,9 +28,12 @@ const previewFor = (slug: string) =>
     <h2 class="section-heading">Portfolio</h2>
     <StarRule />
 
+    {/* Every card is lazy: the hero stands a full screen tall and the grid begins
+        directly beneath it, so none of these are on screen at load. Eager-loading the
+        first row only had them competing with the banner and the opening clip. */}
     <ul class="grid">
       {
-        games.map((game, i) => (
+        games.map((game) => (
           <li>
             {/* Real href so the link still works with JS off or in a new tab.
                 modal.ts catches normal clicks and opens the dialog instead. */}
@@ -45,7 +48,7 @@ const previewFor = (slug: string) =>
                 alt={game.data.alt ?? `${game.data.title.replace(/<[^>]*>/g, ' ')} key art`}
                 widths={[400, 800]}
                 sizes="(min-width: 60rem) 32vw, (min-width: 40rem) 49vw, 100vw"
-                loading={i < 3 ? 'eager' : 'lazy'}
+                loading="lazy"
               />
               {previewFor(game.id) && (
                 <video

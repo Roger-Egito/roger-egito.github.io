@@ -40,6 +40,7 @@ const clips = Object.entries(previews)
 
 <script>
   import '../scripts/hero-reel';
+  import '../scripts/tips';
 </script>
 
 <header class="hero">
@@ -82,7 +83,8 @@ const clips = Object.entries(previews)
         {site.location} | {site.timezone}
       </p>
       <p class="meta">
-        Contact: <a href={`mailto:${site.email}`}>{site.email}</a>
+        <span class="emoji" role="img" aria-label="Email">📫</span>
+        <a href={`mailto:${site.email}`}>{site.email}</a>
       </p>
 
       <!--<StarRule /> -->
@@ -91,7 +93,7 @@ const clips = Object.entries(previews)
       {/* Replaced with the credit for whichever game is playing, as soon as the reel
           knows which that is. The slogan is what's left if the reel never runs — no
           clips means no game to credit. */}
-      <p class="skills" data-hero-credit>{site.slogan}</p>
+      <p class="profession" data-hero-credit>{site.slogan}</p>
 
       <SocialLinks class="header-social" tips />
     </div>
@@ -179,12 +181,11 @@ const clips = Object.entries(previews)
     position: absolute;
     z-index: -1;
     inset: 0;
-    background: linear-gradient(
-      to bottom,
-      color-mix(in srgb, var(--color-bg) 60%, transparent) 0%,
-      color-mix(in srgb, var(--color-bg) 72%, transparent) 55%,
-      var(--color-bg) 100%
-    );
+background: linear-gradient(
+  to bottom,
+  transparent 0%,
+  var(--color-bg) 100%
+);
   }
 
   .container {
@@ -205,9 +206,56 @@ const clips = Object.entries(previews)
     cursor: pointer;
   }
 
+  /* Same lift the portfolio cards use, so everything you can press on the page
+     answers the pointer the same way. */
+  .name-button,
+  .key,
+  :global(.header-social .btn-social) {
+    transition: transform 0.6s ease, /*color var(--transition),
+      background-color var(--transition),*/ opacity var(--transition);
+  }
+
+  /* Both pads sit well back until you go for one, so the footage behind reads as the
+     subject and the controls as trim. */
+  .key,
+  :global(.header-social .btn-social) {
+    opacity: 0.3;
+  }
+
+  /* Filled with the page's own dark rather than the light ink colour, so a hovered
+     control reads as a hole punched in the plate instead of a white chip on top of
+     the video. The border and icon stay light against it. */
+  .key:hover,
+  .key:focus-visible,
+  :global(.header-social .btn-social:hover),
+  :global(.header-social .btn-social:focus-visible) {
+    transform: scale(1.25);
+    opacity: 1;
+    background-color: var(--color-bg);
+  }
+
   .name-button:hover,
   .name-button:focus-visible {
+    transform: scale(1.15);
     color: var(--color-accent);
+  }
+
+  /* Pressing dips the control below its hovered size and it springs back on release —
+     the shorter duration only applies on the way down, so it snaps under the finger
+     and eases back up rather than mushing both ways. */
+  .key:active,
+  :global(.header-social .btn-social:active),
+  .name-button:active {
+    transition-duration: 0.08s;
+  }
+
+  .key:active,
+  :global(.header-social .btn-social:active) {
+    transform: scale(1.08);
+  }
+
+  .name-button:active {
+    transform: scale(1.02);
   }
 
   .name {
@@ -224,7 +272,6 @@ const clips = Object.entries(previews)
     font-size: 1.25em;
     font-weight: 300;
   }
-
   /* A step down again from .skills, so the stack reads name, role, then details. */
   .meta {
     margin: 0.35em 0 0;
@@ -241,6 +288,13 @@ const clips = Object.entries(previews)
   .meta a:hover,
   .meta a:focus-visible {
     color: var(--color-accent);
+  }
+
+  /* Sized and nudged to sit on the same line as the flag beside it. */
+  .emoji {
+    margin-right: 0.35em;
+    font-size: 0.95em;
+    vertical-align: -0.05em;
   }
 
   .flag {
@@ -309,8 +363,8 @@ const clips = Object.entries(previews)
       display: none;
     }
 
-    .intro-text > p.skills:last-of-type {
-      margin-top: 22px;
+    .intro-text > p.profession {
+      margin-top: 25px;
     }
 
     /* Name, role, location and contact ride up together as one block, so the foot of
@@ -339,9 +393,37 @@ const clips = Object.entries(previews)
       content: '';
       position: absolute;
       z-index: -1;
-      inset: var(--plate-top) var(--plate-side) var(--plate-bottom);
+      /* Pinned to the four rows it's meant to cover — name, role, location, contact —
+         rather than to hand-measured insets, so it follows them if their sizes ever
+         change. Absolutely positioned, so it takes the grid area as its box without
+         taking a slot in the layout. Both end lines are spelled out: for an
+         absolutely positioned grid child an `auto` end means the container's padding
+         edge, which would stretch it over the whole block. */
+      grid-column: 2 / 3;
+      grid-row: 1 / 5;
+      /* Negative insets are the breathing room around the text. */
+      inset: -14px -32px;
+      translate: 0 -64px;
       border-radius: 120px / 72px;
-      /*background: rgb(0 0 0 / 0.42);*/
+      /* Invisible, but still hit-tested: this shape alone is what stops a click
+         reaching the footage, so the text inside it can be selected and copied
+         without opening a game. Everything outside it is backdrop again. */
+      pointer-events: auto;
+    }
+
+    /* The container and the block inside it are big rectangles that were swallowing
+       clicks over most of the hero. They let the pointer through now; the plate above
+       and the things that live on it take back what they need. */
+    .container {
+      pointer-events: none;
+    }
+
+    .intro-text > .name,
+    .intro-text > .skills:not([data-hero-credit]),
+    .intro-text > .meta,
+    .dpad,
+    .intro-text > :global(.header-social) {
+      pointer-events: auto;
     }
 
     /* Spans the whole grid rather than sitting in the middle column. The credit
@@ -351,6 +433,9 @@ const clips = Object.entries(previews)
        three columns its length costs nothing, and it's centred text either way. */
     .intro-text > p[data-hero-credit] {
       grid-column: 1 / -1;
+      /* Half a line lower than the rest of the lifted block, so it reads as a caption
+         to the footage rather than part of the name card above it. */
+      translate: 0 -46px;
     }
 
     /* Holds the block the height it was with the links still in it. Without this the
@@ -426,51 +511,12 @@ const clips = Object.entries(previews)
       border-radius: 8px;
       background: none;
       color: var(--color-txt);
-      opacity: 0.55;
       cursor: pointer;
-      transition: opacity var(--transition), background-color var(--transition),
-        color var(--transition);
     }
 
     .key:hover,
     .key:focus-visible {
-      background: var(--color-txt);
       color: var(--color-accent);
-      opacity: 1;
-    }
-
-    /* Hover label. Same uppercase Montserrat as everything else, and pointer-events
-       off so it can never sit between the cursor and the button it belongs to. */
-    .intro-text :global([data-tip]) {
-      position: relative;
-    }
-
-    .intro-text :global([data-tip])::after {
-      content: attr(data-tip);
-      position: absolute;
-      z-index: 2;
-      top: calc(100% + 0.5em);
-      left: 50%;
-      translate: -50% 0;
-      padding: 0.35em 0.7em;
-      border: 2px solid var(--color-txt);
-      border-radius: var(--radius);
-      background-color: var(--color-bg);
-      color: var(--color-txt);
-      font-family: var(--font-heading), sans-serif;
-      font-size: 0.75rem;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      white-space: nowrap;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity var(--transition);
-    }
-
-    .intro-text :global([data-tip]:hover)::after,
-    .intro-text :global([data-tip]:focus-visible)::after {
-      opacity: 1;
     }
 
     .key :global(.key-icon) {
@@ -534,6 +580,10 @@ const clips = Object.entries(previews)
 
     .skills {
       font-size: 1.75em;
+    }
+
+    .profession {
+      font-size: 1.25em;
     }
 
     .meta {
