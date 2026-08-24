@@ -1,6 +1,7 @@
 ---
 import Icon from './Icon.astro';
 import SocialLinks from './SocialLinks.astro';
+import { tagsIn } from '../config/tags';
 import StarRule from './StarRule.astro';
 import { getCollection } from 'astro:content';
 import { site, plainText } from '../config/site';
@@ -29,11 +30,12 @@ const clips = Object.entries(previews)
   .filter(({ slug }) => !site.heroExcludes.includes(slug))
   .map(({ slug, src }) => {
     const game = games.find((entry) => entry.id === slug);
-    // Always "<roles> for <game>". Every game states its own roles; a new one that
-    // hasn't yet falls back to reading `category` as a list so the line still forms.
+    // Always "<roles> for <game>". Every game states its own roles as a sentence; a
+    // new one that hasn't yet falls back to listing its role tags, which are stored
+    // lowercase precisely so they read correctly here.
     const roles =
       game?.data.roles ??
-      listing.format((game?.data.category ?? '').split('|').map((role) => role.trim()).filter(Boolean));
+      listing.format(tagsIn(game?.data.tags ?? [], 'role').map((tag) => tag.id));
     return { src, slug, credit: `${roles} for ${plainText(game?.data.title ?? slug)}` };
   });
 ---

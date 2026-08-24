@@ -2,6 +2,8 @@
 import { Image } from 'astro:assets';
 import { getCollection } from 'astro:content';
 import StarRule from './StarRule.astro';
+import TagIcon from './TagIcon.astro';
+import { chipTags, iconsOn, yearRange } from '../config/tags';
 
 // Highest order first, which matches the order the grid used to show.
 const games = (await getCollection('games')).sort((a, b) => b.data.order - a.data.order);
@@ -17,10 +19,23 @@ const previews = import.meta.glob<string>('../content/games/*.mp4', {
 
 const previewFor = (slug: string) =>
   previews[`../content/games/${slug}.mp4`] as string | undefined;
+
+/**
+ * The card's line or two. `blurb` when it's set; otherwise the first paragraph of the
+ * full description, which is where each entry already opens with what the game is.
+ * Descriptions separate paragraphs with <br><br>.
+ */
+const blurbFor = (data: (typeof games)[number]['data']) => {
+  if (data.blurb) return data.blurb;
+  const first = (data.description ?? '').split(/<br\s*\/?>\s*<br\s*\/?>/i)[0];
+  return first.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+};
 ---
 
 <script>
   import '../scripts/hover-preview';
+  // The tag icons beside each date carry data-tip, same as the social buttons.
+  import '../scripts/tips';
 </script>
 
 <section id="portfolio">
@@ -33,38 +48,91 @@ const previewFor = (slug: string) =>
         first row only had them competing with the banner and the opening clip. */}
     <ul class="grid">
       {
-        games.map((game) => (
-          <li>
-            {/* Real href so the link still works with JS off or in a new tab.
-                modal.ts catches normal clicks and opens the dialog instead. */}
-            <a
-              href={`/games/${game.id}/`}
-              class:list={['card', previewFor(game.id) && 'has-preview']}
-              data-game={game.id}
-              aria-haspopup="dialog"
-            >
-              <Image
-                src={game.data.img}
-                alt={game.data.alt ?? `${game.data.title.replace(/<[^>]*>/g, ' ')} key art`}
-                widths={[400, 800]}
-                sizes="(min-width: 60rem) 32vw, (min-width: 40rem) 49vw, 100vw"
-                loading="lazy"
-              />
-              {previewFor(game.id) && (
-                <video
-                  class="preview"
-                  data-src={previewFor(game.id)}
-                  muted
-                  loop
-                  playsinline
-                  preload="none"
-                  aria-hidden="true"
-                  tabindex="-1"
-                />
-              )}
-            </a>
-          </li>
-        ))
+        games.map((game) => {
+          const d = game.data;
+          const dates = yearRange(d.startDate, d.endDate);
+          const left = iconsOn(d.tags, 'left');
+          const right = iconsOn(d.tags, 'right');
+          const blurb = blurbFor(d);
+          const tags = chipTags(d.tags);
+
+          return (
+            <li>
+              <article class:list={['card', previewFor(game.id) && 'has-preview']}>
+                {/* Real href so the link still works with JS off or in a new tab.
+                    modal.ts catches normal clicks and opens the dialog instead. */}
+                <a
+                  href={`/games/${game.id}/`}
+                  class="card-link"
+                  data-game={game.id}
+                  aria-haspopup="dialog"
+                  aria-label={d.title.replace(/<[^>]*>/g, ' ').trim()}
+                >
+                  <div class="shot">
+                    <Image
+                      src={d.img}
+                      alt={d.alt ?? `${d.title.replace(/<[^>]*>/g, ' ')} key art`}
+                      widths={[400, 800]}
+                      sizes="(min-width: 60rem) 32vw, (min-width: 40rem) 49vw, 100vw"
+                      loading="lazy"
+                    />
+                    {previewFor(game.id) && (
+                      <video
+                        class="preview"
+                        data-src={previewFor(game.id)}
+                        muted
+                        loop
+                        playsinline
+                        preload="none"
+                        aria-hidden="true"
+                        tabindex="-1"
+                      />
+                    )}
+                  </div>
+
+                  {/* Held apart from the artwork so the two can behave differently on
+                      hover: the picture dims and grows, this stays fully lit and only
+                      steps down out of its way. */}
+                  <div class="body">
+                  {/* Three columns so the date stays centred however many icons flank
+                      it — clients to its left, technologies to its right. The whole row
+                      is skipped when a game has none of the three. */}
+                  {(dates || left.length > 0 || right.length > 0) && (
+                    <div class="meta">
+                      <span class="icons start">
+                        {left.map((tag) => (
+                          <TagIcon tag={tag} />
+                        ))}
+                      </span>
+                      <span class="dates">{dates}</span>
+                      <span class="icons end">
+                        {right.map((tag) => (
+                          <TagIcon tag={tag} />
+                        ))}
+                      </span>
+                    </div>
+                  )}
+
+                  {d.team && <p class="team">{d.team}</p>}
+                  {blurb && <p class="blurb">{blurb}</p>}
+                  </div>
+                </a>
+
+                {/* Outside the link on purpose: these become filter buttons later, and
+                    a button inside an anchor is invalid markup. */}
+                {tags.length > 0 && (
+                  <ul class="tags">
+                    {tags.map((tag) => (
+                      <li data-tag={tag.id} data-category={tag.category}>
+                        {tag.label}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </article>
+            </li>
+          );
+        })
       }
     </ul>
   </div>
@@ -111,16 +179,72 @@ const previewFor = (slug: string) =>
   }
 
   .card {
-    display: block;
+    /* How far the text steps down. scale(1.1) pushes the artwork's bottom edge down by
+       half its 10% growth, which on 16:9 art in a card this wide is 10.5px at 375px and
+       11.25px at 400px — under a pixel apart, so one value covers the range. Matching it
+       keeps the gap under the picture constant instead of letting the two close up. */
+    --shift: 11px;
+    display: flex;
+    flex-direction: column;
     position: relative;
-    /* One of only two places the eye appears: you're looking at a game, not
-       navigating. The other is the hero footage. */
-    cursor: var(--cursor-pointer);
     max-width: 400px;
+    height: 100%;
     margin: 0 auto;
+  }
+
+  /* Raised over its neighbours so the grown artwork isn't clipped by the next card. */
+  .card:has(.card-link:hover),
+  .card:has(.card-link:focus-visible) {
+    z-index: 1;
+  }
+
+  /* Only the picture dims and grows. The words under it stay fully lit — they're what
+     tells you what the thing is, and a half-faded caption is just harder to read.
+     Keyed off the link's hover rather than the article's, so pointing at a tag doesn't
+     set the whole thing going — those are about to become filters, not a way in. */
+  .shot {
     opacity: 0.5;
     transition: transform 0.6s ease, opacity 1s ease;
   }
+
+  .card:has(.card-link:hover) .shot,
+  .card:has(.card-link:focus-visible) .shot {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+
+  /* transform rather than margin: the text needs to get out of the picture's way, not
+     re-lay-out the row it sits in. A margin here would grow the card, and stretch every
+     other card in the row along with it. */
+  .body,
+  .tags {
+    transition: transform 0.6s ease;
+  }
+
+  .card:has(.card-link:hover) .body,
+  .card:has(.card-link:focus-visible) .body,
+  .card:has(.card-link:hover) .tags,
+  .card:has(.card-link:focus-visible) .tags {
+    transform: translateY(var(--shift));
+  }
+
+  .card-link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+    /* One of only two places the eye appears: you're looking at a game, not
+       navigating. The other is the hero footage. */
+    cursor: var(--cursor-pointer);
+  }
+
+  /* The clip is absolutely positioned, so it needs a box the size of the artwork to
+     sit in — without this it would stretch over the text below as well. */
+  .shot {
+    position: relative;
+  }
+
+  /* Nested opacity multiplies, so the still inside a 0.5 .shot lands at 50% exactly as
+     it did when the whole card carried the fade. */
 
   .card :global(img) {
     display: block;
@@ -151,20 +275,89 @@ const previewFor = (slug: string) =>
      browser keeps :hover applied after you lift your finger, which means the clip
      stays up too, and both drop together when you touch somewhere else.
      .has-preview keeps cards with no clip from fading their still into nothing. */
-  .card.has-preview:hover .preview,
-  .card.has-preview:focus-visible .preview {
+  .card.has-preview:has(.card-link:hover) .preview,
+  .card.has-preview:has(.card-link:focus-visible) .preview {
     opacity: 1;
   }
 
-  .card.has-preview:hover :global(img),
-  .card.has-preview:focus-visible :global(img) {
+  .card.has-preview:has(.card-link:hover) :global(img),
+  .card.has-preview:has(.card-link:focus-visible) :global(img) {
     opacity: 0;
   }
 
-  .card:hover,
-  .card:focus-visible {
-    transform: scale(1.1);
-    opacity: 1;
-    z-index: 1;
+  /* --- the information under the artwork --- */
+
+  .meta {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .dates {
+    font-family: var(--font-heading), sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+
+  .icons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .icons.start {
+    justify-content: flex-start;
+  }
+
+  .icons.end {
+    justify-content: flex-end;
+  }
+
+  .team {
+    margin: 2px 0 0;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .blurb {
+    margin: 10px 0 0;
+    font-size: 15px;
+    line-height: 1.45;
+    text-align: left;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* Every word on the card sits at full opacity — the size and the border carry the
+     hierarchy instead. Dimming the text was what made the old card unreadable until
+     you pointed at it. */
+  .tags li {
+    padding: 3px 8px;
+    border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+    border-radius: 3px;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    line-height: 1.4;
+    text-transform: uppercase;
+  }
+
+  /* Client tags read as the strongest of the four, since who a thing was for is the
+     first question anyone asks about it. Carried by the border, not the ink. */
+  .tags li[data-category='client'] {
+    border-color: color-mix(in srgb, currentColor 70%, transparent);
   }
 </style>

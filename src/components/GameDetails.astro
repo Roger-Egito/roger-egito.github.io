@@ -5,6 +5,7 @@ import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
 import Icon from './Icon.astro';
 import StarRule from './StarRule.astro';
+import { categories, categoryOrder, tagsIn, yearRange } from '../config/tags';
 
 interface Props {
   game: CollectionEntry<'games'>;
@@ -25,10 +26,23 @@ const storeLinks = [
   d.urlGooglePlay && { url: d.urlGooglePlay, label: 'Link to Google Play Store Page' },
 ].filter(Boolean) as { url: string; label: string }[];
 
+// Built from the same tags the card uses, so this table and the grid can't disagree
+// about who a game was for or what it was made with. One row per category that has
+// any tags, in the order set by categoryOrder in src/config/tags.ts.
+const dates = yearRange(d.startDate, d.endDate);
+
 const details = [
-  d.client && { label: 'Client', value: String(d.client) },
-  d.projectDate && { label: 'Date', value: String(d.projectDate) },
-  d.category && { label: 'Service', value: String(d.category) },
+  dates && { label: 'Date', value: dates },
+  d.team && { label: 'Team', value: d.team },
+  ...categoryOrder.map((category) => {
+    const found = tagsIn(d.tags, category);
+    if (found.length === 0) return undefined;
+    const { label, plural } = categories[category];
+    return {
+      label: found.length > 1 ? plural : label,
+      value: found.map((tag) => tag.label).join(' · '),
+    };
+  }),
 ].filter(Boolean) as { label: string; value: string }[];
 
 const plainTitle = d.title.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
