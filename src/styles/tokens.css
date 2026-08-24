@@ -29,6 +29,17 @@
 
   /* motion */
   --transition: 0.3s ease-in-out;
+
+  /* cursors. The two numbers are the hotspot — the pixel the browser treats as
+     the actual pointer position. Both images are 32x32 with transparent padding,
+     so without them the click point would sit in the empty top-left corner
+     instead of on the artwork. The keyword last is the fallback for anywhere the
+     image can't be used: touch devices, or a browser that refuses the file.
+
+     9 4    the tip of the raised finger
+     15 15  the centre of the iris */
+  --cursor-default: url('../assets/hand_point.png') 9 4, auto;
+  --cursor-pointer: url('../assets/look_b.png') 15 15, pointer;
 }
 
 /* Anyone who's asked their OS to calm animations down gets a still site. */

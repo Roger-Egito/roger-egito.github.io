@@ -14,6 +14,38 @@
 
 html {
   scroll-behavior: smooth; /* replaces the old jQuery easing scroll */
+  cursor: var(--cursor-default);
+}
+
+/*
+ * `cursor` inherits, so the rule above covers most of the page — but links and form
+ * controls have to be named explicitly. The browser's own stylesheet sets a cursor
+ * directly on them (pointer on <a>, default on <button>), and a direct rule beats an
+ * inherited one no matter who wrote it, so without this they'd fall back to the
+ * system cursors instead of the hand.
+ *
+ * The eye is deliberately NOT here. It means "look at this", which only makes sense
+ * where you're previewing a game: the hero footage (Header.astro) and the portfolio
+ * cards (PortfolioGrid.astro). On a nav link it would be noise.
+ */
+a:any-link,
+button,
+summary,
+[role='button'],
+input[type='button'],
+input[type='submit'],
+input[type='reset'] {
+  cursor: var(--cursor-default);
+}
+
+/* Typing needs the I-beam — it's what shows you where the caret will land. */
+input:not([type='button']):not([type='submit']):not([type='reset']):not([type='checkbox']):not([type='radio']),
+textarea {
+  cursor: text;
+}
+
+:disabled {
+  cursor: not-allowed;
 }
 
 body {
@@ -182,7 +214,7 @@ section {
   line-height: 1.33;
   text-align: center;
   text-decoration: none;
-  cursor: pointer;
+  cursor: var(--cursor-default);
   transition: filter var(--transition);
 }
 
@@ -201,7 +233,8 @@ section {
   border: 2px solid var(--color-txt);
   border-radius: 100%;
   color: var(--color-txt);
-  transition: color var(--transition), background-color var(--transition);
+  transition: color var(--transition), background-color var(--transition),
+    transform 0.6s ease, opacity var(--transition);
 }
 
 /* 20px tall with the width following the icon's own aspect ratio, which is how the
@@ -211,10 +244,27 @@ section {
   height: 20px;
 }
 
+/* Filled with the page's own dark rather than the light ink colour, so a hovered
+   control reads as a hole punched in the surface instead of a white chip sitting on
+   top of it. The border and icon stay light against it. The lift is the same one the
+   portfolio cards and the hero's d-pad use, so everything pressable answers the
+   pointer the same way.
+
+   This lives here rather than in Header.astro because these icons appear three times:
+   the hero, the footer, and the footer again on every game page. */
 .btn-social:hover,
 .btn-social:focus-visible {
-  background: var(--color-txt);
+  transform: scale(1.25);
+  background-color: var(--color-bg);
   color: var(--color-accent);
+}
+
+/* Pressing dips below the hovered size and springs back on release — the shorter
+   duration only applies on the way down, so it snaps under the finger and eases back
+   up rather than mushing both ways. */
+.btn-social:active {
+  transform: scale(1.08);
+  transition-duration: 0.08s;
 }
 
 /* Row of social buttons. The old markup relied on whitespace between inline-block

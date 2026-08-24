@@ -32,3 +32,11 @@ const links: Link[] = [...site.social, ...site.links];
     ))
   }
 </ul>
+
+<script>
+  // The hover labels. Imported here, next to the data-tip attributes above, rather
+  // than only in Header.astro — this row also renders in the footer, and the game
+  // pages have a footer but no Header, so the labels had nothing driving them there.
+  // Astro bundles the module once however many components ask for it.
+  import '../scripts/tips';
+</script>

@@ -113,6 +113,9 @@ const previewFor = (slug: string) =>
   .card {
     display: block;
     position: relative;
+    /* One of only two places the eye appears: you're looking at a game, not
+       navigating. The other is the hero footage. */
+    cursor: var(--cursor-pointer);
     max-width: 400px;
     margin: 0 auto;
     opacity: 0.5;
