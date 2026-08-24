@@ -1,44 +1,23 @@
 ---
-// Inline SVG icons. Path data comes straight from the Font Awesome packages, which are
-// dev dependencies read at build time, so nothing ships to the browser except the one
-// <svg> each usage needs. That replaced ~530 KB of icon fonts.
-import {
-  faItchIo,
-  faLinkedin,
-  faGithub,
-  faUnity,
-  faPython,
-} from '@fortawesome/free-brands-svg-icons';
-import {
-  faFileLines,
-  faChevronUp,
-  faChevronDown,
-  faGamepad,
-  faPlay,
-  faCaretUp,
-  faCaretDown,
-  faCaretLeft,
-  faCaretRight,
-} from '@fortawesome/free-solid-svg-icons';
+/**
+ * Inline SVG icons, straight from the Font Awesome packages.
+ *
+ * Name one the way Font Awesome does and it just works — `network-wired`, `pen-ruler`,
+ * `google-play`, `unity`. There is no list to register a name in first.
+ *
+ * Both free sets are imported whole, which sounds heavy and isn't: this runs at build
+ * time, so the ~2,600 definitions live in the build process and only the single <svg>
+ * each usage needs is written into the HTML. Loading both costs about 40ms once. That
+ * is the same reason this replaced ~530 KB of icon fonts.
+ *
+ * Solid is searched before brands. A name in neither fails the build and says which
+ * names were close, rather than rendering an empty box.
+ */
+import * as solid from '@fortawesome/free-solid-svg-icons';
+import * as brands from '@fortawesome/free-brands-svg-icons';
 
-const ICONS = {
-  'itch-io': faItchIo,
-  linkedin: faLinkedin,
-  github: faGithub,
-  unity: faUnity,
-  python: faPython,
-  'file-lines': faFileLines,
-  'chevron-up': faChevronUp,
-  'chevron-down': faChevronDown,
-  gamepad: faGamepad,
-  play: faPlay,
-  'caret-up': faCaretUp,
-  'caret-down': faCaretDown,
-  'caret-left': faCaretLeft,
-  'caret-right': faCaretRight,
-} as const;
-
-export type IconName = keyof typeof ICONS;
+/** A Font Awesome free name, kebab-cased: 'pen-ruler', 'itch-io', 'unity'. */
+export type IconName = string;
 
 interface Props {
   name: IconName;
@@ -49,7 +28,65 @@ interface Props {
 
 const { name, label, class: className } = Astro.props;
 
-const [width, height, , , path] = ICONS[name].icon;
+/** 'network-wired' -> 'faNetworkWired', 'itch-io' -> 'faItchIo'. */
+const toExport = (value: string) =>
+  'fa' + value.replace(/(^|-)([a-z0-9])/g, (_match, _sep, char: string) => char.toUpperCase());
+
+type Glyph = { icon: [number, number, unknown, unknown, string | string[]] };
+const sets = [solid, brands] as unknown as Record<string, Glyph | undefined>[];
+
+const found = sets.map((set) => set[toExport(name)]).find((entry) => Array.isArray(entry?.icon));
+
+if (!found) {
+  // Only walked when something is already wrong, so the cost never lands on a good build.
+  const toKebab = (key: string) =>
+    key.replace(/^fa/, '').replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+
+  const every = [
+    ...new Set(
+      sets
+        .flatMap((set) => Object.keys(set))
+        .filter((key) => key.startsWith('fa'))
+        .map(toKebab)
+    ),
+  ];
+
+  /**
+   * Levenshtein, so a transposition like 'netwrok-wired' still finds 'network-wired'.
+   * Substring matching is no good here: Font Awesome ships single-letter icons (fa-a,
+   * fa-e, …), and every one of those is "contained in" whatever you mistyped.
+   */
+  const distance = (a: string, b: string) => {
+    const row = Array.from({ length: b.length + 1 }, (_unused, i) => i);
+    for (let i = 1; i <= a.length; i++) {
+      let corner = row[0];
+      row[0] = i;
+      for (let j = 1; j <= b.length; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        const next = Math.min(row[j] + 1, row[j - 1] + 1, corner + cost);
+        corner = row[j];
+        row[j] = next;
+      }
+    }
+    return row[b.length];
+  };
+
+  const limit = Math.max(2, Math.floor(name.length / 4));
+  const near = every
+    .map((key) => ({ key, gap: distance(name, key) }))
+    .filter((entry) => entry.gap <= limit)
+    .sort((a, b) => a.gap - b.gap || a.key.localeCompare(b.key))
+    .slice(0, 6)
+    .map((entry) => entry.key);
+
+  throw new Error(
+    `Unknown icon "${name}". Font Awesome's free sets have no fa-${name}.` +
+      (near.length ? ` Did you mean: ${near.join(', ')}?` : '') +
+      ` Search the full set at https://fontawesome.com/search?o=r&m=free`
+  );
+}
+
+const [width, height, , , path] = found.icon;
 const d = Array.isArray(path) ? path.join(' ') : path;
 ---
 

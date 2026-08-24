@@ -3,7 +3,7 @@ order: 2
 title: DESTRUA
 img: ./destrua.webp
 video: https://www.youtube.com/embed/4ES0w5O4Tuw?si=B25mBBvQr8LsSOKn
-tags: [game designer, game developer, rpg maker, personal]
+tags: [private, game designer, game developer, rpg maker, personal]
 startDate: 2015
 team: "Solo"
 roles: "Solo developer"

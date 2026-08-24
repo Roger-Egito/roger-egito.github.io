@@ -48,9 +48,13 @@ export interface Tag {
    */
   label?: string;
   /**
-   * Either a Font Awesome name already registered in Icon.astro ('unity'), or a file
+   * Either any Font Awesome free name ('unity', 'network-wired', 'dice'), or a file
    * sitting in src/assets/tags/ ('ludomancer.svg'). Anything containing a dot is
-   * treated as a filename. A tag with no icon still shows in the tag row as text.
+   * treated as a filename, which is why Font Awesome names never have one.
+   *
+   * Font Awesome names need no setting up — search https://fontawesome.com/search?m=free
+   * and use the name as printed. A name that doesn't exist fails the build and suggests
+   * the closest matches. A tag with no icon at all still shows in the chip row as text.
    */
   icon?: string;
 }
@@ -58,13 +62,21 @@ export interface Tag {
 /* ---------------------------------------------------------------- categories --- */
 
 export const categories = {
-  role: { label: 'Role', plural: 'Roles', icons: 'none', chips: true },
-  genre: { label: 'Genre', plural: 'Genres', icons: 'none', chips: false },
-  // Set chips: false here and technologies become icons beside the date only, instead
-  // of appearing a second time as chips underneath.
-  technology: { label: 'Built with', plural: 'Built with', icons: 'right', chips: false },
-  client: { label: 'Client', plural: 'Clients', icons: 'left', chips: false },
-  generic: { label: 'Tag', plural: 'Tags', icons: 'none', chips: false },
+  // Where you can actually get the thing, or that you can't. Shares the eyebrow's icon
+  // row with technology and leads it, because "is this out?" comes before "what's it
+  // built in?".
+  platform: { label: 'Platform', plural: 'Platforms', icons: 'right', chips: true },
+  // Roles have their own line on a card, and the client sits in the eyebrow beside
+  // the year — so neither repeats itself down in the chip row.
+  role: { label: 'Role', plural: 'Roles', icons: 'none', chips: false },
+  genre: { label: 'Genre', plural: 'Genres', icons: 'none', chips: true },
+  // Deliberately in both places: an icon by the year for a quick read of the stack,
+  // and a chip below for anyone actually reading the card.
+  technology: { label: 'Built with', plural: 'Built with', icons: 'right', chips: true },
+  // icons: 'none' because the client is spelled out in the eyebrow now — a logo beside
+  // its own name would just be the same fact twice.
+  client: { label: 'Client', plural: 'Clients', icons: 'none', chips: false },
+  generic: { label: 'Tag', plural: 'Tags', icons: 'none', chips: true },
 } as const satisfies Record<string, Category>;
 
 export type CategoryId = keyof typeof categories;
@@ -75,6 +87,7 @@ export type CategoryId = keyof typeof categories;
  * Reorder here and every surface follows.
  */
 export const categoryOrder: CategoryId[] = [
+  'platform',
   'role',
   'genre',
   'technology',
@@ -105,12 +118,18 @@ export const tags = {
   multiplayer: { category: 'genre' },
   narrative: { category: 'genre' },
 
+  // platforms — where it's published, or that it isn't
+  steam: { category: 'platform', icon: 'steam' },
+  itch: { category: 'platform', label: 'itch.io', icon: 'itch-io' },
+  'google play': { category: 'platform', icon: 'google-play' },
+  private: { category: 'platform', icon: 'lock' },
+
   // technologies
   unity: { category: 'technology', icon: 'unity' },
   python: { category: 'technology', icon: 'python' },
   pygame: { category: 'technology' },
-  'rpg maker': { category: 'technology', label: 'RPG Maker VX Ace' },
-  netcode: { category: 'technology', label: 'Netcode for GameObjects' },
+  'rpg maker': { category: 'technology', label: 'RPG Maker VX Ace', icon: 'dice' },
+  netcode: { category: 'technology', label: 'Netcode for GameObjects', icon: 'network-wired' },
   relay: { category: 'technology', label: 'Unity Relay' },
 
   // clients — drop a logo in src/assets/tags/ and name it here to get an icon

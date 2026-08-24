@@ -2,8 +2,9 @@
 import { Image } from 'astro:assets';
 import { getCollection } from 'astro:content';
 import StarRule from './StarRule.astro';
+import Icon from './Icon.astro';
 import TagIcon from './TagIcon.astro';
-import { chipTags, iconsOn, yearRange } from '../config/tags';
+import { chipTags, iconsOn, tagsIn, yearRange } from '../config/tags';
 
 // Highest order first, which matches the order the grid used to show.
 const games = (await getCollection('games')).sort((a, b) => b.data.order - a.data.order);
@@ -30,11 +31,13 @@ const blurbFor = (data: (typeof games)[number]['data']) => {
   const first = (data.description ?? '').split(/<br\s*\/?>\s*<br\s*\/?>/i)[0];
   return first.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 };
+
+const plain = (value: string) => value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 ---
 
 <script>
   import '../scripts/hover-preview';
-  // The tag icons beside each date carry data-tip, same as the social buttons.
+  // The technology icons beside the year carry data-tip, same as the social buttons.
   import '../scripts/tips';
 </script>
 
@@ -51,10 +54,11 @@ const blurbFor = (data: (typeof games)[number]['data']) => {
         games.map((game) => {
           const d = game.data;
           const dates = yearRange(d.startDate, d.endDate);
-          const left = iconsOn(d.tags, 'left');
-          const right = iconsOn(d.tags, 'right');
-          const blurb = blurbFor(d);
+          const client = tagsIn(d.tags, 'client')[0];
+          const tech = iconsOn(d.tags, 'right');
+          const roles = tagsIn(d.tags, 'role');
           const tags = chipTags(d.tags);
+          const blurb = blurbFor(d);
 
           return (
             <li>
@@ -66,12 +70,11 @@ const blurbFor = (data: (typeof games)[number]['data']) => {
                   class="card-link"
                   data-game={game.id}
                   aria-haspopup="dialog"
-                  aria-label={d.title.replace(/<[^>]*>/g, ' ').trim()}
                 >
                   <div class="shot">
                     <Image
                       src={d.img}
-                      alt={d.alt ?? `${d.title.replace(/<[^>]*>/g, ' ')} key art`}
+                      alt={d.alt ?? `${plain(d.title)} key art`}
                       widths={[400, 800]}
                       sizes="(min-width: 60rem) 32vw, (min-width: 40rem) 49vw, 100vw"
                       loading="lazy"
@@ -90,31 +93,63 @@ const blurbFor = (data: (typeof games)[number]['data']) => {
                     )}
                   </div>
 
-                  {/* Held apart from the artwork so the two can behave differently on
-                      hover: the picture dims and grows, this stays fully lit and only
-                      steps down out of its way. */}
-                  <div class="body">
-                  {/* Three columns so the date stays centred however many icons flank
-                      it — clients to its left, technologies to its right. The whole row
-                      is skipped when a game has none of the three. */}
-                  {(dates || left.length > 0 || right.length > 0) && (
-                    <div class="meta">
-                      <span class="icons start">
-                        {left.map((tag) => (
-                          <TagIcon tag={tag} />
-                        ))}
-                      </span>
-                      <span class="dates">{dates}</span>
-                      <span class="icons end">
-                        {right.map((tag) => (
-                          <TagIcon tag={tag} />
-                        ))}
-                      </span>
-                    </div>
-                  )}
+                  <div class="info">
+                    {/* Year and client read as one line of provenance; the stack sits
+                        opposite as icons, so the eye takes it in without reading. */}
+                    {(dates || client || tech.length > 0) && (
+                      <p class="eyebrow">
+                        {dates && <span class="year">{dates}</span>}
+                        {client && <span class="client">{client.label}</span>}
+                        {tech.length > 0 && (
+                          <span class="tech">
+                            {tech.map((tag) => (
+                              <TagIcon tag={tag} />
+                            ))}
+                          </span>
+                        )}
+                      </p>
+                    )}
 
-                  {d.team && <p class="team">{d.team}</p>}
-                  {blurb && <p class="blurb">{blurb}</p>}
+                    <h3 class="title" set:html={d.title} />
+
+                    {blurb && <p class="blurb">{blurb}</p>}
+
+                    {roles.length > 0 && (
+                      <p class="roles">
+                        <Icon name="pen-ruler" />
+                        <span>{roles.map((role) => role.label).join(' · ')}</span>
+                      </p>
+                    )}
+
+                    {d.team && (
+                      <p class="team">
+                        <Icon name="user" />
+                        <span>{d.team}</span>
+                      </p>
+                    )}
+
+                    {/* A game with an itch embed can be played without leaving the
+                        page, which is worth saying out loud — it's the difference
+                        between a portfolio you read and one you use. */}
+                    {d.game && (
+                      <p class="playable">
+                        <Icon name="circle-play" />
+                        <span>Playable right here</span>
+                      </p>
+                    )}
+
+                    {/* Only a couple of games have numbers worth showing; the strip and
+                        its rules disappear entirely for the rest. */}
+                    {d.metrics && d.metrics.length > 0 && (
+                      <ul class="metrics">
+                        {d.metrics.map((metric) => (
+                          <li>
+                            <strong>{metric.value}</strong>
+                            <span>{metric.label}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 </a>
 
@@ -148,6 +183,7 @@ const blurbFor = (data: (typeof games)[number]['data']) => {
   }
 
   .grid > li {
+    display: flex;
     margin: 0 0 15px;
   }
 
@@ -178,54 +214,26 @@ const blurbFor = (data: (typeof games)[number]['data']) => {
     }
   }
 
+  /* The artwork sits flush in the top of a panel a shade lighter than the page, with
+     the border running round the whole thing so picture and text read as one object. */
   .card {
-    /* How far the text steps down. scale(1.1) pushes the artwork's bottom edge down by
-       half its 10% growth, which on 16:9 art in a card this wide is 10.5px at 375px and
-       11.25px at 400px — under a pixel apart, so one value covers the range. Matching it
-       keeps the gap under the picture constant instead of letting the two close up. */
-    --shift: 11px;
     display: flex;
     flex-direction: column;
-    position: relative;
+    width: 100%;
     max-width: 400px;
-    height: 100%;
     margin: 0 auto;
+    padding-bottom: 24px;
+    background: var(--color-raised);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    overflow: hidden;
+    transition: border-color 0.25s ease, transform 0.25s ease;
   }
 
-  /* Raised over its neighbours so the grown artwork isn't clipped by the next card. */
   .card:has(.card-link:hover),
   .card:has(.card-link:focus-visible) {
-    z-index: 1;
-  }
-
-  /* Only the picture dims and grows. The words under it stay fully lit — they're what
-     tells you what the thing is, and a half-faded caption is just harder to read.
-     Keyed off the link's hover rather than the article's, so pointing at a tag doesn't
-     set the whole thing going — those are about to become filters, not a way in. */
-  .shot {
-    opacity: 0.5;
-    transition: transform 0.6s ease, opacity 1s ease;
-  }
-
-  .card:has(.card-link:hover) .shot,
-  .card:has(.card-link:focus-visible) .shot {
-    transform: scale(1.1);
-    opacity: 1;
-  }
-
-  /* transform rather than margin: the text needs to get out of the picture's way, not
-     re-lay-out the row it sits in. A margin here would grow the card, and stretch every
-     other card in the row along with it. */
-  .body,
-  .tags {
-    transition: transform 0.6s ease;
-  }
-
-  .card:has(.card-link:hover) .body,
-  .card:has(.card-link:focus-visible) .body,
-  .card:has(.card-link:hover) .tags,
-  .card:has(.card-link:focus-visible) .tags {
-    transform: translateY(var(--shift));
+    border-color: var(--color-txt);
+    transform: translateY(-3px);
   }
 
   .card-link {
@@ -237,23 +245,40 @@ const blurbFor = (data: (typeof games)[number]['data']) => {
     cursor: var(--cursor-pointer);
   }
 
-  /* The clip is absolutely positioned, so it needs a box the size of the artwork to
-     sit in — without this it would stretch over the text below as well. */
   .shot {
     position: relative;
+    aspect-ratio: 16 / 9;
+    background: #101010;
+    overflow: hidden;
   }
 
-  /* Nested opacity multiplies, so the still inside a 0.5 .shot lands at 50% exactly as
-     it did when the whole card carried the fade. */
+  @supports not (aspect-ratio: 16 / 9) {
+    .shot {
+      height: 0;
+      padding-bottom: 56.25%;
+    }
+  }
 
+  /* Held slightly back until you engage with it, then it comes to full and pushes in a
+     little. It grows inside its own frame rather than over the card, so nothing below
+     has to move out of its way. */
   .card :global(img) {
-    display: block;
+    position: absolute;
+    inset: 0;
     width: 100%;
-    height: auto;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.82;
+    transition: transform 0.5s ease, opacity 0.3s ease;
   }
 
-  /* The clip sits exactly on top of the still and the two cross-fade. The still stays
-     in the flow so the card keeps its height whether or not there's a preview. */
+  .card:has(.card-link:hover) :global(img),
+  .card:has(.card-link:focus-visible) :global(img) {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+
+  /* The clip sits exactly on top of the still and the two cross-fade. */
   .preview {
     position: absolute;
     inset: 0;
@@ -264,16 +289,9 @@ const blurbFor = (data: (typeof games)[number]['data']) => {
     transition: opacity var(--transition);
   }
 
-  /* The transition belongs on the base rule, not inside the previewing state,
-     otherwise the image fades out on the way in and snaps back on the way out. */
-  .card :global(img) {
-    transition: opacity var(--transition);
-  }
-
-  /* Deliberately the same :hover / :focus-visible condition that scales the card up,
-     so the clip and the zoom are always in the same state. On a touch screen the
-     browser keeps :hover applied after you lift your finger, which means the clip
-     stays up too, and both drop together when you touch somewhere else.
+  /* Deliberately the same condition that lifts the card, so the clip and the lift are
+     always in the same state. On a touch screen the browser keeps :hover applied after
+     you lift your finger, so both drop together when you touch somewhere else.
      .has-preview keeps cards with no clip from fading their still into nothing. */
   .card.has-preview:has(.card-link:hover) .preview,
   .card.has-preview:has(.card-link:focus-visible) .preview {
@@ -285,79 +303,148 @@ const blurbFor = (data: (typeof games)[number]['data']) => {
     opacity: 0;
   }
 
-  /* --- the information under the artwork --- */
+  /* --- the panel under the artwork ------------------------------------------ */
 
-  .meta {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-    gap: 8px;
-    margin-top: 10px;
+  .info {
+    padding: 20px 22px 0;
   }
 
-  .dates {
-    font-family: var(--font-heading), sans-serif;
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    white-space: nowrap;
-  }
-
-  .icons {
+  /* Year, client and stack on one line. The stack is pushed to the far end so the two
+     halves answer different questions: when and for whom, against with what. */
+  .eyebrow {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
-    min-width: 0;
-  }
-
-  .icons.start {
-    justify-content: flex-start;
-  }
-
-  .icons.end {
-    justify-content: flex-end;
-  }
-
-  .team {
-    margin: 2px 0 0;
+    gap: 10px;
+    margin: 0 0 8px;
+    color: var(--color-muted);
     font-size: 12px;
-    letter-spacing: 1px;
-    text-align: center;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
   }
 
+  /* Full-strength ink against the muted client beside it — that contrast is what marks
+     the year as the thing to read first. */
+  .year {
+    color: var(--color-txt);
+    font-weight: 700;
+  }
+
+  .tech {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+
+  .title {
+    margin: 0 0 6px;
+    font-size: 1.2em;
+    /* The site's headings are uppercase, but a game's name is a name, so it keeps its
+       own capitalisation. */
+    text-transform: none;
+  }
+
   .blurb {
-    margin: 10px 0 0;
+    margin: 0 0 12px;
+    color: var(--color-txt);
     font-size: 15px;
     line-height: 1.45;
-    text-align: left;
+  }
+
+  /* Roles and team are the same kind of line, so they share a shape and their icons
+     share a fixed-width slot — that's what keeps the two glyphs on one left edge even
+     though a pen and a person are different widths. */
+  .roles,
+  .team {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    margin: 0 0 6px;
+    color: var(--color-muted);
+    font-size: 13.5px;
+  }
+
+  .team {
+    margin-bottom: 14px;
+  }
+
+  .roles :global(svg),
+  .team :global(svg) {
+    flex-shrink: 0;
+    width: 14px;
+    height: 11px;
+    fill: currentColor;
+  }
+
+  /* Its own bordered strip rather than another muted line: this is a thing you can do
+     right now, not another fact about the project. */
+  .playable {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 14px;
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    color: var(--color-txt);
+    font-size: 12.5px;
+    letter-spacing: 0.02em;
+  }
+
+  .playable :global(svg) {
+    flex-shrink: 0;
+    width: auto;
+    height: 14px;
+    fill: currentColor;
+  }
+
+  /* Ruled off top and bottom so the numbers read as a fact sheet rather than more
+     prose. Only a couple of games carry any. */
+  .metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin: 0 0 14px;
+    padding: 14px 0;
+    list-style: none;
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .metrics li {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .metrics strong {
+    color: var(--color-txt);
+    font-size: 15px;
+  }
+
+  .metrics span {
+    color: var(--color-muted);
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
 
   .tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
-    margin: 10px 0 0;
-    padding: 0;
+    gap: 8px;
+    margin: 0;
+    padding: 14px 22px 0;
     list-style: none;
   }
 
-  /* Every word on the card sits at full opacity — the size and the border carry the
-     hierarchy instead. Dimming the text was what made the old card unreadable until
-     you pointed at it. */
   .tags li {
-    padding: 3px 8px;
-    border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
-    border-radius: 3px;
-    font-size: 11px;
-    letter-spacing: 0.5px;
+    padding: 4px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 100px;
+    color: var(--color-muted);
+    font-size: 11.5px;
+    letter-spacing: 0.04em;
     line-height: 1.4;
-    text-transform: uppercase;
-  }
-
-  /* Client tags read as the strongest of the four, since who a thing was for is the
-     first question anyone asks about it. Carried by the border, not the ink. */
-  .tags li[data-category='client'] {
-    border-color: color-mix(in srgb, currentColor 70%, transparent);
   }
 </style>

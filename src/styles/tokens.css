@@ -12,6 +12,12 @@
   --color-surface: #181b1e; /* footer bar, buttons */
   --color-accent: #f1f3f4; /* inverted button fill */
   --color-rule: #dddddd;
+  /* Card surfaces. --color-raised is a touch lighter than the page so a card body
+     reads as a panel sitting on it; --color-border is the same idea at the edge, and
+     --color-muted is the secondary ink for eyebrows, labels and captions. */
+  --color-raised: #1d1d1d;
+  --color-border: #333333;
+  --color-muted: #969696;
 
   /* type. 15px base keeps the original proportions; everything else scales off it. */
   --text-base: 0.9375rem;

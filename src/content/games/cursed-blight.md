@@ -5,7 +5,7 @@ img: ./cursed-blight.webp
 video: https://www.youtube.com/embed/yELJnqW02LU?si=cLextrdcNpURQhbh
 game: <iframe frameborder="0" src="https://itch.io/embed-upload/16560630?color=000000" allowfullscreen="" width="980" height="580"><a href="https://ludomancerstudio.itch.io/cursed-blight">Play Cursed Blight on itch.io</a></iframe>
 gameDescription: "Click inside the window to start playing. The game runs right here in the browser, so give it a moment to load."
-tags: [game designer, game developer, dungeon crawler, unity, ludomancer]
+tags: [itch, game designer, game developer, dungeon crawler, unity, ludomancer]
 startDate: 2026
 team: "4 people"
 roles: "Game designer, game developer, and art director"

@@ -4,7 +4,7 @@ title: Memories of War
 img: ./memories-of-war.webp
 game: <iframe frameborder="0" src="https://itch.io/embed-upload/16549834?color=000000" allowfullscreen="" width="980" height="640"><a href="https://yougogames.itch.io/memories-of-war">Play Memories of War on itch.io</a></iframe>
 gameDescription: "Click inside the window to start playing. The game runs right here in the browser, so give it a moment to load."
-tags: [game designer, game developer, tactics, strategy, unity, yougo]
+tags: [itch, game designer, game developer, tactics, strategy, unity, yougo]
 startDate: 2026
 team: "5–6 people"
 roles: "Game designer and game developer"

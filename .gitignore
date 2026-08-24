@@ -4,6 +4,10 @@
 # build output
 dist/
 .astro/
+# Jekyll's output, from the branches that still use it. Was committed here by
+# accident and has nothing to do with the Astro build.
+_site/
+Gemfile.lock
 
 # dependencies
 node_modules/

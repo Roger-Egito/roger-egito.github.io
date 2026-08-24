@@ -3,8 +3,13 @@ order: 5
 title: All Stars Merge
 img: ./all-stars-merge.webp
 video: https://www.youtube.com/embed/RQ0IyogkOHE?si=JFQXMyRD6ZPqVErC
-tags: [game developer, merge, unity, ludomancer]
+tags: [google play, game developer, merge, unity, ludomancer]
 startDate: 2025
+metrics:
+  - label: Downloads
+    value: 10K+
+  - label: Rating
+    value: "4.1 ★ (99 reviews)"
 team: "Dozens over its life"
 roles: "Game developer"
 blurb: "Merge items and help Liz rebuild her city."

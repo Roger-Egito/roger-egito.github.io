@@ -54,7 +54,11 @@ export const site = {
       icon: 'file-lines',
       label: 'Curriculum vitae',
       tip: 'CV',
-      url: 'https://drive.google.com/file/d/1hZ3cvIdgSqQ17rHSOdth92TKjoFSWDFk/view?usp=sharing',
+      // Served from this domain rather than Google Drive: a Drive link looks
+      // provisional, can hit a permission wall, and takes the reader off the site. The
+      // file lives in public/, which Astro copies through untouched, so the URL stays
+      // put when the PDF is replaced.
+      url: '/Roger_Egito_CV.pdf',
     },
   ] satisfies Link[],
 };

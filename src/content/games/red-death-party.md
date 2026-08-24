@@ -2,7 +2,7 @@
 order: 3
 title: Red Death Party
 img: ./red-death-party.webp
-tags: [localization, qa, narrative, ludomancer]
+tags: [itch, localization, qa, narrative, ludomancer, unity]
 startDate: 2025
 roles: "English Localization and QA"
 blurb: "Party turns to tragedy in a millionaire's underground mansion."

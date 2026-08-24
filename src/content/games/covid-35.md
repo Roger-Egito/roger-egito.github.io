@@ -3,7 +3,7 @@ order: 4
 title: Covid 35
 img: ./covid-35.webp
 video: https://www.youtube.com/embed/m8m1w9vx168?si=ajOqsKGKszcYuS7S
-tags: [game developer, strategy, multiplayer, unity, netcode, relay, ludomancer]
+tags: [private, game developer, strategy, multiplayer, unity, netcode, relay, ludomancer]
 startDate: 2025
 team: "5 people"
 roles: "Game developer"

@@ -3,7 +3,7 @@ order: 1
 title: The Art of Videogames
 img: ./the-art-of-videogames.webp
 video: https://www.youtube.com/embed/jmcXMFhv-Rk?si=hVjol0YHjgkTYJy3
-tags: [game designer, game developer, narrative, rpg maker, personal]
+tags: [private, game designer, game developer, narrative, rpg maker, personal]
 startDate: 2015
 team: "Solo"
 roles: "Solo developer"

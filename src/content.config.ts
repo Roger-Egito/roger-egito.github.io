@@ -117,6 +117,14 @@ const games = defineCollection({
        */
       blurb: z.string().optional(),
       /**
+       * Hard numbers worth putting in front of an employer — downloads, a rating, a
+       * review count, a jam placing. Rendered as a strip on the card, and skipped
+       * entirely for a game that has none, which is most of them.
+       */
+      metrics: z
+        .array(z.object({ label: z.string(), value: z.string() }))
+        .optional(),
+      /**
        * What you did on it, as the part before "for <title>" — so 'Sole Developer'
        * reads "Sole Developer for DESTRUA" in the hero. Every game sets this; leave it
        * off a new one and the roles in `category` stand in until you write it.

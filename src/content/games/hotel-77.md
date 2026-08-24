@@ -3,7 +3,7 @@ order: 7
 title: Hotel 77
 img: ./hotel-77.webp
 video: https://www.youtube.com/embed/s3v9tAh8GnM?si=wPh1Nl-ceR_vYxvI
-tags: [level designer, game developer, horror, narrative, unity, ludomancer]
+tags: [steam, level designer, game developer, horror, narrative, unity, ludomancer]
 startDate: 2024
 team: "Fewer than 10"
 roles: "Level designer and game developer"
