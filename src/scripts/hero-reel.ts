@@ -196,10 +196,30 @@ function run(reel: HTMLElement) {
   // Only the bare backdrop counts: the panel behind the text is a barrier, so a click
   // anywhere on it — selecting the email, say — stays where it landed.
   const hero = reel.closest<HTMLElement>('.hero');
+
+  // A drag that ends on the backdrop was someone selecting text, and shouldn't also
+  // open a game — so remember where the press started and compare.
+  //
+  // This used to ask whether anything on the page was selected, which conflates two
+  // different things: "this click finished a selection" and "a selection exists
+  // somewhere else entirely". Clicking a <video> doesn't clear a selection made
+  // elsewhere the way clicking ordinary markup does, so one leftover highlight —
+  // in the footer, the about text, anywhere — left the hero dead for good.
+  let pressedAt: { x: number; y: number } | null = null;
+
+  hero?.addEventListener('pointerdown', (event) => {
+    pressedAt = { x: event.clientX, y: event.clientY };
+  });
+
   hero?.addEventListener('click', (event) => {
     const target = event.target as Node | null;
     if (target !== hero && !reel.contains(target)) return;
-    if (!window.getSelection()?.isCollapsed) return; // they were selecting text
+
+    const from = pressedAt;
+    pressedAt = null;
+    // 4px of slack, so a shaky hand still reads as a click rather than a drag.
+    if (from && Math.hypot(event.clientX - from.x, event.clientY - from.y) > 4) return;
+
     const slug = reel.dataset.slug;
     if (slug) document.querySelector<HTMLElement>(`a[data-game="${CSS.escape(slug)}"]`)?.click();
   });

@@ -16,9 +16,7 @@ export const site = {
   url: 'https://roger-egito.github.io',
   description: 'Portfolio of game designer and developer Roger Egito.',
   author: 'Roger Egito',
-  skills: 'Technical Game Designer | Developer',
-
-  /** Shown under the job title in the hero. The offset is Brasília time, no DST. */
+  skills: 'Technical Game Designer | Unity Developer',
   location: 'RJ, Brazil',
   timezone: 'UTC-03:00',
   email: 'rogeregito@outlook.com',
@@ -53,10 +51,14 @@ export const site = {
 
   links: [
     {
-      icon: 'file',
+      icon: 'file-lines',
       label: 'Curriculum vitae',
       tip: 'CV',
-      url: 'https://drive.google.com/file/d/1hZ3cvIdgSqQ17rHSOdth92TKjoFSWDFk/view?usp=sharing',
+      // Served from this domain rather than Google Drive: a Drive link looks
+      // provisional, can hit a permission wall, and takes the reader off the site. The
+      // file lives in public/, which Astro copies through untouched, so the URL stays
+      // put when the PDF is replaced.
+      url: '/Roger_Egito_CV.pdf',
     },
   ] satisfies Link[],
 };

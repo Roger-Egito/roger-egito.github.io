@@ -2,6 +2,7 @@ import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 import { pageBackground } from './config/theme';
+import { isTag, knownTags } from './config/tags';
 
 // One markdown file per portfolio entry, with its image sitting next to it.
 // Filename becomes the URL, so hotel-77.md is /games/hotel-77/.
@@ -80,9 +81,49 @@ const games = defineCollection({
        * "give it a moment to load", that sort of thing. Can contain <br>.
        */
       gameDescription: z.string().optional(),
-      projectDate: z.union([z.string(), z.number()]).optional(),
-      client: z.string().optional(),
-      category: z.string().optional(),
+      /**
+       * Roles, genres, technologies and clients, lowercase, in any order — the site
+       * sorts and capitalises them. Every one has to be registered in
+       * src/config/tags.ts or the build stops, which is what keeps a typo from
+       * shipping as a tag that silently matches no filter.
+       */
+      tags: z
+        .array(z.string())
+        .default([])
+        .superRefine((list, ctx) => {
+          list.forEach((name, index) => {
+            if (isTag(name)) return;
+            ctx.addIssue({
+              code: 'custom',
+              path: [index],
+              message:
+                `unknown tag "${name}". Add it to src/config/tags.ts, or use one of: ` +
+                knownTags.join(', '),
+            });
+          });
+        }),
+      /**
+       * A year (2024) or a full date (2024-03-01) — only the year is ever shown. Fill
+       * either, both or neither: the card shows "2024 – 2025", a single year, or
+       * nothing at all.
+       */
+      startDate: z.union([z.string(), z.number()]).optional(),
+      endDate: z.union([z.string(), z.number()]).optional(),
+      /** Free text under the date, e.g. 'Solo' or '4+ people'. */
+      team: z.string().optional(),
+      /**
+       * One or two lines for the portfolio card. Left off, the card falls back to the
+       * first paragraph of `description`.
+       */
+      blurb: z.string().optional(),
+      /**
+       * Hard numbers worth putting in front of an employer — downloads, a rating, a
+       * review count, a jam placing. Rendered as a strip on the card, and skipped
+       * entirely for a game that has none, which is most of them.
+       */
+      metrics: z
+        .array(z.object({ label: z.string(), value: z.string() }))
+        .optional(),
       /**
        * What you did on it, as the part before "for <title>" — so 'Sole Developer'
        * reads "Sole Developer for DESTRUA" in the hero. Every game sets this; leave it

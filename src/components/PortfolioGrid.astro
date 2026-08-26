@@ -2,6 +2,9 @@
 import { Image } from 'astro:assets';
 import { getCollection } from 'astro:content';
 import StarRule from './StarRule.astro';
+import Icon from './Icon.astro';
+import TagIcon from './TagIcon.astro';
+import { chipTags, chipsHeading, iconsOn, tagsIn, yearRange } from '../config/tags';
 
 // Highest order first, which matches the order the grid used to show.
 const games = (await getCollection('games')).sort((a, b) => b.data.order - a.data.order);
@@ -17,10 +20,25 @@ const previews = import.meta.glob<string>('../content/games/*.mp4', {
 
 const previewFor = (slug: string) =>
   previews[`../content/games/${slug}.mp4`] as string | undefined;
+
+/**
+ * The card's line or two. `blurb` when it's set; otherwise the first paragraph of the
+ * full description, which is where each entry already opens with what the game is.
+ * Descriptions separate paragraphs with <br><br>.
+ */
+const blurbFor = (data: (typeof games)[number]['data']) => {
+  if (data.blurb) return data.blurb;
+  const first = (data.description ?? '').split(/<br\s*\/?>\s*<br\s*\/?>/i)[0];
+  return first.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+};
+
+const plain = (value: string) => value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 ---
 
 <script>
   import '../scripts/hover-preview';
+  // The technology icons beside the year carry data-tip, same as the social buttons.
+  import '../scripts/tips';
 </script>
 
 <section id="portfolio">
@@ -33,38 +51,127 @@ const previewFor = (slug: string) =>
         first row only had them competing with the banner and the opening clip. */}
     <ul class="grid">
       {
-        games.map((game) => (
-          <li>
-            {/* Real href so the link still works with JS off or in a new tab.
-                modal.ts catches normal clicks and opens the dialog instead. */}
-            <a
-              href={`/games/${game.id}/`}
-              class:list={['card', previewFor(game.id) && 'has-preview']}
-              data-game={game.id}
-              aria-haspopup="dialog"
-            >
-              <Image
-                src={game.data.img}
-                alt={game.data.alt ?? `${game.data.title.replace(/<[^>]*>/g, ' ')} key art`}
-                widths={[400, 800]}
-                sizes="(min-width: 60rem) 32vw, (min-width: 40rem) 49vw, 100vw"
-                loading="lazy"
-              />
-              {previewFor(game.id) && (
-                <video
-                  class="preview"
-                  data-src={previewFor(game.id)}
-                  muted
-                  loop
-                  playsinline
-                  preload="none"
-                  aria-hidden="true"
-                  tabindex="-1"
-                />
-              )}
-            </a>
-          </li>
-        ))
+        games.map((game) => {
+          const d = game.data;
+          const dates = yearRange(d.startDate, d.endDate);
+          const client = tagsIn(d.tags, 'client')[0];
+          const tech = iconsOn(d.tags, 'right');
+          const roles = tagsIn(d.tags, 'role');
+          const tags = chipTags(d.tags);
+          const blurb = blurbFor(d);
+
+          return (
+            <li>
+              <article class:list={['card', previewFor(game.id) && 'has-preview']}>
+                {/* Real href so the link still works with JS off or in a new tab.
+                    modal.ts catches normal clicks and opens the dialog instead. */}
+                <a
+                  href={`/games/${game.id}/`}
+                  class="card-link"
+                  data-game={game.id}
+                  aria-haspopup="dialog"
+                >
+                  <div class="shot">
+                    <Image
+                      src={d.img}
+                      alt={d.alt ?? `${plain(d.title)} key art`}
+                      widths={[400, 800]}
+                      sizes="(min-width: 60rem) 32vw, (min-width: 40rem) 49vw, 100vw"
+                      loading="lazy"
+                    />
+                    {previewFor(game.id) && (
+                      <video
+                        class="preview"
+                        data-src={previewFor(game.id)}
+                        muted
+                        loop
+                        playsinline
+                        preload="none"
+                        aria-hidden="true"
+                        tabindex="-1"
+                      />
+                    )}
+                  </div>
+
+                  <div class="info">
+                    {/* Year and client read as one line of provenance; the stack sits
+                        opposite as icons, so the eye takes it in without reading. */}
+                    {(dates || client || tech.length > 0) && (
+                      <p class="eyebrow">
+                        {dates && <span class="year">{dates}</span>}
+                        {client && <span class="client">{client.label}</span>}
+                        {tech.length > 0 && (
+                          <span class="tech">
+                            {tech.map((tag) => (
+                              <TagIcon tag={tag} />
+                            ))}
+                          </span>
+                        )}
+                      </p>
+                    )}
+
+                    <h3 class="title" set:html={d.title} />
+
+                    {blurb && <p class="blurb">{blurb}</p>}
+
+                    {roles.length > 0 && (
+                      <p class="roles">
+                        <Icon name="pen-ruler" />
+                        <span>{roles.map((role) => role.label).join(' · ')}</span>
+                      </p>
+                    )}
+
+                    {d.team && (
+                      <p class="team">
+                        <Icon name="user" />
+                        <span>{d.team}</span>
+                      </p>
+                    )}
+
+                    {/* A game with an itch embed can be played without leaving the
+                        page, which is worth saying out loud — it's the difference
+                        between a portfolio you read and one you use. */}
+                    {d.game && (
+                      <p class="playable">
+                        <Icon name="circle-play" />
+                        <span>Playable right here</span>
+                      </p>
+                    )}
+
+                    {/* Only a couple of games have numbers worth showing; the strip and
+                        its rules disappear entirely for the rest. */}
+                    {d.metrics && d.metrics.length > 0 && (
+                      <ul class="metrics">
+                        {d.metrics.map((metric) => (
+                          <li>
+                            <strong>{metric.value}</strong>
+                            <span>{metric.label}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </a>
+
+                {/* Outside the link on purpose: these become filter buttons later, and
+                    a button inside an anchor is invalid markup. */}
+                {tags.length > 0 && (
+                  <Fragment>
+                    <p class="tags-heading">{chipsHeading}</p>
+                    <ul class="tags">
+                      {tags.map((tag) => (
+                        <li data-tag={tag.id} data-category={tag.category}>
+                          {tag.icon && <TagIcon tag={tag} inline />}
+                          {tag.label}
+                        </li>
+                      ))}
+                    </ul>
+                  </Fragment>
+                )}
+              </article>
+            </li>
+          );
+        })
       }
     </ul>
   </div>
@@ -80,6 +187,7 @@ const previewFor = (slug: string) =>
   }
 
   .grid > li {
+    display: flex;
     margin: 0 0 15px;
   }
 
@@ -110,23 +218,71 @@ const previewFor = (slug: string) =>
     }
   }
 
+  /* The artwork sits flush in the top of a panel a shade lighter than the page, with
+     the border running round the whole thing so picture and text read as one object. */
   .card {
-    display: block;
-    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
     max-width: 400px;
     margin: 0 auto;
-    opacity: 0.5;
-    transition: transform 0.6s ease, opacity 1s ease;
+    padding-bottom: 24px;
+    background: var(--color-raised);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    overflow: hidden;
+    transition: border-color 0.25s ease, transform 0.25s ease;
   }
 
-  .card :global(img) {
+  .card:has(.card-link:hover),
+  .card:has(.card-link:focus-visible) {
+    border-color: var(--color-txt);
+    transform: translateY(-3px);
+  }
+
+  .card-link {
     display: block;
-    width: 100%;
-    height: auto;
+    color: inherit;
+    text-decoration: none;
+    /* One of only two places the eye appears: you're looking at a game, not
+       navigating. The other is the hero footage. */
+    cursor: var(--cursor-pointer);
   }
 
-  /* The clip sits exactly on top of the still and the two cross-fade. The still stays
-     in the flow so the card keeps its height whether or not there's a preview. */
+  .shot {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background: #101010;
+    overflow: hidden;
+  }
+
+  @supports not (aspect-ratio: 16 / 9) {
+    .shot {
+      height: 0;
+      padding-bottom: 56.25%;
+    }
+  }
+
+  /* Held slightly back until you engage with it, then it comes to full and pushes in a
+     little. It grows inside its own frame rather than over the card, so nothing below
+     has to move out of its way. */
+  .card :global(img) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.82;
+    transition: transform 0.5s ease, opacity 0.3s ease;
+  }
+
+  .card:has(.card-link:hover) :global(img),
+  .card:has(.card-link:focus-visible) :global(img) {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+
+  /* The clip sits exactly on top of the still and the two cross-fade. */
   .preview {
     position: absolute;
     inset: 0;
@@ -137,31 +293,178 @@ const previewFor = (slug: string) =>
     transition: opacity var(--transition);
   }
 
-  /* The transition belongs on the base rule, not inside the previewing state,
-     otherwise the image fades out on the way in and snaps back on the way out. */
-  .card :global(img) {
-    transition: opacity var(--transition);
-  }
-
-  /* Deliberately the same :hover / :focus-visible condition that scales the card up,
-     so the clip and the zoom are always in the same state. On a touch screen the
-     browser keeps :hover applied after you lift your finger, which means the clip
-     stays up too, and both drop together when you touch somewhere else.
+  /* Deliberately the same condition that lifts the card, so the clip and the lift are
+     always in the same state. On a touch screen the browser keeps :hover applied after
+     you lift your finger, so both drop together when you touch somewhere else.
      .has-preview keeps cards with no clip from fading their still into nothing. */
-  .card.has-preview:hover .preview,
-  .card.has-preview:focus-visible .preview {
+  .card.has-preview:has(.card-link:hover) .preview,
+  .card.has-preview:has(.card-link:focus-visible) .preview {
     opacity: 1;
   }
 
-  .card.has-preview:hover :global(img),
-  .card.has-preview:focus-visible :global(img) {
+  .card.has-preview:has(.card-link:hover) :global(img),
+  .card.has-preview:has(.card-link:focus-visible) :global(img) {
     opacity: 0;
   }
 
-  .card:hover,
-  .card:focus-visible {
-    transform: scale(1.1);
-    opacity: 1;
-    z-index: 1;
+  /* --- the panel under the artwork ------------------------------------------ */
+
+  .info {
+    padding: 20px 22px 0;
+  }
+
+  /* Year, client and stack on one line. The stack is pushed to the far end so the two
+     halves answer different questions: when and for whom, against with what. */
+  .eyebrow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 8px;
+    color: var(--color-muted);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* Full-strength ink against the muted client beside it — that contrast is what marks
+     the year as the thing to read first. */
+  .year {
+    color: var(--color-txt);
+    font-weight: 700;
+  }
+
+  .tech {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+
+  .title {
+    margin: 0 0 6px;
+    font-size: 1.2em;
+    /* The site's headings are uppercase, but a game's name is a name, so it keeps its
+       own capitalisation. */
+    text-transform: none;
+  }
+
+  .blurb {
+    margin: 0 0 12px;
+    color: var(--color-txt);
+    font-size: 15px;
+    line-height: 1.45;
+  }
+
+  /* Roles and team are the same kind of line, so they share a shape and their icons
+     share a fixed-width slot — that's what keeps the two glyphs on one left edge even
+     though a pen and a person are different widths. */
+  .roles,
+  .team {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    margin: 0 0 6px;
+    color: var(--color-muted);
+    font-size: 13.5px;
+  }
+
+  .team {
+    margin-bottom: 14px;
+  }
+
+  .roles :global(svg),
+  .team :global(svg) {
+    flex-shrink: 0;
+    width: 14px;
+    height: 11px;
+    fill: currentColor;
+  }
+
+  /* Same line as roles and team, sharing their icon slot so all three glyphs sit on
+     one left edge. Full-strength ink rather than muted, because this one is a thing you
+     can do right now instead of another fact about the project. The vertical room the
+     bordered version had is kept as padding. */
+  .playable {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    margin: 0 0 6px;
+    padding: 8px 0;
+    color: var(--color-txt);
+    font-size: 13.5px;
+  }
+
+  .playable :global(svg) {
+    flex-shrink: 0;
+    width: 14px;
+    height: 11px;
+    fill: currentColor;
+  }
+
+  /* Ruled off top and bottom so the numbers read as a fact sheet rather than more
+     prose. Only a couple of games carry any. */
+  .metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin: 0 0 14px;
+    padding: 14px 0;
+    list-style: none;
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .metrics li {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .metrics strong {
+    color: var(--color-txt);
+    font-size: 15px;
+  }
+
+  .metrics span {
+    color: var(--color-muted);
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 14px 22px 0;
+    list-style: none;
+  }
+
+  .tags-heading {
+    margin: 0;
+    padding: 14px 22px 0;
+    color: var(--color-muted);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  /* The heading already provides the gap above the row. */
+  .tags-heading + .tags {
+    padding-top: 6px;
+  }
+
+  .tags li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 100px;
+    color: var(--color-muted);
+    font-size: 11.5px;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
   }
 </style>

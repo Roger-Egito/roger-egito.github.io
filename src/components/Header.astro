@@ -1,6 +1,7 @@
 ---
 import Icon from './Icon.astro';
 import SocialLinks from './SocialLinks.astro';
+import { tagsIn } from '../config/tags';
 import StarRule from './StarRule.astro';
 import { getCollection } from 'astro:content';
 import { site, plainText } from '../config/site';
@@ -29,11 +30,12 @@ const clips = Object.entries(previews)
   .filter(({ slug }) => !site.heroExcludes.includes(slug))
   .map(({ slug, src }) => {
     const game = games.find((entry) => entry.id === slug);
-    // Always "<roles> for <game>". Every game states its own roles; a new one that
-    // hasn't yet falls back to reading `category` as a list so the line still forms.
+    // Always "<roles> for <game>". Every game states its own roles as a sentence; a
+    // new one that hasn't yet falls back to listing its role tags, which are stored
+    // lowercase precisely so they read correctly here.
     const roles =
       game?.data.roles ??
-      listing.format((game?.data.category ?? '').split('|').map((role) => role.trim()).filter(Boolean));
+      listing.format(tagsIn(game?.data.tags ?? [], 'role').map((tag) => tag.id));
     return { src, slug, credit: `${roles} for ${plainText(game?.data.title ?? slug)}` };
   });
 ---
@@ -166,13 +168,13 @@ const clips = Object.entries(previews)
      text block have to let clicks through to it. Everything with a job of its own —
      the links, the d-pad — takes its clicks back. */
   .hero {
-    cursor: pointer;
+    cursor: var(--cursor-pointer);
   }
 
   /* Text stays selectable; only the bare backdrop opens a game (see hero-reel.ts,
      which acts on clicks that land on the hero or the reel and nothing else). */
   .hero .container {
-    cursor: auto;
+    cursor: var(--cursor-default);
   }
 
   .hero::after {
@@ -203,34 +205,36 @@ background: linear-gradient(
     /* Not covered by `font: inherit` — the UA sheet sets text-transform: none on form
        controls, so without this the name loses the uppercase it gets from h1. */
     text-transform: inherit;
-    cursor: pointer;
   }
 
   /* Same lift the portfolio cards use, so everything you can press on the page
      answers the pointer the same way. */
   .name-button,
-  .key,
-  :global(.header-social .btn-social) {
-    transition: transform 0.6s ease, /*color var(--transition),
-      background-color var(--transition),*/ opacity var(--transition);
+  .key {
+    transition: transform 0.6s ease, background-color var(--transition),
+      opacity var(--transition);
   }
 
   /* Both pads sit well back until you go for one, so the footage behind reads as the
-     subject and the controls as trim. */
+     subject and the controls as trim. This resting fade is the hero's alone — the
+     footer's copies of these icons sit on a flat bar with nothing to recede from. */
   .key,
   :global(.header-social .btn-social) {
     opacity: 0.3;
   }
 
-  /* Filled with the page's own dark rather than the light ink colour, so a hovered
-     control reads as a hole punched in the plate instead of a white chip on top of
-     the video. The border and icon stay light against it. */
   .key:hover,
   .key:focus-visible,
   :global(.header-social .btn-social:hover),
   :global(.header-social .btn-social:focus-visible) {
-    transform: scale(1.25);
     opacity: 1;
+  }
+
+  /* The lift and the dark fill are on .btn-social in global.css now, so the footer and
+     the game pages get them too. .key isn't a .btn-social, so it keeps its own copy. */
+  .key:hover,
+  .key:focus-visible {
+    transform: scale(1.25);
     background-color: var(--color-bg);
   }
 
@@ -244,13 +248,11 @@ background: linear-gradient(
      the shorter duration only applies on the way down, so it snaps under the finger
      and eases back up rather than mushing both ways. */
   .key:active,
-  :global(.header-social .btn-social:active),
   .name-button:active {
     transition-duration: 0.08s;
   }
 
-  .key:active,
-  :global(.header-social .btn-social:active) {
+  .key:active {
     transform: scale(1.08);
   }
 
@@ -511,7 +513,6 @@ background: linear-gradient(
       border-radius: 8px;
       background: none;
       color: var(--color-txt);
-      cursor: pointer;
     }
 
     .key:hover,

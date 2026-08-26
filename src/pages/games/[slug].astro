@@ -9,6 +9,7 @@ import GameDetails from '../../components/GameDetails.astro';
 import Footer from '../../components/Footer.astro';
 import StructuredData from '../../components/StructuredData.astro';
 import { site, pageTitle, plainText } from '../../config/site';
+import { sortTags, tagsIn, yearRange } from '../../config/tags';
 
 export async function getStaticPaths() {
   const games = await getCollection('games');
@@ -27,6 +28,11 @@ const description = plainText(game.data.description ?? site.description).slice(0
 // Give link previews the game's own art rather than nothing.
 const preview = await getImage({ src: game.data.img, width: 1200, format: 'jpg' });
 
+// Search engines get the same facts the page shows, straight from the tags.
+const dates = yearRange(game.data.startDate, game.data.endDate);
+const [publisher] = tagsIn(game.data.tags, 'client');
+const keywords = sortTags(game.data.tags).map((tag) => tag.label);
+
 const work = {
   '@type': 'CreativeWork',
   name: title,
@@ -34,8 +40,9 @@ const work = {
   url: new URL(`/games/${game.id}/`, site.url).href,
   image: new URL(preview.src, site.url).href,
   author: { '@id': `${site.url}/#person` },
-  ...(game.data.projectDate && { dateCreated: String(game.data.projectDate) }),
-  ...(game.data.client && { publisher: { '@type': 'Organization', name: game.data.client } }),
+  ...(dates && { dateCreated: dates }),
+  ...(publisher && { publisher: { '@type': 'Organization', name: publisher.label } }),
+  ...(keywords.length > 0 && { keywords: keywords.join(', ') }),
 };
 ---
 

@@ -23,6 +23,7 @@ npm run check      # type-check on its own
 | Colors, type, spacing | `src/styles/tokens.css` |
 | Name, slogan, social links, CV link | `src/config/site.ts` |
 | A game's details | `src/content/games/<slug>.md` |
+| Which tags exist, and their icons | `src/config/tags.ts` |
 | About text | `src/components/About.astro` |
 | Shared CSS (reset, buttons, layout) | `src/styles/global.css` |
 
@@ -43,6 +44,117 @@ if the image path is wrong, so a typo can't reach the live site.
 
 Save source images as WebP around 1920px wide. Astro generates the smaller responsive
 versions itself, so there's no need to resize anything by hand.
+
+### Tags
+
+A game lists its tags as plain lowercase strings, in any order:
+
+```yaml
+tags: [game designer, unity, horror, ludomancer]
+startDate: 2024
+endDate: 2025          # leave either off; the label shows whichever is filled
+team: "4 people"       # free text, or leave it off
+blurb: "One line for the card."   # optional; falls back to the first paragraph of description
+
+# Hard numbers worth putting in front of an employer. Omit for the games that
+# haven't got any, which is most of them — the strip and its rules vanish with it.
+metrics:
+  - label: Downloads
+    value: 10K+
+  - label: Rating
+    value: "4.1 ★ (99 reviews)"
+```
+
+A game with a `game:` embed also gets a "Playable right here on the portfolio" strip on
+its card automatically — there is no field to set for it.
+
+Every tag has to be registered in `src/config/tags.ts` or **the build fails**, naming
+the file, the tag and every valid alternative:
+
+```
+[InvalidContentEntryDataError] games → destrua data does not match collection schema.
+  tags.0: unknown tag "game desiner". Add it to src/config/tags.ts, or use one of: …
+```
+
+That's deliberate. A typo should stop at your terminal rather than ship as a tag that
+silently matches no filter.
+
+Tags are written lowercase because the same words appear un-capitalised in the hero
+credit ("game designer and game developer for Cursed Blight"). Everything on display is
+Title Cased automatically — set `label` on a tag for the names that gets wrong, like
+`qa` → "QA" or `yougo` → "YouGo Games".
+
+#### The registry
+
+`src/config/tags.ts` holds three things:
+
+- **`categories`** — what kinds of tag exist. Each one says how it's labelled in a
+  game's detail table, and where it appears on a card, via two independent switches:
+  - `icons: 'left' | 'right' | 'none'` — whether its tags show as icons beside the
+    date, and on which side. That's why technologies sit to the right and clients to
+    the left: it's config, not markup.
+  - `chips: true | false` — whether its tags show in the row under the card's text.
+
+  A category can do both, either or neither. Technologies ship as `icons: 'right'` plus
+  `chips: true`, so they appear twice on a card — as an icon by the date and again as a
+  chip below. Set `chips: false` there and they become icons only.
+
+  Turning `chips` off doesn't hide a tag anywhere else. It still appears in the game's
+  detail table and still counts for filtering; it just leaves the card's chip row.
+- **`categoryOrder`** — the order categories appear in, left to right on a card and top
+  to bottom in the detail table. Tags sort alphabetically *within* a category.
+- **`tags`** — the tags themselves, each naming its category and optionally a `label`
+  override and an `icon`.
+
+Adding a category is a matter of adding it to `categories`, then dropping its id into
+`categoryOrder` where you want it to appear.
+
+The categories as they stand:
+
+| Category | Icons | Chips | What it's for |
+| --- | --- | --- | --- |
+| `platform` | right | yes | Where it's published — `steam`, `itch`, `google play` — or `private` for one that isn't |
+| `role` | — | no | What you did. Has its own line on the card, so it stays out of the chip row |
+| `genre` | — | yes | Horror, tactics, dungeon crawler |
+| `technology` | right | yes | Unity, Pygame. Deliberately in both places |
+| `client` | — | no | Spelled out in the eyebrow beside the year |
+| `generic` | — | yes | Anything else worth flagging |
+
+`platform` and `technology` share the eyebrow's icon row, and `categoryOrder` is what
+puts platforms first in it.
+
+#### Icons
+
+A tag's `icon` is either **any Font Awesome free name** (`'unity'`, `'network-wired'`,
+`'dice'`) or a file in `src/assets/tags/` (`'ludomancer.svg'`). Anything containing a
+dot is treated as a filename, which is why Font Awesome names never have one.
+
+Font Awesome names need no setting up. Search
+[fontawesome.com](https://fontawesome.com/search?o=r&m=free), filter to Free, and use
+the name as printed. Both free sets are read at build time, so all ~2,600 icons are
+available and only the one `<svg>` each usage needs reaches the browser.
+
+A name that doesn't exist fails the build and suggests the closest matches:
+
+```
+Unknown icon "netwrok-wired". Font Awesome's free sets have no fa-netwrok-wired.
+Did you mean: network-wired?
+```
+
+Naming a file that isn't in `src/assets/tags/` is likewise a build error rather than an
+empty box on the page.
+
+A tag with no icon still appears in the tag row as text — it just gets nothing beside
+the date. Font Awesome covers Unity, Python, JS, Steam, itch.io and Google Play, but has
+nothing for Godot, Unreal, RPG Maker, Inky or any studio logo, so those need a file.
+
+Icons show their name on hover, using the same floating label as the social buttons.
+
+#### Where they show up
+
+On a portfolio card the tags sit below the blurb, **outside** the link that opens the
+game — a button inside an anchor is invalid markup, and these become filter buttons
+later. In a game's detail table they become one row per category.
 
 ### Hover previews
 
