@@ -7,17 +7,24 @@
  * Anything containing a dot is treated as a filename, which is why Font Awesome names
  * never have one.
  *
- * The name shows on hover, the same floating label the social buttons use — tips.ts
- * picks up any [data-tip] on the page.
+ * Two shapes:
+ *
+ *   default — a standalone glyph in the card's eyebrow. Dimmed until pointed at, and
+ *             it names itself on hover, since nothing else on that row says what it is.
+ *   inline  — sitting inside its own chip, where the name is already spelled out
+ *             beside it. No tooltip repeating that name, no dimming, and sized to the
+ *             text it sits with.
  */
 import Icon, { type IconName } from './Icon.astro';
 import type { ResolvedTag } from '../config/tags';
 
 interface Props {
   tag: ResolvedTag;
+  /** Set when the icon sits next to its own label, e.g. inside a chip. */
+  inline?: boolean;
 }
 
-const { tag } = Astro.props;
+const { tag, inline = false } = Astro.props;
 
 // Eager so a missing file is a build error rather than an empty box on the page, and
 // so Vite hashes each one. src/assets keeps them out of the served folder until used.
@@ -37,7 +44,13 @@ if (tag.iconIsFile && !src) {
 }
 ---
 
-<span class="tag-icon" data-tip={tag.label} aria-label={tag.label} role="img">
+<span
+  class:list={['tag-icon', inline && 'is-inline']}
+  data-tip={inline ? undefined : tag.label}
+  aria-label={inline ? undefined : tag.label}
+  aria-hidden={inline ? 'true' : undefined}
+  role={inline ? undefined : 'img'}
+>
   {
     src ? (
       <img src={src} alt="" width="18" height="18" loading="lazy" />
@@ -74,5 +87,18 @@ if (tag.iconIsFile && !src) {
 
   .tag-icon :global(svg) {
     fill: currentColor;
+  }
+
+  /* Inside a chip the icon is a piece of punctuation next to the word, not a control
+     of its own — so it takes the chip's ink and never moves. */
+  .is-inline,
+  .is-inline:hover {
+    opacity: 1;
+    transform: none;
+  }
+
+  .is-inline :global(svg),
+  .is-inline img {
+    height: 11px;
   }
 </style>

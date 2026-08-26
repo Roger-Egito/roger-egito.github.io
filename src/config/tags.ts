@@ -95,6 +95,16 @@ export const categoryOrder: CategoryId[] = [
   'generic',
 ];
 
+/**
+ * Heading over a card's chip row.
+ *
+ * The row is deliberately mixed — platform, genre, technology, and whatever else earns
+ * a chip — so neither "Stack" nor "Responsibilities" covers it: each names about a
+ * third of what's there. Something broad is the honest label while one row holds all
+ * of it. Split the row by category and each group can take its own `plural` instead.
+ */
+export const chipsHeading = 'Highlights';
+
 /* ---------------------------------------------------------------------- tags --- */
 
 export const tags = {
