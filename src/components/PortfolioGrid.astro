@@ -1,21 +1,31 @@
 ---
-import { Image } from 'astro:assets';
-import { getCollection } from 'astro:content';
-import StarRule from './StarRule.astro';
-import Icon from './Icon.astro';
-import TagIcon from './TagIcon.astro';
-import { chipTags, chipsHeading, iconsOn, tagsIn, yearRange } from '../config/tags';
+import { Image } from "astro:assets";
+import { getCollection } from "astro:content";
+import StarRule from "./StarRule.astro";
+import Icon from "./Icon.astro";
+import TagIcon from "./TagIcon.astro";
+import {
+  chipTags,
+  chipsHeading,
+  iconsOn,
+  resolve,
+  stores,
+  tagsIn,
+  yearRange,
+} from "../config/tags";
 
 // Highest order first, which matches the order the grid used to show.
-const games = (await getCollection('games')).sort((a, b) => b.data.order - a.data.order);
+const games = (await getCollection("games")).sort(
+  (a, b) => b.data.order - a.data.order,
+);
 
 // A game gets a hover preview just by having <slug>.mp4 sitting next to its markdown.
 // No front matter needed: drop the file in and it works, remove it and the card goes
 // back to a plain still. Vite hashes the URL for us.
-const previews = import.meta.glob<string>('../content/games/*.mp4', {
+const previews = import.meta.glob<string>("../content/games/*.mp4", {
   eager: true,
-  query: '?url',
-  import: 'default',
+  query: "?url",
+  import: "default",
 });
 
 const previewFor = (slug: string) =>
@@ -26,19 +36,40 @@ const previewFor = (slug: string) =>
  * full description, which is where each entry already opens with what the game is.
  * Descriptions separate paragraphs with <br><br>.
  */
-const blurbFor = (data: (typeof games)[number]['data']) => {
+const blurbFor = (data: (typeof games)[number]["data"]) => {
   if (data.blurb) return data.blurb;
-  const first = (data.description ?? '').split(/<br\s*\/?>\s*<br\s*\/?>/i)[0];
-  return first.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  const first = (data.description ?? "").split(/<br\s*\/?>\s*<br\s*\/?>/i)[0];
+  return first
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 };
 
-const plain = (value: string) => value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+/**
+ * A card's storefront rows, in the order set by `stores` in src/config/tags.ts. Name
+ * and icon come from each store's platform tag, so a card and the game's own page can
+ * never call the same storefront two different things.
+ *
+ * Lives out here rather than inline in the template because Astro parses expressions
+ * as JSX, where `ReturnType<typeof resolve>` reads as an opening tag.
+ */
+const storesFor = (data: (typeof games)[number]["data"]) =>
+  stores.flatMap(({ field, tag }) => {
+    const link = data[field];
+    return link ? [{ url: link.url, store: resolve(tag) }] : [];
+  });
+
+const plain = (value: string) =>
+  value
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 ---
 
 <script>
-  import '../scripts/hover-preview';
+  import "../scripts/hover-preview";
   // The technology icons beside the year carry data-tip, same as the social buttons.
-  import '../scripts/tips';
+  import "../scripts/tips";
 </script>
 
 <section id="portfolio">
@@ -46,23 +77,28 @@ const plain = (value: string) => value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, 
     <h2 class="section-heading">Portfolio</h2>
     <StarRule />
 
-    {/* Every card is lazy: the hero stands a full screen tall and the grid begins
+    {
+      /* Every card is lazy: the hero stands a full screen tall and the grid begins
         directly beneath it, so none of these are on screen at load. Eager-loading the
-        first row only had them competing with the banner and the opening clip. */}
+        first row only had them competing with the banner and the opening clip. */
+    }
     <ul class="grid">
       {
         games.map((game) => {
           const d = game.data;
           const dates = yearRange(d.startDate, d.endDate);
-          const client = tagsIn(d.tags, 'client')[0];
-          const tech = iconsOn(d.tags, 'right');
-          const roles = tagsIn(d.tags, 'role');
+          const client = tagsIn(d.tags, "client")[0];
+          const icons = iconsOn(d.tags, "right");
+          const roles = tagsIn(d.tags, "role");
           const tags = chipTags(d.tags);
           const blurb = blurbFor(d);
+          const storeList = storesFor(d);
 
           return (
             <li>
-              <article class:list={['card', previewFor(game.id) && 'has-preview']}>
+              <article
+                class:list={["card", previewFor(game.id) && "has-preview"]}
+              >
                 {/* Real href so the link still works with JS off or in a new tab.
                     modal.ts catches normal clicks and opens the dialog instead. */}
                 <a
@@ -96,13 +132,19 @@ const plain = (value: string) => value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, 
                   <div class="info">
                     {/* Year and client read as one line of provenance; the stack sits
                         opposite as icons, so the eye takes it in without reading. */}
-                    {(dates || client || tech.length > 0) && (
+                    {(dates || client || icons.length > 0) && (
                       <p class="eyebrow">
                         {dates && <span class="year">{dates}</span>}
-                        {client && <span class="client">{client.label}</span>}
-                        {tech.length > 0 && (
+                        {/* A client with a logo is just another icon in the row on the
+                            right, landing last because categoryOrder puts it last. One
+                            without a logo has to say its name here instead, since there
+                            would otherwise be nothing to see. */}
+                        {client && !client.icon && (
+                          <span class="client">{client.label}</span>
+                        )}
+                        {icons.length > 0 && (
                           <span class="tech">
-                            {tech.map((tag) => (
+                            {icons.map((tag) => (
                               <TagIcon tag={tag} />
                             ))}
                           </span>
@@ -117,24 +159,18 @@ const plain = (value: string) => value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, 
                     {roles.length > 0 && (
                       <p class="roles">
                         <Icon name="pen-ruler" />
-                        <span>{roles.map((role) => role.label).join(' · ')}</span>
+                        <span>
+                          {roles.map((role) => role.label).join(" · ")}
+                        </span>
                       </p>
                     )}
 
                     {d.team && (
                       <p class="team">
                         <Icon name="user" />
-                        <span>{d.team}</span>
-                      </p>
-                    )}
-
-                    {/* A game with an itch embed can be played without leaving the
-                        page, which is worth saying out loud — it's the difference
-                        between a portfolio you read and one you use. */}
-                    {d.game && (
-                      <p class="playable">
-                        <Icon name="circle-play" />
-                        <span>Playable right here</span>
+                        <span>
+                          <b>Team Size:</b> {d.team}
+                        </span>
                       </p>
                     )}
 
@@ -153,11 +189,36 @@ const plain = (value: string) => value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, 
                   </div>
                 </a>
 
+                {/* Outside the card's link because an <a> inside another <a> is invalid
+                    markup and browsers tear it apart — which is why these sit under the
+                    text block rather than in among it. Each one leaves the site, so it
+                    has to be a real link rather than something the card intercepts. */}
+                {storeList.length > 0 && (
+                  <ul class="stores">
+                    {storeList.map(({ url, store }) => (
+                      <li>
+                        {/* A real .btn, so the fill, border, press and lift all come
+                            from the one place in global.css; .store only shrinks it to
+                            the card's scale. */}
+                        <a
+                          class="btn store"
+                          href={url}
+                          target="_blank"
+                          rel="noopener"
+                        >
+                          <TagIcon tag={store} inline />
+                          <span>Go to {store.label}'s store page.</span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
                 {/* Outside the link on purpose: these become filter buttons later, and
                     a button inside an anchor is invalid markup. */}
                 {tags.length > 0 && (
                   <Fragment>
-                    <p class="tags-heading">{chipsHeading}</p>
+                    <!--<p class="tags-heading">{chipsHeading}</p> -->
                     <ul class="tags">
                       {tags.map((tag) => (
                         <li data-tag={tag.id} data-category={tag.category}>
@@ -231,7 +292,9 @@ const plain = (value: string) => value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, 
     border: 1px solid var(--color-border);
     border-radius: 6px;
     overflow: hidden;
-    transition: border-color 0.25s ease, transform 0.25s ease;
+    transition:
+      border-color 0.25s ease,
+      transform 0.25s ease;
   }
 
   .card:has(.card-link:hover),
@@ -252,7 +315,7 @@ const plain = (value: string) => value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, 
   .shot {
     position: relative;
     aspect-ratio: 16 / 9;
-    background: #101010;
+    background: var(--color-well);
     overflow: hidden;
   }
 
@@ -266,18 +329,20 @@ const plain = (value: string) => value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, 
   /* Held slightly back until you engage with it, then it comes to full and pushes in a
      little. It grows inside its own frame rather than over the card, so nothing below
      has to move out of its way. */
-  .card :global(img) {
+  .shot :global(img) {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
     opacity: 0.82;
-    transition: transform 0.5s ease, opacity 0.3s ease;
+    transition:
+      transform 0.5s ease,
+      opacity 0.3s ease;
   }
 
-  .card:has(.card-link:hover) :global(img),
-  .card:has(.card-link:focus-visible) :global(img) {
+  .card:has(.card-link:hover) .shot :global(img),
+  .card:has(.card-link:focus-visible) .shot :global(img) {
     transform: scale(1.04);
     opacity: 1;
   }
@@ -302,8 +367,8 @@ const plain = (value: string) => value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, 
     opacity: 1;
   }
 
-  .card.has-preview:has(.card-link:hover) :global(img),
-  .card.has-preview:has(.card-link:focus-visible) :global(img) {
+  .card.has-preview:has(.card-link:hover) .shot :global(img),
+  .card.has-preview:has(.card-link:focus-visible) .shot :global(img) {
     opacity: 0;
   }
 
@@ -334,10 +399,19 @@ const plain = (value: string) => value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, 
     font-weight: 700;
   }
 
+  /* Only reached by a client with no logo of its own — the name standing in for a
+     mark that isn't there. */
+  /* The gap is set by the hover, not by how the row looks at rest. An icon scaled 3x
+     grows by (3-1)/2 = one full width on each side, so anything narrower than the gap
+     stops short of its neighbour instead of covering it.
+
+     The widest mark is the gamepad at 20px, so 20 would leave the two exactly touching;
+     24 keeps a little air and some room for the next icon that turns up. Change the
+     scale in TagIcon, or add an icon wider than this, and it has to follow. */
   .tech {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 24px;
     margin-left: auto;
   }
 
@@ -381,24 +455,70 @@ const plain = (value: string) => value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, 
     fill: currentColor;
   }
 
-  /* Same line as roles and team, sharing their icon slot so all three glyphs sit on
-     one left edge. Full-strength ink rather than muted, because this one is a thing you
-     can do right now instead of another fact about the project. The vertical room the
-     bordered version had is kept as padding. */
-  .playable {
+  /* One button per storefront, stacked, sitting outside the card's own link. The 22px
+     matches .info's padding, which is what keeps them on the same left edge as the
+     roles and team lines above even though they're no longer inside that block.
+     align-items keeps each button the width of its own label rather than the column. */
+  .stores {
     display: flex;
-    align-items: baseline;
-    gap: 7px;
-    margin: 0 0 6px;
-    padding: 8px 0;
-    color: var(--color-txt);
-    font-size: 13.5px;
+    flex-direction: column;
+    align-items: flex-start;
+    /* 3 rather than 8 because each button's layout box is --lift times its resting
+       size (see .store), leaving about 5px of empty box below one and above the next.
+       Together that reads as the 8px this used to be. */
+    gap: 3px;
+    margin: 0 0 4px;
+    padding: 0 22px;
+    list-style: none;
   }
 
-  .playable :global(svg) {
+  /* Everything that makes this look pressable — fill, border, radius, the brightening
+     and the lift — comes from .btn. What's left here is scale: .btn is sized for a page
+     heading's worth of button, which would dwarf 13.5px card text.
+   *
+   * The sizes below are the resting ones multiplied by --lift, and the button is then
+   * held at 1/--lift until pointed at. That looks identical to setting the resting
+   * sizes directly — same pixels in both states — but the text is laid out, and so
+   * rasterised, at the size it reaches when grown.
+   *
+   * That's the whole point. transform: scale() doesn't re-render text; it stretches
+   * the bitmap the glyphs were already drawn into, so growing 13.5px type by 1.15
+   * meant reading 13.5px glyphs blown up to 15.5px, and thin strokes came apart. This
+   * way the hovered state draws at its true size and every other state is a
+   * downscale, which costs nothing — shrinking a bitmap has detail to spare.
+   *
+   * Everything here scales together, so --lift is the only number to change. */
+  .store {
+    --lift: 1.15;
+
+    display: inline-flex;
+    align-items: center;
+    gap: calc(8px * var(--lift));
+    padding: calc(8px * var(--lift)) calc(13px * var(--lift));
+    font-size: calc(13.5px * var(--lift));
+    line-height: 1.2;
+    /* Grows rightward from the column it shares with the lines above, rather than from
+       its middle, so a hovered button doesn't drift out of that left edge. */
+    transform-origin: left center;
+    transform: scale(calc(1 / var(--lift)));
+  }
+
+  /* Full size means exactly the size it was drawn at. */
+  .store:hover,
+  .store:focus-visible {
+    transform: scale(1);
+  }
+
+  /* Still a dip below the hovered size, just expressed against the new baseline —
+     .btn:active supplies the 0.08s that makes it snap. */
+  .store:active {
+    transform: scale(calc(1.05 / var(--lift)));
+  }
+
+  .store :global(svg) {
     flex-shrink: 0;
-    width: 14px;
-    height: 11px;
+    width: calc(14px * var(--lift));
+    height: calc(11px * var(--lift));
     fill: currentColor;
   }
 

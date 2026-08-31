@@ -1,24 +1,16 @@
 /*
  * Design tokens. Change a value here and it applies everywhere.
  *
- * Colors came from the old _config.yml palette. Fonts are self-hosted and wired up
- * in astro.config.mjs, which sets --font-heading and --font-body for us.
+ * COLORS ARE NOT IN THIS FILE. Every --color-* variable is generated from
+ * src/config/theme.ts and written into each page by Head.astro, so that a single
+ * plain-language file is the only place a colour is ever set. Adding a colour here
+ * would quietly shadow the one over there, so don't.
+ *
+ * Fonts are self-hosted and wired up in astro.config.mjs, which sets --font-heading
+ * and --font-body for us.
  */
 
 :root {
-  /* color */
-  --color-bg: #151515;
-  --color-txt: #dddddd;
-  --color-surface: #181b1e; /* footer bar, buttons */
-  --color-accent: #f1f3f4; /* inverted button fill */
-  --color-rule: #dddddd;
-  /* Card surfaces. --color-raised is a touch lighter than the page so a card body
-     reads as a panel sitting on it; --color-border is the same idea at the edge, and
-     --color-muted is the secondary ink for eyebrows, labels and captions. */
-  --color-raised: #1d1d1d;
-  --color-border: #333333;
-  --color-muted: #969696;
-
   /* type. 15px base keeps the original proportions; everything else scales off it. */
   --text-base: 0.9375rem;
   --text-body: 20px;

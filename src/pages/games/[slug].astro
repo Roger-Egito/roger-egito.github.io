@@ -5,6 +5,7 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 import { getImage } from 'astro:assets';
 import Base from '../../layouts/Base.astro';
+import Icon from '../../components/Icon.astro';
 import GameDetails from '../../components/GameDetails.astro';
 import Footer from '../../components/Footer.astro';
 import StructuredData from '../../components/StructuredData.astro';
@@ -47,11 +48,17 @@ const work = {
 ---
 
 <Base title={pageTitle(title)} description={description} image={preview.src}>
-  <nav class="crumb container">
-    <a href="/#portfolio">&larr; {site.title}</a>
-  </nav>
-
   <main class="container">
+    {/* Inside main rather than above it, so it shares the article's centring and lands
+        on the same left edge at every breakpoint — the container steps 750/970/1170
+        while the article stays 900, so the offset between them is not a fixed number. */}
+    <nav class="crumb">
+      <a href="/#portfolio">
+        <Icon name="angle-left" class="crumb-icon" />
+        Portfolio
+      </a>
+    </nav>
+
     <article>
       <GameDetails game={game}>
         <a slot="action" class="btn" href="/#portfolio">Back to Portfolio</a>
@@ -64,11 +71,19 @@ const work = {
 </Base>
 
 <style>
+  /* The article's own box, so the chevron starts exactly on its border rather than
+     out in the margin beside it. */
   .crumb {
-    padding-top: 20px;
+    max-width: 900px;
+    margin: 0 auto 20px;
   }
 
   .crumb a {
+    /* inline-flex so the chevron and the word sit on one baseline and the link is only
+       as wide as the two of them — a block would hand the scale the whole column. */
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
     opacity: 0.7;
     color: var(--color-txt);
     font-family: var(--font-heading), sans-serif;
@@ -76,12 +91,30 @@ const work = {
     letter-spacing: 1px;
     text-decoration: none;
     text-transform: uppercase;
-    transition: opacity var(--transition);
+    /* Grows rightward from that border, not outward from its own middle: a centred
+       scale would push the chevron back out past the edge it was just aligned to. */
+    transform-origin: left center;
+    transition: opacity var(--transition), transform 0.6s ease;
   }
 
   .crumb a:hover,
   .crumb a:focus-visible {
     opacity: 1;
+    transform: scale(1.15);
+  }
+
+  /* Under 1 so the press compresses past rest and springs back, the way the tabs do. */
+  .crumb a:active {
+    transform: scale(0.85);
+    transition-duration: 0.08s;
+  }
+
+  /* :global because the <svg> comes from Icon.astro and carries that component's scope
+     rather than this page's. */
+  .crumb a :global(.crumb-icon) {
+    width: auto;
+    height: 0.9em;
+    fill: currentColor;
   }
 
   main {

@@ -1,14 +1,21 @@
 ---
 // Body of a portfolio entry, shared by the homepage dialog and the standalone
 // /games/<slug>/ page so there's only one copy of this markup.
-import { Image } from 'astro:assets';
-import type { CollectionEntry } from 'astro:content';
-import Icon from './Icon.astro';
-import StarRule from './StarRule.astro';
-import { categories, categoryOrder, tagsIn, yearRange } from '../config/tags';
+import { Image } from "astro:assets";
+import type { CollectionEntry } from "astro:content";
+import Icon from "./Icon.astro";
+import StarRule from "./StarRule.astro";
+import {
+  categories,
+  categoryOrder,
+  resolve,
+  stores,
+  tagsIn,
+  yearRange,
+} from "../config/tags";
 
 interface Props {
-  game: CollectionEntry<'games'>;
+  game: CollectionEntry<"games">;
   /**
    * In the dialog the <iframe> starts with no src, so nine YouTube players don't load
    * on the homepage. modal.ts fills it in when the dialog opens and clears it on close,
@@ -20,11 +27,23 @@ interface Props {
 const { game, deferVideo = false } = Astro.props;
 const d = game.data;
 
-const storeLinks = [
-  d.urlSteam && { url: d.urlSteam, label: 'Link to Steam Page' },
-  d.urlItchIo && { url: d.urlItchIo, label: 'Link to itch.io Page' },
-  d.urlGooglePlay && { url: d.urlGooglePlay, label: 'Link to Google Play Store Page' },
-].filter(Boolean) as { url: string; label: string }[];
+// Names and icons come from the platform tags rather than being written out here, so
+// this page and the grid can't end up calling the same storefront two different things.
+const storeLinks = stores
+  .map(({ field, tag }) => {
+    const link = d[field];
+    return link && { ...link, store: resolve(tag) };
+  })
+  .filter(Boolean) as {
+  url: string;
+  embed?: { src: string; width: number; height: number };
+  store: ReturnType<typeof resolve>;
+}[];
+
+// A store that handed us its embed snippet gets the real widget; the rest stay a line
+// of link text.
+const storeEmbeds = storeLinks.filter((link) => link.embed);
+const storeTextLinks = storeLinks.filter((link) => !link.embed);
 
 // Built from the same tags the card uses, so this table and the grid can't disagree
 // about who a game was for or what it was made with. One row per category that has
@@ -32,27 +51,30 @@ const storeLinks = [
 const dates = yearRange(d.startDate, d.endDate);
 
 const details = [
-  dates && { label: 'Date', value: dates },
-  d.team && { label: 'Team', value: d.team },
+  dates && { label: "Date", value: dates },
+  d.team && { label: "Team", value: d.team },
   ...categoryOrder.map((category) => {
     const found = tagsIn(d.tags, category);
     if (found.length === 0) return undefined;
     const { label, plural } = categories[category];
     return {
       label: found.length > 1 ? plural : label,
-      value: found.map((tag) => tag.label).join(' · '),
+      value: found.map((tag) => tag.label).join(" · "),
     };
   }),
 ].filter(Boolean) as { label: string; value: string }[];
 
-const plainTitle = d.title.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+const plainTitle = d.title
+  .replace(/<[^>]*>/g, " ")
+  .replace(/\s+/g, " ")
+  .trim();
 
 // enablejsapi lets game-tabs.ts postMessage the player to pause it when you switch
 // to the Game tab. Without it a cross-origin YouTube frame ignores everything.
 const videoSrc = d.video
   ? (() => {
       const url = new URL(d.video);
-      url.searchParams.set('enablejsapi', '1');
+      url.searchParams.set("enablejsapi", "1");
       return url.href;
     })()
   : undefined;
@@ -63,14 +85,14 @@ const videoSrc = d.video
 // always there; a single tab isn't worth a tablist, so an entry with nothing but its
 // cover just shows the cover.
 const tabs = [
-  d.game && { name: 'game', label: 'Game' },
-  d.video && { name: 'video', label: 'Video' },
-  { name: 'cover', label: 'Cover' },
+  d.game && { name: "game", label: "Game" },
+  d.video && { name: "video", label: "Video" },
+  { name: "cover", label: "Cover" },
 ].filter(Boolean) as { name: string; label: string }[];
 
 // A phone never gets a playable build, so it may be left with one tab even when a
 // desktop has two. The CSS uses this to drop the tablist in that case.
-const mobileTabs = tabs.filter((tab) => tab.name !== 'game').length;
+const mobileTabs = tabs.filter((tab) => tab.name !== "game").length;
 
 // A build takes the opening tab, so on an entry that has one the trailer starts out
 // hidden — and a YouTube player that boots inside a hidden panel measures itself as
@@ -83,22 +105,26 @@ const deferredVideo = deferVideo || !!d.game;
 // browser with no JS staring at an empty frame, and never a trailer that's waiting to
 // be asked for either. game-tabs.ts upgrades to the Game tab on a desktop, before
 // anything is painted.
-const shown = d.game ? 'cover' : d.video ? 'video' : 'cover';
+const shown = d.game ? "cover" : d.video ? "video" : "cover";
 ---
 
-{/* Drives the Game / Video tabs. Imported here rather than from the dialog, so a
+{
+  /* Drives the Game / Video tabs. Imported here rather than from the dialog, so a
     game's own page gets it too. Astro bundles it once however many times this
-    component is rendered. */}
+    component is rendered. */
+}
 <script>
-  import '../scripts/game-tabs';
+  import "../scripts/game-tabs";
 </script>
 
 {/* title and description can contain <br>, so render them as HTML */}
 <h2 class="section-heading" set:html={d.title} />
 <StarRule />
 
-{/* data-shown says which panel is up. game-tabs.ts moves it and the CSS below does the
-    rest, so the served page is already showing something sensible. */}
+{
+  /* data-shown says which panel is up. game-tabs.ts moves it and the CSS below does the
+    rest, so the served page is already showing something sensible. */
+}
 <div class="group" data-media-group data-shown={shown}>
   {
     tabs.length > 1 && (
@@ -115,7 +141,7 @@ const shown = d.game ? 'cover' : d.video ? 'video' : 'cover';
             role="tab"
             id={`${game.id}-tab-${tab.name}`}
             aria-controls={`${game.id}-panel-${tab.name}`}
-            aria-selected={tab.name === shown ? 'true' : 'false'}
+            aria-selected={tab.name === shown ? "true" : "false"}
             data-tab={tab.name}
           >
             {tab.label}
@@ -159,14 +185,18 @@ const shown = d.game ? 'cover' : d.video ? 'video' : 'cover';
     )
   }
 
-  {d.game && d.gameDescription && <p class="game-note" set:html={d.gameDescription} />}
+  {
+    d.game && d.gameDescription && (
+      <p class="game-note" set:html={d.gameDescription} />
+    )
+  }
 
   {
     d.video && (
       <div
         class="media video-panel"
         id={`${game.id}-panel-video`}
-        role={tabs.length > 1 ? 'tabpanel' : undefined}
+        role={tabs.length > 1 ? "tabpanel" : undefined}
         aria-labelledby={tabs.length > 1 ? `${game.id}-tab-video` : undefined}
       >
         <iframe
@@ -185,7 +215,7 @@ const shown = d.game ? 'cover' : d.video ? 'video' : 'cover';
   <div
     class="media cover-panel"
     id={`${game.id}-panel-cover`}
-    role={tabs.length > 1 ? 'tabpanel' : undefined}
+    role={tabs.length > 1 ? "tabpanel" : undefined}
     aria-labelledby={tabs.length > 1 ? `${game.id}-tab-cover` : undefined}
   >
     <Image
@@ -201,12 +231,28 @@ const shown = d.game ? 'cover' : d.video ? 'video' : 'cover';
 {d.description && <p class="description" set:html={d.description} />}
 
 {
-  (storeLinks.length > 0 || d.private) && (
+  storeEmbeds.length > 0 && (
+    <div class="store-embeds">
+      {storeEmbeds.map((link) => (
+        <iframe
+          class="store-embed"
+          src={link.embed!.src}
+          title={`${link.store.label} page for ${plainTitle}`}
+          style={`--embed-w: ${link.embed!.width}; --embed-h: ${link.embed!.height}`}
+          loading="lazy"
+        />
+      ))}
+    </div>
+  )
+}
+
+{
+  (storeTextLinks.length > 0 || d.private) && (
     <ul class="links">
-      {storeLinks.map((link) => (
+      {storeTextLinks.map((link) => (
         <li>
           <a href={link.url} target="_blank" rel="noopener">
-            {link.label}
+            Link to {link.store.label} Page
           </a>
         </li>
       ))}
@@ -252,19 +298,59 @@ const shown = d.game ? 'cover' : d.video ? 'video' : 'cover';
     letter-spacing: 1px;
     text-transform: uppercase;
     opacity: 0.55;
-    transition: opacity var(--transition), background-color var(--transition),
-      color var(--transition);
+    transition:
+      opacity var(--transition),
+      background-color var(--transition),
+      color var(--transition),
+      transform 0.6s ease;
   }
 
   .tab:hover,
   .tab:focus-visible {
     opacity: 1;
+    transform: scale(1.15);
   }
 
-  .tab[aria-selected='true'] {
+  /* Below 1, not below the hovered size. A press that only shrinks from 1.15 to 1.05 is
+     still bigger than the tab's natural size, so releasing onto a newly-selected tab
+     just lands where a shrink was already heading and no click ever registers. Going
+     under 1 gives the gesture something to come back from: it compresses past rest,
+     then settles onto it.
+
+     The short duration is on the way down only, so the compression snaps under the
+     finger while the return is left to the 0.18s on the selected tab below. */
+  .tab:active {
+    transform: scale(0.85);
+    transition-duration: 0.08s;
+  }
+
+  .tab[aria-selected="true"] {
     background: var(--color-txt);
     color: var(--color-bg);
     opacity: 1;
+    /* Clicking an unselected tab ends with it selected, so the press has nowhere to
+       spring back up to — it releases to rest instead of to the hovered size. Left on
+       the 0.6s the lift uses, that last stretch reads as the tab slowly deflating
+       rather than a click resolving, so the size settles quickly here. The fill keeps
+       its normal timing: the tab filling in is a separate event from the press letting
+       go, and rushing it would lose the handover between them. */
+    transition:
+      opacity var(--transition),
+      background-color var(--transition),
+      color var(--transition),
+      transform 0.18s ease;
+  }
+
+  /* The tab you're already on has nothing to offer a click, so it stops answering the
+     pointer: no lift, no press. The fill it carries is what says it's the current one,
+     and that stays put. Keyboard focus is unaffected — the outline in global.css is a
+     separate thing from the lift, so this tab still shows where focus is.
+
+     game-tabs.ts moves aria-selected as you switch, so this follows on its own. */
+  .tab[aria-selected="true"]:hover,
+  .tab[aria-selected="true"]:focus-visible,
+  .tab[aria-selected="true"]:active {
+    transform: none;
   }
 
   /* 16:9 box that keeps its shape before the video or image arrives, so nothing
@@ -276,9 +362,9 @@ const shown = d.game ? 'cover' : d.video ? 'video' : 'cover';
   }
 
   /* Which panel is up. Everything that isn't the one named by data-shown goes away. */
-  .group:not([data-shown='game']) :is(.game-panel, .game-note),
-  .group:not([data-shown='video']) .video-panel,
-  .group:not([data-shown='cover']) .cover-panel {
+  .group:not([data-shown="game"]) :is(.game-panel, .game-note),
+  .group:not([data-shown="video"]) .video-panel,
+  .group:not([data-shown="cover"]) .cover-panel {
     display: none;
   }
 
@@ -298,11 +384,11 @@ const shown = d.game ? 'cover' : d.video ? 'video' : 'cover';
      for a phone connection, so below tablet width the Game tab isn't offered and the
      iframe never gets a src. If that leaves a single tab, drop the tablist too. */
   @media (max-width: 47.99rem) {
-    .tab[data-tab='game'] {
+    .tab[data-tab="game"] {
       display: none;
     }
 
-    .tabs[data-mobile-tabs='1'] {
+    .tabs[data-mobile-tabs="1"] {
       display: none;
     }
 
@@ -388,6 +474,21 @@ const shown = d.game ? 'cover' : d.video ? 'video' : 'cover';
     letter-spacing: 1px;
     text-transform: uppercase;
     white-space: nowrap;
+    /* The lift is on .play rather than on .game-start, which is the whole cover-art
+       overlay — scaling that would blow up the artwork behind it instead of the
+       button. Driven from the parent's hover because the pointer is over the cover,
+       not necessarily over this span. */
+    transition: transform 0.6s ease;
+  }
+
+  .game-start:hover .play,
+  .game-start:focus-visible .play {
+    transform: scale(1.15);
+  }
+
+  .game-start:active .play {
+    transform: scale(1.05);
+    transition-duration: 0.08s;
   }
 
   /* :global because the <svg> is rendered by Icon.astro, so it carries that
@@ -405,6 +506,26 @@ const shown = d.game ? 'cover' : d.video ? 'video' : 'cover';
 
   .description {
     text-align: left;
+  }
+
+  /* The store's own widget, standing in for a line of link text. itch serves it at a
+     fixed size and it doesn't reflow, so its printed width is a ceiling rather than a
+     target — below that it shrinks with the page, above it we stop, because stretching
+     the widget only blurs the cover art inside it. */
+  .store-embeds {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-gap);
+    margin: var(--space-gap) 0;
+  }
+
+  .store-embed {
+    width: calc(var(--embed-w) * 1px);
+    max-width: 100%;
+    height: calc(var(--embed-h) * 1px);
+    border: 0;
+    border-radius: var(--radius);
   }
 
   .links,
