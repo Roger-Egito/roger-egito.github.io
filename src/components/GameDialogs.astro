@@ -71,7 +71,7 @@ const games = (await getCollection('games')).sort((a, b) => b.data.order - a.dat
   }
 
   .confirm::backdrop {
-    background: rgb(0 0 0 / 0.6);
+    background: var(--color-backdrop-deep);
   }
 
   .confirm p {

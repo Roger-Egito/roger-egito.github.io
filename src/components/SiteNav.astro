@@ -62,12 +62,21 @@ const links = [
     letter-spacing: 1px;
     text-decoration: none;
     text-transform: uppercase;
-    transition: color var(--transition);
+    /* inline-block so the lift has a box to scale; an inline element ignores transform. */
+    display: inline-block;
+    transition: color var(--transition), transform 0.6s ease;
   }
 
   .site-nav a:hover,
   .site-nav a:focus-visible {
     color: var(--color-accent);
+    transform: scale(1.15);
+  }
+
+  /* Same press-and-spring as .btn. */
+  .site-nav a:active {
+    transform: scale(1.05);
+    transition-duration: 0.08s;
   }
 
   @media (prefers-reduced-motion: reduce) {

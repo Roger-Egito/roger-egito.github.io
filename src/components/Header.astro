@@ -217,10 +217,17 @@ background: linear-gradient(
 
   /* Both pads sit well back until you go for one, so the footage behind reads as the
      subject and the controls as trim. This resting fade is the hero's alone — the
-     footer's copies of these icons sit on a flat bar with nothing to recede from. */
+     footer's copies of these icons sit on a flat bar with nothing to recede from.
+
+     The fill is always on rather than arriving with the hover, so each control reads as
+     a solid object over the footage the whole time instead of a floating outline that
+     acquires a body when pointed at. It needs no transparency of its own: the 0.3 here
+     takes the fill down with the border and the glyph, so the clip still shows through
+     and the whole control comes up together. */
   .key,
   :global(.header-social .btn-social) {
     opacity: 0.3;
+    background-color: var(--color-bg);
   }
 
   .key:hover,
@@ -230,12 +237,12 @@ background: linear-gradient(
     opacity: 1;
   }
 
-  /* The lift and the dark fill are on .btn-social in global.css now, so the footer and
-     the game pages get them too. .key isn't a .btn-social, so it keeps its own copy. */
+  /* The lift is on .btn-social in global.css, so the footer and the game pages get it
+     too. .key isn't a .btn-social, so it keeps its own copy. The fill isn't here any
+     more — it's on at rest now, and the hover only lifts the opacity. */
   .key:hover,
   .key:focus-visible {
     transform: scale(1.25);
-    background-color: var(--color-bg);
   }
 
   .name-button:hover,
@@ -317,7 +324,7 @@ background: linear-gradient(
   .name,
   .skills,
   .meta {
-    text-shadow: 0 2px 12px rgb(0 0 0 / 0.6);
+    text-shadow: 0 2px 12px var(--color-text-shadow);
   }
 
   /* :global because the <ul> is rendered by SocialLinks, so it carries that
@@ -511,7 +518,9 @@ background: linear-gradient(
       padding: 0;
       border: 2px solid var(--color-txt);
       border-radius: 8px;
-      background: none;
+      /* No `background: none` here. The resting fill is set further up alongside the
+         social buttons', and the shorthand would reset it back to transparent — the
+         browser's own button background is already gone by then anyway. */
       color: var(--color-txt);
     }
 

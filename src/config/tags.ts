@@ -64,8 +64,9 @@ export interface Tag {
 export const categories = {
   // Where you can actually get the thing, or that you can't. Shares the eyebrow's icon
   // row with technology and leads it, because "is this out?" comes before "what's it
-  // built in?".
-  platform: { label: 'Platform', plural: 'Platforms', icons: 'right', chips: true },
+  // built in?". No chip: each store already has its own line further down the card,
+  // spelling out where it goes, so a chip repeating the name adds nothing.
+  platform: { label: 'Platform', plural: 'Platforms', icons: 'right', chips: false },
   // Roles have their own line on a card, and the client sits in the eyebrow beside
   // the year — so neither repeats itself down in the chip row.
   role: { label: 'Role', plural: 'Roles', icons: 'none', chips: false },
@@ -73,9 +74,13 @@ export const categories = {
   // Deliberately in both places: an icon by the year for a quick read of the stack,
   // and a chip below for anyone actually reading the card.
   technology: { label: 'Built with', plural: 'Built with', icons: 'right', chips: true },
-  // icons: 'none' because the client is spelled out in the eyebrow now — a logo beside
-  // its own name would just be the same fact twice.
-  client: { label: 'Client', plural: 'Clients', icons: 'none', chips: false },
+  // Shares the right-hand icon row with platform and technology. Where it lands in
+  // that row is set by categoryOrder below, not here.
+  client: { label: 'Client', plural: 'Clients', icons: 'right', chips: false },
+  // What this site itself offers for a game, as opposed to what the game is or who it
+  // was for. Icons only: a chip saying the same thing would sit in a row about the work
+  // rather than about the portfolio, which is a different subject.
+  feature: { label: 'Feature', plural: 'Features', icons: 'right', chips: false },
   generic: { label: 'Tag', plural: 'Tags', icons: 'none', chips: true },
 } as const satisfies Record<string, Category>;
 
@@ -87,11 +92,14 @@ export type CategoryId = keyof typeof categories;
  * Reorder here and every surface follows.
  */
 export const categoryOrder: CategoryId[] = [
+  'client',
   'platform',
   'role',
   'genre',
   'technology',
-  'client',
+  // Last, so it lands as the rightmost icon beside the year — the closest thing to the
+  // card's edge, where an offer to play something right now is worth the most.
+  'feature',
   'generic',
 ];
 
@@ -138,17 +146,47 @@ export const tags = {
   unity: { category: 'technology', icon: 'unity' },
   python: { category: 'technology', icon: 'python' },
   pygame: { category: 'technology' },
-  'rpg maker': { category: 'technology', label: 'RPG Maker VX Ace', icon: 'dice' },
+  'rpg maker': { category: 'technology', label: 'RPG Maker VX Ace', icon: 'rpg-maker-vx-ace.png' },
   netcode: { category: 'technology', label: 'Netcode for GameObjects', icon: 'network-wired' },
   relay: { category: 'technology', label: 'Unity Relay' },
 
+  // features — what this site offers for the game, rather than anything about the game
+  // itself. Only add this to an entry that actually carries a `game:` embed, since it's
+  // promising something the page has to deliver.
+  playable: {
+    category: 'feature',
+    label: 'Playable in the portfolio',
+    icon: 'gamepad',
+  },
+
   // clients — drop a logo in src/assets/tags/ and name it here to get an icon
-  ludomancer: { category: 'client', label: 'Ludomancer Studio' },
-  yougo: { category: 'client', label: 'YouGo Games' },
-  personal: { category: 'client', label: 'Personal Project' },
+  // ludomancer-full.png is the same logo with its "LUDOMANCER STUDIO" banner still
+  // attached; swap the name here if you prefer it. Two lines of type do not survive
+  // being 16px tall, which is why the mark is the one wired up.
+  ludomancer: { category: 'client', label: 'Ludomancer Studio', icon: 'ludomancer-mark.png' },
+  yougo: { category: 'client', label: 'YouGo Games', icon: 'yougogames.png' },
+  // Your own face, since on a personal project you are the client.
+  personal: { category: 'client', label: 'Personal Project', icon: 'profile.webp' },
 } as const satisfies Record<string, Tag>;
 
 export type TagId = keyof typeof tags;
+
+/* -------------------------------------------------------------------- stores --- */
+
+/**
+ * The storefronts a game can link to, top to bottom as they list on a card.
+ *
+ * Each one borrows its name and icon from a platform tag above, so a store row and the
+ * icon beside the year can't drift apart — rename `steam`'s label there and both follow.
+ * The `field` is the front matter key a game puts the link in.
+ */
+export const stores = [
+  { field: 'urlSteam', tag: 'steam' },
+  { field: 'urlItchIo', tag: 'itch' },
+  { field: 'urlGooglePlay', tag: 'google play' },
+] as const satisfies readonly { field: string; tag: TagId }[];
+
+export type StoreField = (typeof stores)[number]['field'];
 
 /* ------------------------------------------------------------------- helpers --- */
 

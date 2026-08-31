@@ -207,7 +207,7 @@ section {
   border: 1px solid var(--color-surface);
   border-radius: 6px;
   background-color: var(--color-surface);
-  color: #fff;
+  color: var(--color-on-surface);
   /* <button> doesn't inherit the page font on its own. */
   font-family: inherit;
   font-size: 19px;
@@ -215,12 +215,24 @@ section {
   text-align: center;
   text-decoration: none;
   cursor: var(--cursor-default);
-  transition: filter var(--transition);
+  /* The lift is the slow one the hero's name and the social buttons use; the fill
+     brightens on the standard timing. Two speeds on purpose — the size settles after
+     the colour, which is what stops the movement reading as a twitch. */
+  transition: filter var(--transition), transform 0.6s ease;
 }
 
 .btn:hover,
 .btn:focus-visible {
   filter: brightness(1.6);
+  transform: scale(1.15);
+}
+
+/* Pressing dips below the hovered size and springs back on release — the shorter
+   duration only applies on the way down, so it snaps under the finger and eases back
+   up rather than mushing both ways. Same as .btn-social and the hero's name. */
+.btn:active {
+  transform: scale(1.05);
+  transition-duration: 0.08s;
 }
 
 /* Circular outlined icon button, used for the social/CV links. */
@@ -303,7 +315,7 @@ dialog.overlay {
 }
 
 dialog.overlay::backdrop {
-  background: rgb(0 0 0 / 0.5);
+  background: var(--color-backdrop);
 }
 
 .sheet {
@@ -314,7 +326,7 @@ dialog.overlay::backdrop {
   border: 2px groove var(--color-txt);
   border-radius: 25px;
   background-color: var(--color-bg);
-  box-shadow: 15px 15px 10px 5px rgb(0 0 0 / 0.31);
+  box-shadow: 15px 15px 10px 5px var(--color-drop-shadow);
 }
 
 .panel {

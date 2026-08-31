@@ -1,7 +1,7 @@
 import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
-import { pageBackground } from './config/theme';
+import { colors } from './config/theme';
 import { isTag, knownTags } from './config/tags';
 
 // One markdown file per portfolio entry, with its image sitting next to it.
@@ -13,6 +13,38 @@ import { isTag, knownTags } from './config/tags';
 // `image()` makes Astro process the file, so it gets resized, converted to modern
 // formats and hashed. It also fails the build if the path is wrong, instead of
 // shipping a broken <img>.
+/**
+ * Undoes the escaping HTML does to an attribute value.
+ *
+ * This matters for any embed URL carrying more than one parameter. A snippet written
+ * with colours reads
+ *
+ *     src="https://itch.io/embed/123?bg_color=2A315A&amp;fg_color=CCE2E1"
+ *
+ * because inside an attribute the separators have to be escaped. Pull that out as-is
+ * and Astro escapes it again on the way to the page, so the browser hands itch a
+ * parameter named `amp;fg_color` and the colour is quietly ignored — the first one
+ * works, the rest don't.
+ *
+ * One left-to-right pass, so `&amp;lt;` correctly comes back as the text `&lt;`
+ * rather than being decoded twice into `<`.
+ */
+const decodeEntities = (value: string) =>
+  value.replace(
+    /&(?:#(\d+)|#[xX]([0-9a-fA-F]+)|(amp|lt|gt|quot|apos|nbsp));/g,
+    (_match, dec: string, hex: string, name: string) => {
+      if (dec) return String.fromCodePoint(Number(dec));
+      if (hex) return String.fromCodePoint(parseInt(hex, 16));
+      return { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' }[name]!;
+    },
+  );
+
+/** The value of one attribute on a pasted snippet, decoded. */
+const attr = (snippet: string, name: string) => {
+  const found = snippet.match(new RegExp(`\\s${name}=["']([^"']+)["']`, 'i'))?.[1];
+  return found === undefined ? undefined : decodeEntities(found);
+};
+
 /**
  * A playable embed. Paste the whole <iframe> snippet itch.io gives you under
  * "Embed options" and this pulls out what it needs; a bare URL works too.
@@ -30,7 +62,7 @@ const embed = z.string().transform((value, ctx) => {
 
   if (!raw.startsWith('<')) return { src: restyle(raw), width: 16, height: 9 };
 
-  const src = raw.match(/\ssrc=["']([^"']+)["']/i)?.[1];
+  const src = attr(raw, 'src');
   if (!src) {
     ctx.addIssue({
       code: 'custom',
@@ -46,12 +78,97 @@ const embed = z.string().transform((value, ctx) => {
   };
 });
 
+/**
+ * The store page a widget belongs to, worked out from the widget's own URL.
+ *
+ * Only needed for stores whose snippet carries no fallback link. itch puts an <a> inside
+ * its iframe for browsers that won't render one, and that anchor is the store page — so
+ * itch never reaches here. Steam's snippet is the bare iframe and nothing else:
+ *
+ *     <iframe src="https://store.steampowered.com/widget/2960360/" ...></iframe>
+ *
+ * which leaves the app id in the widget path as the only thing to go on.
+ */
+function storePageFrom(src: string) {
+  let url;
+  try {
+    url = new URL(src);
+  } catch {
+    return undefined;
+  }
+
+  if (/(^|\.)steampowered\.com$/.test(url.hostname)) {
+    // /widget/2960360/ -> /app/2960360/. Steam redirects that to the titled URL itself,
+    // so there's no need to guess at the game's slug.
+    const id = url.pathname.match(/^\/widget\/(\d+)/)?.[1];
+    return id && `https://store.steampowered.com/app/${id}/`;
+  }
+
+  return undefined;
+}
+
+/**
+ * A link to a storefront, given either way round:
+ *
+ *   urlItchIo: https://egito.itch.io/prison-break-escape-big-sister
+ *   urlItchIo: <iframe ... src="https://itch.io/embed/2827746" ...>...</iframe>
+ *
+ * Paste the widget snippet from itch's "Embed options" and the game's own page shows
+ * the real widget — cover, price, platforms, a Download button — instead of a line of
+ * link text. The plain URL still works and still gets a plain link.
+ *
+ * The store URL is read back out of the `<a href>` itch leaves inside the snippet as a
+ * fallback, because the widget's own src points at the embed rather than the page, and
+ * the portfolio card needs somewhere to send a click.
+ */
+const storeLink = z.string().transform((value, ctx) => {
+  const raw = value.trim();
+
+  if (!raw.startsWith('<')) return { url: raw, embed: undefined };
+
+  const src = attr(raw, 'src');
+  if (!src) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'no src="..." found — paste the whole <iframe> snippet, or just the URL',
+    });
+    return z.NEVER;
+  }
+
+  // The fallback link inside the iframe if the store leaves one, otherwise whatever can
+  // be read off the widget URL.
+  const href = raw.match(/<a\s[^>]*href=["']([^"']+)["']/i)?.[1];
+  const url = (href === undefined ? undefined : decodeEntities(href)) ?? storePageFrom(src);
+  if (!url) {
+    ctx.addIssue({
+      code: 'custom',
+      message:
+        `couldn't work out which store page "${src}" belongs to, and the <iframe> has ` +
+        'no fallback <a href="..."> inside it to read one from — so a click on the card ' +
+        'would have nowhere to go. Use the plain store URL instead, or add this store to ' +
+        'storePageFrom() in src/content.config.ts.',
+    });
+    return z.NEVER;
+  }
+
+  return {
+    url,
+    // itch's widget is a fixed size and doesn't reflow; these are the numbers it
+    // printed, used as a ceiling so it's never stretched past its own artwork.
+    embed: {
+      src,
+      width: Number(raw.match(/\swidth=["']?(\d+)/i)?.[1]) || 552,
+      height: Number(raw.match(/\sheight=["']?(\d+)/i)?.[1]) || 167,
+    },
+  };
+});
+
 /** Points an itch embed at our background color. Anything else is left alone. */
 function restyle(src: string) {
   try {
     const url = new URL(src);
     if (!/(^|\.)itch\.io$/.test(url.hostname)) return src;
-    url.searchParams.set('color', pageBackground.replace('#', ''));
+    url.searchParams.set('color', colors.bg.replace('#', ''));
     return url.href;
   } catch {
     return src; // not a URL we can parse; let it through and fail visibly
@@ -132,9 +249,14 @@ const games = defineCollection({
       roles: z.string().optional(),
       /** Can contain <br><br>. */
       description: z.string().optional(),
-      urlSteam: z.string().optional(),
-      urlItchIo: z.string().optional(),
-      urlGooglePlay: z.string().optional(),
+      /**
+       * Storefronts. A plain URL, or the whole <iframe> snippet from that store's embed
+       * options — see `storeLink` above. Each one adds a row to the portfolio card and
+       * a link on the game's own page.
+       */
+      urlSteam: storeLink.optional(),
+      urlItchIo: storeLink.optional(),
+      urlGooglePlay: storeLink.optional(),
       /** Shown instead of a store link for private or NDA'd projects. */
       private: z.string().optional(),
     }),

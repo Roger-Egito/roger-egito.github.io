@@ -1,7 +1,7 @@
 ---
 import { Font } from 'astro:assets';
 import { site } from '../config/site';
-import { pageBackground } from '../config/theme';
+import { colors, colorVariables } from '../config/theme';
 
 interface Props {
   title?: string;
@@ -17,6 +17,11 @@ const preview = image ? new URL(image, site.url).href : undefined;
 
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+{/* The whole palette, straight from src/config/theme.ts. is:inline keeps Astro from
+    scoping it to this component, which :root would not survive. It goes ahead of the
+    stylesheets so nothing is ever painted before the colours exist. */}
+<style is:inline set:html={colorVariables}></style>
 <title>{title}</title>
 <meta name="description" content={description} />
 <meta name="author" content={site.author} />
@@ -30,7 +35,7 @@ const preview = image ? new URL(image, site.url).href : undefined;
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 <link rel="manifest" href="/site.webmanifest" />
-<meta name="theme-color" content={pageBackground} />
+<meta name="theme-color" content={colors.bg} />
 
 <link rel="alternate" type="application/rss+xml" title="RSS" href="/feed.xml" />
 

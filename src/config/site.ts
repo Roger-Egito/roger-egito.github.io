@@ -16,7 +16,7 @@ export const site = {
   url: 'https://roger-egito.github.io',
   description: 'Portfolio of game designer and developer Roger Egito.',
   author: 'Roger Egito',
-  skills: 'Technical Game Designer | Unity Developer',
+  skills: 'Technical Game Designer & Unity Developer',
   location: 'RJ, Brazil',
   timezone: 'UTC-03:00',
   email: 'rogeregito@outlook.com',

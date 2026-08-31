@@ -4,11 +4,11 @@ title: Memories of War
 img: ./memories-of-war.webp
 game: <iframe frameborder="0" src="https://itch.io/embed-upload/16549834?color=000000" allowfullscreen="" width="980" height="640"><a href="https://yougogames.itch.io/memories-of-war">Play Memories of War on itch.io</a></iframe>
 gameDescription: "Click inside the window to start playing. The game runs right here in the browser, so give it a moment to load."
-tags: [itch, game designer, game developer, tactics, strategy, unity, yougo]
+tags: [itch, game designer, game developer, tactics, strategy, unity, yougo, playable]
 startDate: 2026
-team: "5–6 people"
+team: "6"
 roles: "Game designer and game developer"
-blurb: "Manage a squad and defeat your foes."
+blurb: "In an era long past, manage a squad and defeat your foes."
 description: "Memories of War is a squad-based, grid tactical strategy game built around shared action economy, chess-inspired movement, and meaningful positioning.<br><br>I designed the levels, obstacles, allies and enemies stats, and changed the game to use simple, low numbers for its stat system. I was also the one responsible for developing the entire game.<br><br>This game was made using Unity."
-urlItchIo: https://yougogames.itch.io/memories-of-war
+urlItchIo: <iframe frameborder="0" src="https://itch.io/embed/4304556?bg_color=551700&amp;fg_color=ffffff&amp;link_color=ff6120&amp;border_color=333333" width="552" height="167"><a href="https://yougogames.itch.io/memories-of-war">Memories of War by YouGo Games, Egito, anna frieiro</a></iframe>
 ---

@@ -84,11 +84,11 @@ const fields = [
     /* 17.5px rather than 7.5px keeps the fields the height they've always been: the
        old markup carried an empty validation-message paragraph worth 10px. */
     padding: 0 15px 17.5px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--color-field);
   }
 
   .field:first-of-type {
-    border-top: 1px solid #eee;
+    border-top: 1px solid var(--color-field);
   }
 
   /* Scoped to .field on purpose: a bare `input` rule would override the browser's
@@ -141,11 +141,11 @@ const fields = [
   /* `:user-invalid` only fires once someone has actually interacted, so the form
      doesn't turn red the moment it loads. */
   .field:has(:user-invalid) {
-    border-bottom-color: #e74c3c;
+    border-bottom-color: var(--color-error);
   }
 
   .field:has(:user-invalid) label {
-    color: #e74c3c;
+    color: var(--color-error);
   }
 
   /* One blank line's worth of space, which is what the <br> above the button used
