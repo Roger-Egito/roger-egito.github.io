@@ -51,5 +51,27 @@ const preview = image ? new URL(image, site.url).href : undefined;
 {/* Pageview counter. is:inline keeps Astro's hands off it, so the data- attribute it
     looks itself up by survives. It skips anything served from localhost on its own, so
     working on the site doesn't show up in the numbers. */}
-<script is:inline async data-goatcounter={site.analytics} src="https://gc.zgo.at/count.js"
-></script>
+{
+  site.analytics.goatcounter && (
+    <script
+      is:inline
+      async
+      data-goatcounter={site.analytics.goatcounter}
+      src="https://gc.zgo.at/count.js"
+    />
+  )
+}
+
+{/* Umami counts localhost by default, unlike GoatCounter. data-domains limits it to the
+    live hostname so working on the site stays out of the numbers here too. */}
+{
+  site.analytics.umami && (
+    <script
+      is:inline
+      defer
+      src="https://cloud.umami.is/script.js"
+      data-website-id={site.analytics.umami}
+      data-domains={new URL(site.url).hostname}
+    />
+  )
+}

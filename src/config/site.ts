@@ -35,11 +35,17 @@ export const site = {
   contactAction: 'https://formspree.io/f/xldnwyla',
 
   /**
-   * GoatCounter's endpoint for this site. Counts pageviews and referrers, sets no
-   * cookies and collects nothing personal, so there's no consent banner to put up.
-   * Stats are at https://roger-egito.goatcounter.com.
+   * Pageview counters. Both are cookieless and collect nothing personal, so there's no
+   * consent banner to put up. Running side by side for now to compare them on the
+   * same traffic. Drop the one that loses and its script goes with it.
+   *
+   * goatcounter: stats at https://roger-egito.goatcounter.com
+   * umami: the website ID from Umami Cloud, stats at https://cloud.umami.is
    */
-  analytics: 'https://roger-egito.goatcounter.com/count',
+  analytics: {
+    goatcounter: 'https://roger-egito.goatcounter.com/count',
+    umami: '913e43fb-62a5-46f8-8ce3-3249ef11d660',
+  },
 
   footerNote: 'Games developed by Roger Egito (fully or partially), not restricted by NDA.',
 
