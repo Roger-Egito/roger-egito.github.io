@@ -5,7 +5,6 @@ import StarRule from "./StarRule.astro";
 import Icon from "./Icon.astro";
 import TagIcon from "./TagIcon.astro";
 import {
-  creditsFor,
   iconsOn,
   resolve,
   responsibilityChipsIn,
@@ -59,6 +58,13 @@ const storesFor = (data: (typeof games)[number]["data"]) =>
     return link ? [{ url: link.url, store: resolve(tag) }] : [];
   });
 
+/**
+ * Off while I work out a better home for the numbers. The entries keep their `metrics`
+ * and the schema still checks them, so nothing is lost: flip this to true and the
+ * banner comes back exactly as it was.
+ */
+const showMetrics = false;
+
 const plain = (value: string) =>
   value
     .replace(/<[^>]*>/g, " ")
@@ -89,7 +95,6 @@ const plain = (value: string) =>
           const dates = yearRange(d.startDate, d.endDate);
           const client = tagsIn(d.tags, "client")[0];
           const icons = iconsOn(d.tags, "right");
-          const roles = creditsFor(d.tags, d.sole);
           const genres = tagsIn(d.tags, "genre");
           const responsibilities = responsibilityChipsIn(d.tags);
           const blurb = blurbFor(d);
@@ -166,25 +171,6 @@ const plain = (value: string) =>
                     </div>
 
                     {blurb && <p class="blurb">{blurb}</p>}
-
-                    {roles.length > 0 && (
-                      <p class="roles">
-                        <Icon name="pen-ruler" />
-                        <span>
-                          {roles.join(" · ")}
-                        </span>
-                      </p>
-                    )}
-
-                    {d.team && (
-                      <p class="team">
-                        <Icon name="user" />
-                        <span>
-                          <b>Team Size:</b> {d.team}
-                        </span>
-                      </p>
-                    )}
-
                   </div>
                 </a>
 
@@ -216,7 +202,7 @@ const plain = (value: string) =>
                 {/* Only a couple of games have numbers worth showing, and the strip
                     disappears entirely for the rest. Out here with the store buttons
                     rather than inside the card's link, so it can sit below them. */}
-                {d.metrics && d.metrics.length > 0 && (
+                {showMetrics && d.metrics && d.metrics.length > 0 && (
                   <ul class="metrics">
                     {d.metrics.map((metric) => (
                       <li>
@@ -294,12 +280,15 @@ const plain = (value: string) =>
 
   /* The artwork sits flush in the top of a panel a shade lighter than the page, with
      the border running round the whole thing so picture and text read as one object. */
-  /* --fade is the empty space under the Team Size line, the last thing in the card's
-     link. The link's darker shade fades into the card's own color across exactly that
-     space, so the change lands between Team Size and the button below without running
-     behind either one. */
+  /* --fade is how far the link's darker shade takes to become the card's own colour,
+     measured up from the bottom of the link. Long rather than a hairline: over 14px the
+     change read as a seam you could miss, and the point is for the part you click to
+     feel like its own panel settling into the card. The blurb is the last thing in the
+     link, and the wash runs through the empty space under it. 32px rather than the 48
+     it was: with the roles and the team gone, that space is all the card has left down
+     there, and 48 of it read as a hole. */
   .card {
-    --fade: 14px;
+    --fade: 32px;
 
     display: flex;
     flex-direction: column;
@@ -411,7 +400,7 @@ const plain = (value: string) =>
     flex-wrap: wrap;
     align-items: center;
     gap: 10px;
-    margin: 0 0 8px;
+    margin: 0 0 6px;
     color: var(--color-muted);
     font-size: 12px;
     letter-spacing: 0.1em;
@@ -447,58 +436,42 @@ const plain = (value: string) =>
     display: flex;
     align-items: baseline;
     column-gap: 10px;
-    margin: 0 0 6px;
+    margin: 0 0 4px;
   }
 
+  /* 1.4em rather than the 1.2em it was: at 1.2 the name stood only 3px over the
+     blurb under it, which is too small a step to read as a rank. */
   .title {
     flex: 1 1 auto;
     min-width: 0;
     margin: 0;
-    font-size: 1.2em;
+    font-size: 1.4em;
     /* The site's headings are uppercase, but a game's name is a name, so it keeps its
        own capitalisation. */
     text-transform: none;
   }
 
+  /* Last thing inside the link now that the roles and the team size are gone, so the
+     space under it is the one the gradient washes through. */
   .blurb {
-    margin: 0 0 12px;
+    margin: 0 0 var(--fade);
     color: var(--color-txt);
     font-size: 15px;
-    line-height: 1.45;
+    line-height: 1.5;
   }
 
-  /* Roles and team are the same kind of line, so they share a shape and their icons
-     share a fixed-width slot — that's what keeps the two glyphs on one left edge even
-     though a pen and a person are different widths. */
-  .roles,
-  .team {
-    display: flex;
-    align-items: baseline;
-    gap: 7px;
-    margin: 0 0 6px;
-    color: var(--color-muted);
-    font-size: 13.5px;
-  }
-
-  .team {
-    margin-bottom: var(--fade);
-  }
-
-  .roles :global(svg),
-  .team :global(svg) {
-    flex-shrink: 0;
-    width: 14px;
-    height: 11px;
-    fill: currentColor;
-  }
-
+  /* The titles I held, in full ink rather than the grey the team size wears up in the
+     eyebrow. They used to be the same size and colour as each other, 6px apart, which
+     made a single grey block out of two different claims. This is the last line inside
+     the card's link, so it carries the fade to the card's own colour. */
   /* One button per storefront, stacked and centered, sitting outside the card's own
      link. align-items keeps each button the width of its own label rather than the
      column. */
   .stores {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
+    margin-top: -6px;
     /* 3 rather than 8 because each button's layout box is --lift times its resting
        size (see .store), leaving about 5px of empty box below one and above the next.
        Together that reads as the 8px this used to be. */
@@ -533,8 +506,11 @@ const plain = (value: string) =>
     padding: calc(8px * var(--lift)) calc(13px * var(--lift));
     font-size: calc(13.5px * var(--lift));
     line-height: 1.2;
-    /* Grows from its middle, so a centered button stays centered while it lifts. */
-    transform-origin: center;
+    /* Grows to the right, off its own left edge, so the button lines up with the text
+       above it at rest and stays lined up while it lifts. Growing from the middle would
+       hold it a few pixels in from that edge, since the box is --lift times the size
+       the button is drawn at. */
+    transform-origin: left center;
     transform: scale(calc(1 / var(--lift)));
   }
 
@@ -557,14 +533,33 @@ const plain = (value: string) =>
     fill: currentColor;
   }
 
-  /* Centered under the store button. Only a couple of games carry any. */
+  /* Not on the page at the moment: showMetrics above is false while the numbers look
+     for a better home. Kept whole so turning them back on is a one-word change.
+
+     The numbers that make the case: downloads, plays, how long it took. Only three of
+     the games carry any, which is the argument for framing them rather than leaving
+     them as another line of text — the frame marks the ones with something to show.
+
+     A banner, not a panel: darker than the card so it reads as its own object, with
+     both ends notched inward the way a ribbon's are. The notch is cut by clip-path,
+     which is also why there's no border to go with it. A border is painted before the
+     clip and would come away cut in half along the diagonals. */
   .metrics {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 18px;
-    margin: 0;
-    padding: 10px 22px 0;
+    gap: 26px;
+    margin: 14px 22px 2px;
+    padding: 12px 34px 11px;
+    background: var(--color-well);
+    clip-path: polygon(
+      0 0,
+      100% 0,
+      calc(100% - 16px) 50%,
+      100% 100%,
+      0 100%,
+      16px 50%
+    );
     list-style: none;
   }
 
@@ -572,17 +567,22 @@ const plain = (value: string) =>
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 1px;
   }
 
+  /* The number is the loudest thing on the card after the name. 24px against the
+     title's 21 is deliberate: the eye should land on the name, then on this. */
   .metrics strong {
     color: var(--color-txt);
-    font-size: 15px;
+    font-size: 24px;
+    font-family: var(--font-heading), sans-serif;
+    line-height: 1.1;
   }
 
   .metrics span {
     color: var(--color-muted);
-    font-size: 11.5px;
-    letter-spacing: 0.06em;
+    font-size: 10px;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
   }
 
@@ -607,7 +607,7 @@ const plain = (value: string) =>
     align-items: center;
     gap: 12px;
     margin: 0;
-    padding: 18px 22px 0;
+    padding: 14px 22px 0;
     color: var(--color-txt);
     font-size: 11px;
     letter-spacing: 0.12em;

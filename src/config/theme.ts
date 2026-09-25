@@ -81,6 +81,23 @@ export const colors = {
   /** Production tags: project management, QA, localization. */
   production: '#08bdba',
 
+  /* ── storefronts ─────────────────────────────────────────────── */
+
+  /**
+   * Each store's button, in that store's own colour, so the button is recognizable
+   * before the label is read. These are the brands' own values, or the lighter end of
+   * their palette where the brand colour is too dark to carry black text on a dark
+   * card. The label sits on top in near-black, which reads at 5.9:1 on the itch red
+   * and around 9:1 on the other two.
+   */
+
+  /** itch.io's red. */
+  itch: '#fa5c5c',
+  /** Steam's light blue, the one from its own dark interface. */
+  steam: '#66c0f4',
+  /** Android's green, for the Google Play button. */
+  googlePlay: '#3ddc84',
+
   /* ── states ────────────────────────────────────────────────────────────────── */
 
   /** A contact-form field filled in wrongly. */

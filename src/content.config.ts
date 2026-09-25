@@ -243,8 +243,9 @@ const games = defineCollection({
       blurb: z.string().optional(),
       /**
        * Hard numbers worth putting in front of an employer — downloads, a rating, a
-       * review count, a jam placing. Rendered as a strip on the card, and skipped
-       * entirely for a game that has none, which is most of them.
+       * review count, a jam placing. Nothing shows these right now: the card's banner
+       * is switched off by showMetrics in PortfolioGrid.astro while they look for a
+       * better home. Keep writing them, they're waiting on a place to go.
        */
       metrics: z
         .array(z.object({ label: z.string(), value: z.string() }))
