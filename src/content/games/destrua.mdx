@@ -1,0 +1,77 @@
+---
+order: 2
+title: DESTRUA
+img: ./destrua.webp
+video: https://www.youtube.com/embed/4ES0w5O4Tuw?si=B25mBBvQr8LsSOKn
+tags: [private, solo developer, rpg maker, personal,
+  level design, narrative design, puzzle design, systems design,
+  narrative writing,
+  gameplay programming]
+startDate: 2015
+team: "1"
+roles: "Solo developer"
+blurb: "DESTROY the factory. LOOP until you can."
+description: "DESTRUA (DESTROY) is the last command remembered by a lonely, self-aware robot trapped in a decaying factory. Every minute, a malfunctioning four-dimensional loop device resets reality and undoes most of what the robot has done. Only what it carries survives, along with everything you've learned.<br><br>I made it alone for a game jam in 2015, my first attempt at a conventional game."
+private: Due to copyrighted content used in the creation of the game, I will not be making the game publicly playable.
+---
+
+import TwoColumn from '../../components/mdx/TwoColumn.astro';
+import boot from './destrua/boot.webp';
+import keycard from './destrua/keycard.webp';
+import combination from './destrua/combination.webp';
+import lighting from './destrua/lighting.webp';
+import analysis from './destrua/analysis.webp';
+
+### The project
+
+<TwoColumn image={boot} alt="Boot text on a black screen, in Portuguese: four-dimensional looping chip 100%, standard operations 100%, time left until reset 1 min, mission: destroy division" caption="The robot boots up, with one minute until the reset">
+
+DESTRUA is a game I made alone in 2015 for a game jam, and my first attempt at a conventional game.
+
+A lonely, self-aware robot trapped in a decaying factory remembers a single command, destroy, and a malfunctioning four-dimensional loop device resets reality every minute. Each reset undoes most of what the robot has done, but the items it carries survive, and so does everything the player has learned.
+
+</TwoColumn>
+
+### My role
+
+I was the solo developer. The goal was a complete puzzle and story game in RPG Maker, finished within the jam.
+
+### What I did
+
+Everything except the art and audio assets is mine: every level, every puzzle and every line of dialogue. The game's logic is built entirely with RPG Maker's event scripting rather than written code: 4 maps, 953 event pages and about 3,900 event commands.
+
+**The loop.** I scripted the one-minute loop with dedicated timer and reset switches, resetting the factory each cycle while the robot's inventory carries over.
+
+A puzzle doesn't fit in a minute, but reaching the end of a corridor and solving its puzzle correctly takes about that long. The puzzles are there to make you spend time figuring them out, and that's the challenge. One of the computers tells the player that items carry over. Attentive players can work it out without the tip: go back to where an item used to be, and a different message says the spot is empty. Pressing Esc also opens the inventory and shows it outright.
+
+<TwoColumn image={keycard} alt="A locked door in the factory with the message, in Portuguese: requires an access card, and the loop timer at 00:30" caption="A door that needs an access card" side="right">
+
+**Logic.** I built the game's logic from RPG Maker's switches, variables and conditional branches, including key and keycard doors, and position tracking for a wheelchair and colored objects.
+
+</TwoColumn>
+
+<TwoColumn image={combination} alt="A glowing machine with a three-digit display reading 000 and the message, in Portuguese: a 3-digit combination is required" caption="The three-lever combination puzzle">
+
+**Puzzles.** I designed all of the factory's levels and the puzzles in them, including a three-lever combination puzzle.
+
+</TwoColumn>
+
+<TwoColumn image={lighting} alt="A mostly dark factory floor where only patches around lights are visible, with pairs of glowing blue eyes in the shadows" caption="Dynamic lighting in the dark" side="right">
+
+**Plugins.** I configured plugins for dynamic lighting, picking up and throwing objects, an in-game hint system, audio, events that play before the title screen, and a menu without combat options.
+
+</TwoColumn>
+
+<TwoColumn image={analysis} alt="A green system message box reading, in Portuguese: analysis finished, organic part compromised, mind intact" caption="One of the robot's system messages (the game is in Portuguese)">
+
+**Writing.** I wrote the story and all of the text, 588 messages and 34 choices, with custom colors, pauses and font sizes for the robot's system messages.
+
+</TwoColumn>
+
+### Outcome
+
+I finished the game for the jam. It isn't publicly playable because it uses copyrighted content.
+
+Looking back, puzzles and a timer don't mesh well. The biggest lesson I took from it: if something can be frustrating, make it as frictionless as possible. Players loop constantly, and the loop is the main mechanic, but each reset takes too long. Today I'd make it almost instant, not far from how Prison Break respawns you.
+
+*Screenshots from the game's trailer.*

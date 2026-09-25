@@ -1,0 +1,98 @@
+---
+order: 8
+title: COVID 35
+img: ./covid-35.webp
+video: https://www.youtube.com/embed/Ga119P4EaXc
+game: <iframe frameborder="0" src="https://itch.io/embed-upload/14968342?color=000000" allowfullscreen="" width="980" height="620"><a href="https://pandemics-and-borders.itch.io/covid-35">Play COVID 35 on itch.io</a></iframe>
+gameDescription: "Click inside the window to start playing. The game runs right here in the browser, so give it a moment to load."
+tags: [itch, game developer, strategy, multiplayer, unity, netcode, relay, ludomancer, playable,
+  ui/ux design,
+  gameplay programming, network programming, ui programming]
+startDate: 2025
+team: "5"
+roles: "Game developer"
+blurb: "Eliminate the pandemic as the government of your country. Other players may aid or harm you."
+description: "COVID 35 is an online multiplayer serious game where teams govern six nations through a fictional pandemic, and cooperation between them, rather than competition, leads to the best outcome.<br><br>I was the project's largest contributor, building its networked multiplayer, core rules and interface in Unity."
+urlItchIo: <iframe frameborder="0" src="https://itch.io/embed/3710251" width="552" height="167"><a href="https://pandemics-and-borders.itch.io/covid-35">COVID 35 by Pandemics and Borders</a></iframe>
+---
+
+import TwoColumn from '../../components/mdx/TwoColumn.astro';
+import chooseCountry from './covid-35/choose-country.webp';
+import gameScreen from './covid-35/game-screen.webp';
+import createOrJoin from './covid-35/create-or-join.webp';
+import gameSettings from './covid-35/game-settings.webp';
+import news from './covid-35/news.webp';
+import resultsGraphs from './covid-35/results-graphs.webp';
+import resultsReport from './covid-35/results-report.webp';
+
+### The project
+
+COVID 35 is an online multiplayer serious game made for Simon Fraser University's Faculty of Health Sciences. It is based on the university's [Pandemics and Borders](https://www.pandemics-borders.org/) project, an international research group studying how travel measures are used to control pandemics. [Wero Creative](https://werocreative.com/portfolio/covid35) developed it with my client, Ludomancer Studio, and our team had five people.
+
+<TwoColumn image={chooseCountry} alt="Country selection screen with a map of six nations: Mepria, Giladon, Pansong, Edresh, Theurus and Swacor" caption="Each team picks one of six nations">
+
+The game simulates a fictional coronavirus outbreak on a continent divided between six nations. Teams of students and stakeholders each act as a nation's government and try to contain and eliminate the pandemic over a number of turns, while keeping their country socially, economically and politically stable.
+
+They can aid their neighbors or harm them, and donate to a Global Health Organization.
+
+</TwoColumn>
+
+### My role
+
+My job was to turn the design into a working networked game in Unity, using Netcode for GameObjects and Unity Relay, that a room full of players could join, play through and debrief together.
+
+### What I did
+
+From January to August 2025 I was the project's largest contributor, with 122 of its 293 commits.
+
+<TwoColumn image={gameScreen} alt="Main game screen with the six-nation map, turn counter and timer, chat panel, aid buttons and policy categories" caption="The main game screen" side="right">
+
+**Prototype and architecture.** I built the first playable pieces: the game screen prototype, the turn timer, a new UI mockup, and the chat prototype that grew into the inter-team chat. I then structured the game around models, views and controllers for the clients, the server and each country, separating what the server owns from what each client displays.
+
+The server runs the game flow and owns the turn clock, and it only ends a turn once every player has confirmed. Until a player confirms, everything on their screen is theirs to change. Confirming sends their choices to everyone.
+
+**Core rules.** I implemented the turn and spending system with the correct order of operations, policies, emergency loans, vaccination, aid between countries, popularity, and donations to the Global Health Organization with a progressive global cost and a reset. My client and I replaced the original calculations with simpler, more direct ones that were easier to follow and test, starting with the disease stats in the pandemic model those rules feed into.
+
+</TwoColumn>
+
+<TwoColumn image={createOrJoin} alt="Create Game and Join Game panels, with a room name field and a join code field" caption="Hosting a room, or joining one with a code">
+
+**Multiplayer that holds up in a real classroom.** I fixed the server's player count per country, and a bug that stopped a third player from joining: the Relay allocation was still sized by a prototype constant of two players instead of the room's real player count. I also gave clients the right write permissions, and added safe disconnection and client reconnection that restores each player's local policies. Clients now disconnect cleanly when the host leaves, the packet queue limit is higher, and the create and join buttons lock while a session loads.
+
+Reconnection for players on unstable Wi-Fi is one of the features the client highlights.
+
+</TwoColumn>
+
+<TwoColumn image={gameSettings} alt="Initial game settings screen with each nation's infection rate, population, ICU capacity and popularity, plus vaccination and turn length settings" caption="The host's initial game settings" side="right">
+
+**Game setup.** I built the initial game settings screen and wired every field to the game's variables. Before a session starts, the host can tune each nation's infection rate, population, ICU capacity and popularity, along with the vaccination rate, when vaccines arrive, and how long each turn lasts.
+
+</TwoColumn>
+
+<TwoColumn image={news} alt="In-game newspaper, The Zecan Sentinel, reporting a new virus identified in Mepria" caption="The news popup">
+
+**News and the rest of the interface.** I built the news popup that reports on the outbreak as the game goes on, along with the main menu, the policy screens and a policy details popup, the pause, reset and emergency buttons, and the onboarding screens.
+
+</TwoColumn>
+
+<TwoColumn image={resultsGraphs} alt="Results screen with graphs of infections, deaths, ICU usage, vaccination and popularity for each nation" caption="Results graphs, filterable by nation" side="right">
+
+**Results for the debrief.** I built the end-of-game results: graphs of infections, deaths, ICU usage, vaccination and popularity, with filters to show one nation or all of them. The client uses them for post-round debriefing.
+
+</TwoColumn>
+
+<TwoColumn image={resultsReport} alt="Report screen listing each nation's policies, its donations to the Global Health Organization and its donations to other nations" caption="The report: policies, GHO donations and international donations">
+
+I also built the report screen, which breaks down every policy each nation took, what it donated to the Global Health Organization, and what it gave to other nations, so the group can talk through who cooperated and who didn't.
+
+</TwoColumn>
+
+I fixed bugs through to the end of the project, including aid timing, the Global Health Organization aid report, and typos and dates in the news.
+
+### Outcome
+
+COVID 35 is publicly released on itch.io by Pandemics and Borders, playable in the browser and on Windows. Wero Creative also features it in its portfolio.
+
+We got feedback from the client throughout and kept improving the game with it. One lesson was almost funny: every screen they played on was 16:10, and we had only ever tested at 16:9.
+
+*Screenshots from Wero Creative's project page.*

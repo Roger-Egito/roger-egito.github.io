@@ -33,6 +33,12 @@ export const colors = {
 
   /** A portfolio card's body. Slightly lighter than the page so it reads as a panel. */
   raised: '#1d1d1d',
+  /**
+   * The top of a card, the part you click to open the game: art, name, blurb, roles.
+   * A shade darker than `raised`, so the clickable part reads as one block apart from
+   * the buttons and details under it.
+   */
+  raisedDark: '#191919',
   /** The hairline around a card, and the rules above and below the numbers strip. */
   border: '#333333',
   /** Behind a card's artwork while the image is still loading. */
@@ -50,6 +56,30 @@ export const colors = {
   rule: '#dddddd',
   /** The line under each contact-form field. */
   field: '#eeeeee',
+
+  /* ── responsibility tags ─────────────────────────────────────────── */
+
+  /**
+   * One per discipline, on the tag line at the bottom of a card. The colour is what
+   * separates the disciplines now that the labels are gone.
+   *
+   * These come from IBM Carbon's dark theme, a set built for near-black backgrounds.
+   * Measured against the chip's own tinted fill, each one reads at 6.1:1 to 6.5:1,
+   * well past the 4.5:1 the accessibility guidelines ask for at this text size, and
+   * short of the 10:1 and up a fully bright colour would hit, which glares against
+   * this much black.
+   */
+
+  /** Design tags: level design, systems design, narrative design. */
+  design: '#78a9ff',
+  /** Programming tags: gameplay, AI, UI, network. */
+  programming: '#42be65',
+  /** Art tags: 2D, 3D, art direction. */
+  art: '#be95ff',
+  /** Audio tags: editing, implementation, sound design. */
+  audio: '#ff832b',
+  /** Production tags: project management, QA, localization. */
+  production: '#08bdba',
 
   /* ── states ────────────────────────────────────────────────────────────────── */
 

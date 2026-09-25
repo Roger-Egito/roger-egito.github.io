@@ -5,16 +5,18 @@ import { tagsIn } from '../config/tags';
 import StarRule from './StarRule.astro';
 import { getCollection } from 'astro:content';
 import { site, plainText } from '../config/site';
+import { heroClips, heroTiers } from '../config/hero';
+import { statSync } from 'node:fs';
+import { join } from 'node:path';
 // Same idea as Icon.astro: the file comes from a package and is inlined at build time,
 // so one flag ships as markup and nothing is fetched for it. Windows has no country
 // flag glyphs, so the 🇧🇷 emoji would just read "BR" for most desktop visitors.
 import brazilFlag from 'flag-icons/flags/4x3/br.svg?raw';
 
-// The clips the grid already uses for its hover previews, played full-screen behind
-// the hero. Same deal as over there: a game joins in just by having <slug>.mp4 next to
-// its markdown. To swap in bigger, hero-only versions later, point this glob at the
-// folder holding them — nothing else needs to change.
-const previews = import.meta.glob<string>('../content/games/*.mp4', {
+// The hero's own clips, separate from the card previews: src/config/hero.ts says which
+// games play here, and `npm run hero:encode` writes every clip at every quality tier.
+// The page carries all the tiers, and hero-quality.ts picks one per clip in the browser.
+const encoded = import.meta.glob<string>('../assets/hero/*.mp4', {
   eager: true,
   query: '?url',
   import: 'default',
@@ -25,19 +27,30 @@ const previews = import.meta.glob<string>('../content/games/*.mp4', {
 const games = await getCollection('games');
 const listing = new Intl.ListFormat('en', { style: 'long', type: 'conjunction' });
 
-const clips = Object.entries(previews)
-  .map(([path, src]) => ({ slug: path.split('/').pop()!.replace('.mp4', ''), src }))
-  .filter(({ slug }) => !site.heroExcludes.includes(slug))
-  .map(({ slug, src }) => {
-    const game = games.find((entry) => entry.id === slug);
-    // Always "<roles> for <game>". Every game states its own roles as a sentence; a
-    // new one that hasn't yet falls back to listing its role tags, which are stored
-    // lowercase precisely so they read correctly here.
-    const roles =
-      game?.data.roles ??
-      listing.format(tagsIn(game?.data.tags ?? [], 'role').map((tag) => tag.id));
-    return { src, slug, credit: `${roles} for ${plainText(game?.data.title ?? slug)}` };
+const clips = Object.keys(heroClips).map((slug) => {
+  const sources = heroTiers.map(({ height, kbps }) => {
+    const src = encoded[`../assets/hero/${slug}-${height}.mp4`];
+    if (!src) {
+      throw new Error(
+        `The hero has no ${height}p file for "${slug}". Run \`npm run hero:encode\` after ` +
+          'changing src/config/hero.ts.'
+      );
+    }
+    // The file size lets the browser time the download, which is how it measures the
+    // connection. The build runs from the project folder, so this path is stable.
+    const bytes = statSync(join(process.cwd(), 'src/assets/hero', `${slug}-${height}.mp4`)).size;
+    return { height, kbps, src, bytes };
   });
+
+  const game = games.find((entry) => entry.id === slug);
+  // Always "<roles> for <game>". Every game states its own roles as a sentence; a new
+  // one that hasn't yet falls back to listing its role tags, which are stored
+  // lowercase precisely so they read correctly here.
+  const roles =
+    game?.data.roles ??
+    listing.format(tagsIn(game?.data.tags ?? [], 'role').map((tag) => tag.id));
+  return { slug, sources, credit: `${roles} for ${plainText(game?.data.title ?? slug)}` };
+});
 ---
 
 <script>
@@ -48,7 +61,13 @@ const clips = Object.entries(previews)
 <header class="hero">
   {/* Decorative: the clips are the portfolio's own footage, shown again below with
       names attached, so there's nothing here for a screen reader to announce. */}
-  <div class="reel" data-reel data-clips={JSON.stringify(clips)} aria-hidden="true">
+  <div
+    class="reel"
+    data-reel
+    data-clips={JSON.stringify(clips)}
+    data-tiers={JSON.stringify(heroTiers)}
+    aria-hidden="true"
+  >
     <video muted playsinline preload="none"></video>
     <video muted playsinline preload="none"></video>
   </div>
@@ -82,7 +101,7 @@ const clips = Object.entries(previews)
 
       <p class="meta">
         <span class="flag" role="img" aria-label="Brazil" set:html={brazilFlag} />
-        {site.location} | {site.timezone}
+        {site.location.region}, {site.location.country} | {site.timezone}
       </p>
       <p class="meta">
         <span class="emoji" role="img" aria-label="Email">📫</span>

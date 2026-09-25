@@ -1,0 +1,67 @@
+---
+order: 5
+title: Memories of War
+img: ./memories-of-war.webp
+game: <iframe frameborder="0" src="https://itch.io/embed-upload/16549834?color=000000" allowfullscreen="" width="980" height="640"><a href="https://yougogames.itch.io/memories-of-war">Play Memories of War on itch.io</a></iframe>
+gameDescription: "Click inside the window to start playing. The game runs right here in the browser, so give it a moment to load."
+tags: [itch, game designer, programmer, tactics, strategy, unity, yougo, playable,
+  combat design, encounter design, level design, systems design,
+  gameplay programming]
+sole: [programmer]
+startDate: 2026
+team: "6"
+roles: "Game designer and game developer"
+blurb: "In an era long past, manage a squad and defeat your foes."
+description: "Memories of War is a squad-based grid tactics game built around a shared action economy, chess-inspired movement and positioning that matters.<br><br>I designed its levels and combat numbers, reworking the stats into small, simple values. As its sole programmer, I refactored the code I inherited and built the rest of the game."
+urlItchIo: <iframe frameborder="0" src="https://itch.io/embed/4304556?bg_color=551700&amp;fg_color=ffffff&amp;link_color=ff6120&amp;border_color=333333" width="552" height="167"><a href="https://yougogames.itch.io/memories-of-war">Memories of War by YouGo Games, Egito, anna frieiro</a></iframe>
+---
+
+import TwoColumn from '../../components/mdx/TwoColumn.astro';
+import movement from './memories-of-war/movement.webp';
+import battlefield from './memories-of-war/battlefield.webp';
+import statsTutorial from './memories-of-war/stats-tutorial.webp';
+import heroStats from './memories-of-war/hero-stats.webp';
+
+### The project
+
+Memories of War is a squad-based grid tactics game made with YouGo Games by a team of six. YouGo designed its core: a shared action economy, chess-inspired movement and positioning that matters. A previous programmer had already started the code when I joined.
+
+### My role
+
+I was a game designer and the sole programmer. My job was to design the game's levels and combat numbers, and take over its development.
+
+### What I did
+
+<TwoColumn image={movement} alt="A unit's movement range highlighted in green on the grid, with a Movement tooltip and the skill bar below" caption="Choosing where a unit moves">
+
+**Development.** The code I inherited was tightly coupled, threw frequent exceptions, and made little use of polymorphism. Some data came from ScriptableObjects and the rest didn't. I refactored the entire codebase, then developed the rest of the game in Unity myself.
+
+I reworked the classes so allies and enemies work the same way, built a better turn system, and rebuilt the whole attack and movement preview. I tried to reuse the existing attack and movement patterns, but ended up rewriting those too. Data is now a mix of ScriptableObjects and JSON, and the JSON doubles as the save data.
+
+</TwoColumn>
+
+<TwoColumn image={battlefield} alt="Battlefield of dirt paths and bushes with the player's squad in the middle and enemies closing in from both sides" caption="A battlefield mid-fight" side="right">
+
+**Levels that build on each other.** I designed the levels and the obstacles that shape them, each one building on the last. The first level is a single enemy and teaches the basics. The second splits the map in two, adds more enemies, and shows how walls two tiles thick get in the way of both moving and attacking. The third arranges the walls so that movement itself gets hard. Each level asks you to use what the one before it taught.
+
+</TwoColumn>
+
+<TwoColumn image={statsTutorial} alt="Tutorial overlay explaining the turn panel, stats and map, skills, help and end turn, including the rule Attack minus Defense equals Damage" caption="The tutorial explaining turns, stats and skills">
+
+**Balance.** I set the stats for every ally and enemy. They live in JSON, and I tuned them by playtesting the game a lot, making sure each character has its own specialty. Since I designed both the levels and the stats, playtesting let me balance them together. When a character was too strong or a level too hard, I could adjust either side.
+
+</TwoColumn>
+
+<TwoColumn image={heroStats} alt="A hooded mage character with a stats panel showing 5 health, 2 attack and 0 defense" caption="A hero's stats: 5 health, 2 attack, 0 defense" side="right">
+
+**Small numbers.** Stats used to run to values like 25 and 105, which felt bloated to me. I reworked them into small, simple numbers, so the player can do the math in their head and work out a fight at a glance, the way Hearthstone and Magic: The Gathering do.
+
+</TwoColumn>
+
+### Outcome
+
+It's playable in the browser and on Windows on itch.io.
+
+It changed how I think about code. I now pay more attention to how a codebase is structured as a whole. When a game needs many characters, I want the pieces that make up a character to be modular, so adding one means putting existing parts together.
+
+*Screenshots from the game's itch.io page.*

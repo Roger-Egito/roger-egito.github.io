@@ -1,0 +1,101 @@
+---
+order: 9
+title: Cursed Blight
+img: ./cursed-blight.webp
+video: https://www.youtube.com/embed/yELJnqW02LU?si=cLextrdcNpURQhbh
+game: <iframe frameborder="0" src="https://itch.io/embed-upload/16560630?color=000000" allowfullscreen="" width="980" height="580"><a href="https://ludomancerstudio.itch.io/cursed-blight">Play Cursed Blight on itch.io</a></iframe>
+gameDescription: "Click inside the window to start playing. The game runs right here in the browser, so give it a moment to load."
+tags: [itch, game designer, programmer, art director, dungeon crawler, unity, ludomancer, playable,
+  economy design, encounter design, level design, narrative design, progression design, systems design, ui/ux design,
+  narrative writing,
+  gameplay programming, ui programming,
+  art direction,
+  audio editing, audio implementation,
+  trailer production]
+sole: [game designer, programmer]
+startDate: 2026
+team: "4"
+metrics:
+  - label: Design to release
+    value: "~1 month"
+  - label: Browser plays
+    value: 590+
+roles: "Game designer, game developer and art director"
+blurb: "Reach the cure to save your village in an unforgiving catacomb of a dead world."
+description: "Cursed Blight is a grim-dark dungeon crawler where every encounter can kill you, so the best fight is the one you avoid.<br><br>I turned Ludomancer Studio's one-page brief into the full game in about a month, as its sole designer and programmer, and directed the art with our artist."
+urlItchIo: <iframe frameborder="0" src="https://itch.io/embed/4261632?bg_color=000000&amp;fg_color=d0f773&amp;link_color=cef6a3&amp;border_color=333333" width="552" height="167"><a href="https://ludomancerstudio.itch.io/cursed-blight">Cursed Blight by Ludomancer Studio, Egito, anna frieiro</a></iframe>
+---
+
+import TwoColumn from '../../components/mdx/TwoColumn.astro';
+import cultists from './cursed-blight/cultists.webp';
+import chest from './cursed-blight/chest.webp';
+import flesh from './cursed-blight/flesh.webp';
+import characterCreation from './cursed-blight/character-creation.webp';
+import corridor from './cursed-blight/corridor.webp';
+
+### The project
+
+Cursed Blight is a short grim-dark dungeon crawler made at Ludomancer Studio by a team of four, with a producer and an artist alongside me. The studio handed me a one-page brief built on Mörk Borg's tabletop rules.
+
+### My role
+
+I was the game's sole designer and programmer. My job was to design the full game from that brief, build it, and ship it in about a month.
+
+### What I did
+
+I wrote the full GDD from the one-page brief.
+
+<TwoColumn image={cultists} alt="Two hooded cultists flanking a barred gate in a torchlit catacomb, with the enemy's name and HP shown in the side panel" caption="Cultists guarding a gate">
+
+**From stealth to one tile of sight.** To set the game apart from other dungeon crawlers and push it toward horror, my first idea was torchlight stealth. The client and I agreed it couldn't be built in the time we had, so it never reached a prototype. I simplified it instead: the game is on a grid, enemies roam and only move when the player moves, and they see just one tile ahead. Waiting in place and letting them pass is always an option. The best fight is often the one you avoid.
+
+I designed the level and the enemy routes around that short sight and those roaming enemies.
+
+</TwoColumn>
+
+<TwoColumn image={chest} alt="An iron-banded chest in a catacomb room, between two wall carvings under a torch" caption="A chest, and the next upgrade inside it" side="right">
+
+**Simple enough for people who don't play RPGs.** I wanted someone who never plays RPGs to be able to pick this one up. So instead of loot and an inventory, the chests hold upgrades in the style of Metroid or Mega Man. They alternate between weapon and armor, from a femur up to a cleaver, so every chest makes you stronger and there's nothing to manage.
+
+**Only the stats survived from the tabletop.** From Mörk Borg's rules we kept the four stats and little else. Combat is one roll to hit, a d20 plus a stat, then the weapon's damage die minus the armor's die. I adapted Presence to the game's own economy: a higher Presence means the true ending asks for less Flesh and each piece heals more, but you can carry less of it.
+
+</TwoColumn>
+
+<TwoColumn image={flesh} alt="A pile of red flesh on the floor of a green stone corridor" caption="Flesh, the game's only resource">
+
+**A heal with a price.** Combat hurts, so the game needed healing, but I wanted healing to carry pressure and risk. Flesh heals 2d4. Two dice make the middle results likely, which is a little friendlier, but a piece can still heal as little as 2. You also never know where the next one is.
+
+Enemies drop Flesh, so every kill pays out right away. The fight can also cost more health than the Flesh gives back.
+
+Flesh is also the price of the true ending. The moment you realize that, the game gets harder: now you ration your heals, and a lucky strike can kill you.
+
+</TwoColumn>
+
+<TwoColumn image={characterCreation} alt='Character creation screen asking "Is this your flesh?" with rolled Strength, Agility, Presence, Toughness and HP beside a portrait' caption="Character creation" side="right">
+
+**Words and art.** I wrote the story and every line of in-game text, specced every screen, and directed the art with our artist.
+
+</TwoColumn>
+
+<TwoColumn image={corridor} alt="First-person catacomb view with a minimap, a movement log, the controls, the player's stats, possessions and a portrait around it" caption="The HUD: minimap, log, stats and possessions">
+
+**Programming.** I programmed the entire game in Unity, 44 C# scripts and about 3,200 lines. That covers grid step movement, enemy navigation that switches from roaming waypoints to combat, raycast enemy vision that walls block, and weapons, armor, enemies, upgrades and player stats as ScriptableObject data.
+
+</TwoColumn>
+
+It also covers the Flesh system, character creation, the chat log, minimap floor triggers, the HUD with damage flashes and a blood overlay, billboarded sprites driven by a sprite state machine, WebGL-specific handling, and every screen from the splash and title to the credits, game over and ending.
+
+- Integrated a dithering palette asset to get the game's limited-color look.
+- Edited and implemented all of the audio, including a separate music controller for the catacombs, and cut the trailer.
+
+**What I cut.** To ship in a month, we cut more enemy variety, more levels and deeper mechanics. Another month would have brought those back, along with a richer story.
+
+### Outcome
+
+Cursed Blight went from design to release in about a month. It's playable in the browser and on Windows on itch.io, where it has more than 590 browser plays.
+
+The atmosphere was my biggest focus, and it's what players responded to most. They quoted the game back, like "my flesh got harvested", after the line that appears when you die.
+
+Looking back, I'd optimize the level better, and make it smaller with more variety packed into it.
+
+*Screenshots from the game's itch.io page.*

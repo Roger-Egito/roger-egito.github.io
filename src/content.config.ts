@@ -2,7 +2,7 @@ import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 import { colors } from './config/theme';
-import { isTag, knownTags } from './config/tags';
+import { isTag, knownTags, tags as tagRegistry } from './config/tags';
 
 // One markdown file per portfolio entry, with its image sitting next to it.
 // Filename becomes the URL, so hotel-77.md is /games/hotel-77/.
@@ -176,7 +176,9 @@ function restyle(src: string) {
 }
 
 const games = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: './src/content/games' }),
+  // .mdx for entries with a long-form body built from layout components (see
+  // src/components/mdx/), plain .md for the rest.
+  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/games' }),
   schema: ({ image }) =>
     z.object({
       /** Position in the grid, highest shows first. */
@@ -229,6 +231,12 @@ const games = defineCollection({
       /** Free text under the date, e.g. 'Solo' or '4+ people'. */
       team: z.string().optional(),
       /**
+       * Role tags from this game's `tags` that I held alone, so they read "Sole
+       * Programmer" and not just "Programmer". Only for roles nobody else on the team
+       * shared. Checked below against the game's own role tags.
+       */
+      sole: z.array(z.string()).default([]),
+      /**
        * One or two lines for the portfolio card. Left off, the card falls back to the
        * first paragraph of `description`.
        */
@@ -259,6 +267,26 @@ const games = defineCollection({
       urlGooglePlay: storeLink.optional(),
       /** Shown instead of a store link for private or NDA'd projects. */
       private: z.string().optional(),
+    })
+    // `sole` only means something next to `tags`, so it's checked here where both are
+    // in view. A typo, or a sole role the game doesn't list, stops the build the same
+    // way an unknown tag does.
+    .superRefine((data, ctx) => {
+      data.sole.forEach((name, index) => {
+        if (!isTag(name) || tagRegistry[name].category !== 'role') {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['sole', index],
+            message: `"${name}" isn't a role tag. sole only takes roles from src/config/tags.ts.`,
+          });
+        } else if (!data.tags.includes(name)) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['sole', index],
+            message: `"${name}" is marked sole but isn't in this game's tags. Add it to tags too.`,
+          });
+        }
+      });
     }),
 });
 

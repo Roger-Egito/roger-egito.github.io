@@ -2,8 +2,9 @@
 // Body of a portfolio entry, shared by the homepage dialog and the standalone
 // /games/<slug>/ page so there's only one copy of this markup.
 import { Image } from "astro:assets";
-import type { CollectionEntry } from "astro:content";
+import { render, type CollectionEntry } from "astro:content";
 import Icon from "./Icon.astro";
+import { faGamepad } from "@fortawesome/free-solid-svg-icons";
 import StarRule from "./StarRule.astro";
 import {
   categories,
@@ -12,6 +13,7 @@ import {
   stores,
   tagsIn,
   yearRange,
+  type CategoryId,
 } from "../config/tags";
 
 interface Props {
@@ -26,6 +28,20 @@ interface Props {
 
 const { game, deferVideo = false } = Astro.props;
 const d = game.data;
+
+// The bullet in the long-form body. A list marker can't be an inline <svg>, so the
+// gamepad goes in as a shape CSS paints through: the same glyph Icon.astro would draw,
+// straight from the icon package, so it can't drift from the ones on the page. Painted
+// as a mask rather than an image, which is what lets it take the text's own colour.
+const [padWidth, padHeight, , , padPath] = faGamepad.icon;
+const gamepadMarker = `url("data:image/svg+xml,${encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${padWidth} ${padHeight}"><path d="${padPath}"/></svg>`
+)}")`;
+
+// The long-form write-up under the front matter. Only .mdx entries have one so far, and
+// a plain .md entry with an empty body skips the wrapper entirely.
+const { Content } = await render(game);
+const hasBody = Boolean(game.body?.trim());
 
 // Names and icons come from the platform tags rather than being written out here, so
 // this page and the grid can't end up calling the same storefront two different things.
@@ -46,23 +62,37 @@ const storeEmbeds = storeLinks.filter((link) => link.embed);
 const storeTextLinks = storeLinks.filter((link) => !link.embed);
 
 // Built from the same tags the card uses, so this table and the grid can't disagree
-// about who a game was for or what it was made with. One row per category that has
-// any tags, in the order set by categoryOrder in src/config/tags.ts.
+// about who a game was for or what it was made with.
 const dates = yearRange(d.startDate, d.endDate);
 
-const details = [
+type Fact = { label: string; value: string };
+
+/** A category's tags as one line, labeled singular or plural to match the count. */
+const factFor = (category: CategoryId): Fact | undefined => {
+  const found = tagsIn(d.tags, category);
+  if (found.length === 0) return undefined;
+  const { label, plural } = categories[category];
+  return {
+    label: found.length > 1 ? plural : label,
+    value: found.map((tag) => tag.label).join(" · "),
+  };
+};
+
+// The quick facts share a single row across the top of the table.
+const summaryCategories: CategoryId[] = ["client", "platform", "technology"];
+const summary = [
   dates && { label: "Date", value: dates },
   d.team && { label: "Team", value: d.team },
-  ...categoryOrder.map((category) => {
-    const found = tagsIn(d.tags, category);
-    if (found.length === 0) return undefined;
-    const { label, plural } = categories[category];
-    return {
-      label: found.length > 1 ? plural : label,
-      value: found.map((tag) => tag.label).join(" · "),
-    };
-  }),
-].filter(Boolean) as { label: string; value: string }[];
+  ...summaryCategories.map(factFor),
+].filter(Boolean) as Fact[];
+
+// Everything else gets a row of its own, in the order set by categoryOrder in
+// src/config/tags.ts. Roles and Feature are left off this page entirely.
+const skipped: CategoryId[] = [...summaryCategories, "role", "feature"];
+const rows = categoryOrder
+  .filter((category) => !skipped.includes(category))
+  .map(factFor)
+  .filter(Boolean) as Fact[];
 
 const plainTitle = d.title
   .replace(/<[^>]*>/g, " ")
@@ -115,6 +145,7 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
 }
 <script>
   import "../scripts/game-tabs";
+  import "../scripts/trailer-fullscreen";
 </script>
 
 {/* title and description can contain <br>, so render them as HTML */}
@@ -162,7 +193,16 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
       >
         {/* Nothing is fetched until this is pressed — these builds are tens of MB, and
             landing on the Game tab shouldn't mean landing on a download. */}
-        <button type="button" class="game-start" data-play>
+        {/* The note sits inside the button so it shares the cover, which means its text
+            would otherwise become part of the button's name. aria-label keeps the name
+            short, and aria-describedby hands the note over as a description instead. */}
+        <button
+          type="button"
+          class="game-start"
+          data-play
+          aria-label={`Play ${plainTitle} right here`}
+          aria-describedby={d.gameDescription ? `${game.id}-play-note` : undefined}
+        >
           <Image
             src={d.img}
             alt=""
@@ -174,6 +214,9 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
             <Icon name="play" class="play-icon" />
             Play it right here
           </span>
+          {d.gameDescription && (
+            <span class="play-note" id={`${game.id}-play-note`} set:html={d.gameDescription} />
+          )}
         </button>
         <iframe
           title={`Play ${plainTitle}`}
@@ -186,12 +229,6 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
   }
 
   {
-    d.game && d.gameDescription && (
-      <p class="game-note" set:html={d.gameDescription} />
-    )
-  }
-
-  {
     d.video && (
       <div
         class="media video-panel"
@@ -199,7 +236,10 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
         role={tabs.length > 1 ? "tabpanel" : undefined}
         aria-labelledby={tabs.length > 1 ? `${game.id}-tab-video` : undefined}
       >
+        {/* data-trailer marks it for trailer-fullscreen.ts whichever way it loads.
+            data-video only exists while the src is waiting for its tab. */}
         <iframe
+          data-trailer
           title={`${plainTitle} trailer`}
           src={deferredVideo ? undefined : videoSrc}
           data-video={deferredVideo ? videoSrc : undefined}
@@ -228,7 +268,46 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
   </div>
 </div>
 
+{/* The facts first, straight under the media: what it is and who did what, before the
+    write-up explains how. */}
+{
+  (summary.length > 0 || rows.length > 0) && (
+    <table class="facts">
+      <tbody>
+        {summary.length > 0 && (
+          <tr class="summary">
+            <td colspan="2">
+              <dl>
+                {summary.map((item) => (
+                  <div>
+                    <dt>{item.label}</dt>
+                    <dd>{item.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </td>
+          </tr>
+        )}
+        {rows.map((item) => (
+          <tr>
+            <th scope="row">{item.label}</th>
+            <td>{item.value}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
 {d.description && <p class="description" set:html={d.description} />}
+
+{
+  hasBody && (
+    <div class="long-form">
+      <Content />
+    </div>
+  )
+}
 
 {
   storeEmbeds.length > 0 && (
@@ -261,22 +340,9 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
   )
 }
 
-{
-  details.length > 0 && (
-    <dl class="meta">
-      {details.map((item) => (
-        <div>
-          <dt>{item.label}:</dt>
-          <dd>{item.value}</dd>
-        </div>
-      ))}
-    </dl>
-  )
-}
-
 <slot name="action" />
 
-<style>
+<style define:vars={{ gamepadMarker }}>
   /* Game / Video switch. Same uppercase Montserrat as the headings so it reads as
      part of the design rather than a browser control. */
   .tabs {
@@ -362,7 +428,7 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
   }
 
   /* Which panel is up. Everything that isn't the one named by data-shown goes away. */
-  .group:not([data-shown="game"]) :is(.game-panel, .game-note),
+  .group:not([data-shown="game"]) .game-panel,
   .group:not([data-shown="video"]) .video-panel,
   .group:not([data-shown="cover"]) .cover-panel {
     display: none;
@@ -373,11 +439,6 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
      Only the frame is hidden, so the panel keeps its size and nothing reflows. */
   .group[data-paused] .game-panel :global(iframe) {
     display: none;
-  }
-
-  .game-note {
-    margin: -1em 0 2em;
-    text-align: left;
   }
 
   /* A playable build needs a pointer and a keyboard, and the builds are far too heavy
@@ -392,8 +453,7 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
       display: none;
     }
 
-    .group .game-panel,
-    .group .game-note {
+    .group .game-panel {
       display: none !important;
     }
   }
@@ -433,11 +493,15 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
   }
 
   /* Cover art standing in for the build until someone asks for it. */
+  /* The Play button with its note underneath, centered as one block. The artwork is
+     absolutely positioned, so it doesn't take a grid cell of its own. */
   .game-start {
     position: absolute;
     inset: 0;
     display: grid;
-    place-items: center;
+    place-content: center;
+    justify-items: center;
+    gap: 0.9em;
     padding: 0;
     border: 0;
     background: none;
@@ -491,6 +555,21 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
     transition-duration: 0.08s;
   }
 
+  /* Small and quiet: a hint for what happens after pressing, not a second button. It
+     stays put while the button lifts. */
+  .play-note {
+    z-index: 1;
+    max-width: 30em;
+    padding: 0 1em;
+    color: var(--color-muted);
+    /* rem, not em: a <button> doesn't inherit the page's font size, so em would be
+       relative to the browser's own small button default. */
+    font-size: 0.8rem;
+    line-height: 1.4;
+    text-align: center;
+    text-shadow: 0 1px 6px var(--color-text-shadow);
+  }
+
   /* :global because the <svg> is rendered by Icon.astro, so it carries that
      component's scope attribute rather than this one's. */
   .play :global(.play-icon) {
@@ -506,6 +585,90 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
 
   .description {
     text-align: left;
+  }
+
+  /* The body comes out of <Content />, a different component, so none of it carries this
+     file's scope. Every rule below reaches in through :global. */
+  .long-form {
+    text-align: left;
+  }
+
+  .long-form :global(h2),
+  .long-form :global(h3) {
+    margin: var(--space-gap) 0 0.5em;
+    font-family: var(--font-heading), sans-serif;
+    line-height: var(--line-height-heading);
+    text-transform: uppercase;
+  }
+
+  /* Bullets read at the same size as the paragraphs around them. Without this they
+     fall back to the page's base size, which is smaller than --text-body, and a list
+     mid-article came out visibly finer than the sentence introducing it. */
+  .long-form :global(ul),
+  .long-form :global(ol) {
+    font-size: var(--text-body);
+  }
+
+  /* A list is pulled in from both edges, so it reads as a block set inside the article
+     rather than more paragraphs. It lands halfway between the full text column and the
+     552px store widget further down, the narrowest block on the page.
+
+     The inset is a share of the column rather than a fixed number, so it holds at every
+     breakpoint. On a phone the column is already narrower than the widget, the
+     calculation comes out wider than 100%, and the list keeps the full width. The
+     padding on top of that is what leaves the gamepads their own column. */
+  .long-form :global(ul) {
+    max-width: calc((100% + 552px) / 2);
+    margin-inline: auto;
+    padding-left: 2.2em;
+    list-style: none;
+  }
+
+  .long-form :global(ol) {
+    max-width: calc((100% + 552px) / 2);
+    margin-inline: auto;
+  }
+
+  .long-form :global(ul) > :global(li) {
+    position: relative;
+  }
+
+  /* The gamepad standing in for the dot. currentColor through a mask, so it stays the
+     same ink as the line it belongs to. Held slightly back, since the mark is wider
+     than a bullet and would otherwise pull the eye off the text.
+
+     0.68em tall and pulled 1.6em left puts it where the dot would have been, and the
+     top offset centers it on the first line however the text wraps. */
+  .long-form :global(ul) > :global(li)::before {
+    position: absolute;
+    top: calc((1em * var(--line-height)) / 2);
+    left: -1.6em;
+    width: 0.85em;
+    height: 0.68em;
+    transform: translateY(-50%);
+    background-color: currentColor;
+    mask: var(--gamepadMarker) no-repeat center / contain;
+    opacity: 0.75;
+    content: "";
+  }
+
+  /* Half a line of air on each side of a list, and half a line more between its items
+     than they had, so the block breathes instead of running on like another paragraph.
+     0.5lh is literally half a line of this text. A browser too old to know the unit
+     ignores these two declarations and keeps the tighter spacing, which is a fallback
+     rather than a break. */
+  .long-form :global(ul),
+  .long-form :global(ol) {
+    margin-block: calc(1em + 0.5lh);
+  }
+
+  .long-form :global(li + li) {
+    margin-top: 0.4em;
+    margin-top: calc(0.4em + 0.5lh);
+  }
+
+  .long-form :global(a) {
+    color: var(--color-accent);
   }
 
   /* The store's own widget, standing in for a line of link text. itch serves it at a
@@ -528,8 +691,69 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
     border-radius: var(--radius);
   }
 
-  .links,
-  .meta {
+  /* Label and value in two columns, one fact per row. The label column is only as wide
+     as its longest label, so the values all start on the same line. */
+  .facts {
+    width: 100%;
+    margin: 0 0 var(--space-gap);
+    border-collapse: collapse;
+    text-align: left;
+  }
+
+  .facts tr + tr {
+    border-top: 1px solid var(--color-border);
+  }
+
+  .facts th,
+  .facts td {
+    padding: 0.55em 0.75em;
+    vertical-align: top;
+  }
+
+  .facts th {
+    width: 1%;
+    padding-left: 0;
+    color: var(--color-muted);
+    font-size: 0.85em;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .facts td {
+    font-weight: 700;
+  }
+
+  /* The quick facts, side by side in one row, each label over its value. They spread
+     across the full width with equal space between them, first against the left edge
+     and last against the right. They wrap onto a second line on a narrow screen rather
+     than squeezing. */
+  .summary td {
+    padding-left: 0;
+  }
+
+  .summary dl {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.6em 2.2em;
+    margin: 0;
+  }
+
+  .summary dt {
+    color: var(--color-muted);
+    font-size: 0.85em;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .summary dd {
+    margin: 0;
+  }
+
+  .links {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
@@ -547,17 +771,4 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
     font-weight: 700;
   }
 
-  .meta div {
-    display: flex;
-    gap: 0.35em;
-  }
-
-  .meta dt {
-    font-weight: 400;
-  }
-
-  .meta dd {
-    margin: 0;
-    font-weight: 700;
-  }
 </style>

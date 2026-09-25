@@ -24,9 +24,9 @@ html {
  * inherited one no matter who wrote it, so without this they'd fall back to the
  * system cursors instead of the hand.
  *
- * The eye is deliberately NOT here. It means "look at this", which only makes sense
- * where you're previewing a game: the hero footage (Header.astro) and the portfolio
- * cards (PortfolioGrid.astro). On a nav link it would be noise.
+ * The eye is deliberately NOT here. It means "look at this", and only the hero footage
+ * (Header.astro) uses it, where the whole screen is a game playing. Everywhere else,
+ * the portfolio cards included, it would be noise.
  */
 a:any-link,
 button,
@@ -135,9 +135,11 @@ section {
 
 /* --- section heading + its little divider --- */
 
+/* 3em, except on phones narrow enough that a long single word in a game's name
+   ("Vivenciando") would be wider than the column at that size. */
 .section-heading {
   margin: 0;
-  font-size: 3em;
+  font-size: min(3em, 10vw);
   text-align: center;
 }
 

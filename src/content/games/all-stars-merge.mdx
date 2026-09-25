@@ -1,0 +1,92 @@
+---
+order: 7
+title: All Stars Merge
+img: ./all-stars-merge.webp
+video: https://www.youtube.com/embed/RQ0IyogkOHE?si=JFQXMyRD6ZPqVErC
+tags: [google play, game developer, merge, unity, ludomancer,
+  economy design,
+  gameplay programming, ui programming,
+  audio implementation,
+  english localization]
+startDate: 2025
+metrics:
+  - label: Downloads
+    value: 10K+
+team: "20+"
+roles: "Game developer"
+blurb: "Merge items and help Liz rebuild her city, stadium by stadium."
+description: "After Liz is suddenly fired, she starts over merging and selling sports equipment and rebuilding the stadiums around town, unaware that her good deeds may draw the wrong kind of attention.<br><br>I built the meta layer around the merge board: stadium upgrades, quests, story cutscenes, the sticker album, the store and the onboarding."
+urlGooglePlay: https://play.google.com/store/apps/details?id=com.hermitcrabstudio.f2p.allstarsmerge&pcampaignid=web_share
+---
+
+import TwoColumn from '../../components/mdx/TwoColumn.astro';
+import mergeBoard from './all-stars-merge/merge-board.webp';
+import stadiumUpgrade from './all-stars-merge/stadium-upgrade.webp';
+import dailyMissions from './all-stars-merge/daily-missions.webp';
+import cutscene from './all-stars-merge/cutscene.webp';
+import stickerAlbum from './all-stars-merge/sticker-album.webp';
+
+### The project
+
+<TwoColumn image={mergeBoard} alt="Merge board full of sports equipment, with customer requests and their coin rewards along the top" caption="The merge board">
+
+All Stars Merge is a free-to-play merge game published on Google Play by Hermit Crab Game Studio. I worked on it for my client, Ludomancer Studio, which was developing the game for Hermit Crab.
+
+I joined in June 2025, on a codebase that had been in development since 2023, alongside a team of more than 20 people.
+
+</TwoColumn>
+
+### My role
+
+My job was to build out the game's meta layer around the merge board: the stadiums players rebuild, the quests that drive them, the story cutscenes, the sticker collection, the store, and the onboarding that ties it all together.
+
+### What I did
+
+Between June and October 2025 I made 147 commits across 109 C# files.
+
+**Learning the codebase first.** I was the only programmer on the team at the time, on a tight schedule. Before building anything I took time to understand the architecture. Many developers had worked on the game over two years, and each system followed its own conventions.
+
+<TwoColumn image={stadiumUpgrade} alt="City map with an upgrade popup showing a gem reward, a coin cost and an Upgrade button" caption="Upgrading a stadium part" side="right">
+
+**Stadiums.** I built the stadium layer from its first scene: field evolution, upgradeable field parts with costs, the upgrade choice screen and its animation, stage swapping, the basketball and volleyball stadiums, and the transition animation between them. I also fixed the upgrade save so progress held between sessions.
+
+</TwoColumn>
+
+<TwoColumn image={dailyMissions} alt="Daily Missions screen with progress bars for spending gems, merging items, watching videos and delivering requests" caption="Daily missions and their rewards">
+
+**Quests.** I implemented missions with task costs and rewards, a questline flow driven by ScriptableObjects, and the level 3 questlines, which I authored in PlayFab title data. I added quest completion notifications in both the merge and stadium scenes, consumed the right board items when a quest completed, marked quest items on the board, and added the quest drawer.
+
+I also rebuilt the daily tasks screen and its rewards.
+
+</TwoColumn>
+
+<TwoColumn image={cutscene} alt="Story cutscene with chat bubbles from Kai, Axel, Maya and the player, each with a character portrait" caption="A story cutscene with character portraits" side="right">
+
+**Story.** I implemented the story cutscenes and the prologue, then restyled them and added character portraits with expressions, a skip button, and a new HQ introduction.
+
+</TwoColumn>
+
+<TwoColumn image={stickerAlbum} alt="Sticker album page with collected jerseys and shorts, empty numbered slots, and a page completion reward" caption="A sticker album page and its completion reward">
+
+**Sticker album.** I brought the album back online and extended it: more albums, stickers and packages, sticker page progression with page rewards, a three-pack opening animation, and collection notifications.
+
+</TwoColumn>
+
+**Store, economy and onboarding.**
+
+- Built the gem store with its info screen, energy refills in the store, the daily offer, selling chests, and the level-up screen with XP rewards, and gated the store behind level 3.
+- Made small adjustments to economy values: starting energy, request rewards, chest cooldowns, sticker package frequency and ratios, and the daily offer's character pool.
+- Built the onboarding tutorials for quests, the store, the album and the full board, including tutorial GIFs. Quests and the other new mechanics each got a tutorial of their own, placed after the ones the game already had, so new systems are taught once the basics are in place. It's also why quests and the store only open at level 3: the onboarding teaches the merge board first.
+
+**Audio and localization.**
+
+- Implemented audio across the game: new sound effects, music fade in and fade out, separate music and effects volume sliders and toggles, and saved player settings.
+- Helped with the English localization.
+
+### Outcome
+
+All Stars Merge is live on Google Play with more than 10,000 downloads, and it was updated as recently as May 2026.
+
+It taught me how much code architecture and shared practices matter on a big team. When many people build a game over years, a common structure is what lets the next person add to it safely.
+
+*Screenshots from the game's Google Play page.*

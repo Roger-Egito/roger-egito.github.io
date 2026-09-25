@@ -90,9 +90,14 @@ const [width, height, , , path] = found.icon;
 const d = Array.isArray(path) ? path.join(' ') : path;
 ---
 
+{/* overflow="visible" because some glyphs draw a little past their viewBox, like the
+    head on person-digging or the top of the lock, and an <svg> crops anything outside
+    its box by default. Font Awesome's own stylesheet sets the same thing on its inline
+    icons. This component skips that stylesheet, so it has to say it here. */}
 <svg
   class={className}
   viewBox={`0 0 ${width} ${height}`}
+  overflow="visible"
   xmlns="http://www.w3.org/2000/svg"
   fill="currentColor"
   role={label ? 'img' : undefined}

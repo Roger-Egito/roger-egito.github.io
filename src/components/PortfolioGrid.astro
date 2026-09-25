@@ -5,10 +5,10 @@ import StarRule from "./StarRule.astro";
 import Icon from "./Icon.astro";
 import TagIcon from "./TagIcon.astro";
 import {
-  chipTags,
-  chipsHeading,
+  creditsFor,
   iconsOn,
   resolve,
+  responsibilityChipsIn,
   stores,
   tagsIn,
   yearRange,
@@ -89,8 +89,9 @@ const plain = (value: string) =>
           const dates = yearRange(d.startDate, d.endDate);
           const client = tagsIn(d.tags, "client")[0];
           const icons = iconsOn(d.tags, "right");
-          const roles = tagsIn(d.tags, "role");
-          const tags = chipTags(d.tags);
+          const roles = creditsFor(d.tags, d.sole);
+          const genres = tagsIn(d.tags, "genre");
+          const responsibilities = responsibilityChipsIn(d.tags);
           const blurb = blurbFor(d);
           const storeList = storesFor(d);
 
@@ -152,7 +153,17 @@ const plain = (value: string) =>
                       </p>
                     )}
 
-                    <h3 class="title" set:html={d.title} />
+                    {/* Genre shares the name's line as a small aside, pushed to the
+                        card's right edge: it answers "what kind of game", which belongs
+                        with the title more than with the list of what I did on it. */}
+                    <div class="title-line">
+                      <h3 class="title" set:html={d.title} />
+                      {genres.length > 0 && (
+                        <p class="genres">
+                          {genres.map((genre) => genre.label).join(" · ")}
+                        </p>
+                      )}
+                    </div>
 
                     {blurb && <p class="blurb">{blurb}</p>}
 
@@ -160,7 +171,7 @@ const plain = (value: string) =>
                       <p class="roles">
                         <Icon name="pen-ruler" />
                         <span>
-                          {roles.map((role) => role.label).join(" · ")}
+                          {roles.join(" · ")}
                         </span>
                       </p>
                     )}
@@ -174,18 +185,6 @@ const plain = (value: string) =>
                       </p>
                     )}
 
-                    {/* Only a couple of games have numbers worth showing; the strip and
-                        its rules disappear entirely for the rest. */}
-                    {d.metrics && d.metrics.length > 0 && (
-                      <ul class="metrics">
-                        {d.metrics.map((metric) => (
-                          <li>
-                            <strong>{metric.value}</strong>
-                            <span>{metric.label}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
                   </div>
                 </a>
 
@@ -214,15 +213,29 @@ const plain = (value: string) =>
                   </ul>
                 )}
 
+                {/* Only a couple of games have numbers worth showing, and the strip
+                    disappears entirely for the rest. Out here with the store buttons
+                    rather than inside the card's link, so it can sit below them. */}
+                {d.metrics && d.metrics.length > 0 && (
+                  <ul class="metrics">
+                    {d.metrics.map((metric) => (
+                      <li>
+                        <strong>{metric.value}</strong>
+                        <span>{metric.label}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
                 {/* Outside the link on purpose: these become filter buttons later, and
                     a button inside an anchor is invalid markup. */}
-                {tags.length > 0 && (
+                {responsibilities.length > 0 && (
                   <Fragment>
-                    <!--<p class="tags-heading">{chipsHeading}</p> -->
-                    <ul class="tags">
-                      {tags.map((tag) => (
+                    <p class="responsibilities">Responsibilities</p>
+                    <ul class="chips">
+                      {responsibilities.map((tag) => (
                         <li data-tag={tag.id} data-category={tag.category}>
-                          {tag.icon && <TagIcon tag={tag} inline />}
+                          {tag.chipIcon && <Icon name={tag.chipIcon} />}
                           {tag.label}
                         </li>
                       ))}
@@ -281,7 +294,13 @@ const plain = (value: string) =>
 
   /* The artwork sits flush in the top of a panel a shade lighter than the page, with
      the border running round the whole thing so picture and text read as one object. */
+  /* --fade is the empty space under the Team Size line, the last thing in the card's
+     link. The link's darker shade fades into the card's own color across exactly that
+     space, so the change lands between Team Size and the button below without running
+     behind either one. */
   .card {
+    --fade: 14px;
+
     display: flex;
     flex-direction: column;
     width: 100%;
@@ -308,11 +327,15 @@ const plain = (value: string) =>
 
   .card-link {
     display: block;
+    /* A shade darker than the card, marking out the part that opens the game. Solid
+       down to the Team Size line, then a quick fade into the card's color. */
+    background: linear-gradient(
+      to bottom,
+      var(--color-raised-dark) calc(100% - var(--fade)),
+      var(--color-raised)
+    );
     color: inherit;
     text-decoration: none;
-    /* One of only two places the eye appears: you're looking at a game, not
-       navigating. The other is the hero footage. */
-    cursor: var(--cursor-pointer);
   }
 
   .shot {
@@ -418,8 +441,19 @@ const plain = (value: string) =>
     margin-left: auto;
   }
 
-  .title {
+  /* The genres keep their spot on the first line, and a long name wraps its last
+     words onto a second line under itself instead of pushing the genres down. */
+  .title-line {
+    display: flex;
+    align-items: baseline;
+    column-gap: 10px;
     margin: 0 0 6px;
+  }
+
+  .title {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
     font-size: 1.2em;
     /* The site's headings are uppercase, but a game's name is a name, so it keeps its
        own capitalisation. */
@@ -447,7 +481,7 @@ const plain = (value: string) =>
   }
 
   .team {
-    margin-bottom: 14px;
+    margin-bottom: var(--fade);
   }
 
   .roles :global(svg),
@@ -458,14 +492,13 @@ const plain = (value: string) =>
     fill: currentColor;
   }
 
-  /* One button per storefront, stacked, sitting outside the card's own link. The 22px
-     matches .info's padding, which is what keeps them on the same left edge as the
-     roles and team lines above even though they're no longer inside that block.
-     align-items keeps each button the width of its own label rather than the column. */
+  /* One button per storefront, stacked and centered, sitting outside the card's own
+     link. align-items keeps each button the width of its own label rather than the
+     column. */
   .stores {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     /* 3 rather than 8 because each button's layout box is --lift times its resting
        size (see .store), leaving about 5px of empty box below one and above the next.
        Together that reads as the 8px this used to be. */
@@ -500,9 +533,8 @@ const plain = (value: string) =>
     padding: calc(8px * var(--lift)) calc(13px * var(--lift));
     font-size: calc(13.5px * var(--lift));
     line-height: 1.2;
-    /* Grows rightward from the column it shares with the lines above, rather than from
-       its middle, so a hovered button doesn't drift out of that left edge. */
-    transform-origin: left center;
+    /* Grows from its middle, so a centered button stays centered while it lifts. */
+    transform-origin: center;
     transform: scale(calc(1 / var(--lift)));
   }
 
@@ -525,22 +557,21 @@ const plain = (value: string) =>
     fill: currentColor;
   }
 
-  /* Ruled off top and bottom so the numbers read as a fact sheet rather than more
-     prose. Only a couple of games carry any. */
+  /* Centered under the store button. Only a couple of games carry any. */
   .metrics {
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
     gap: 18px;
-    margin: 0 0 14px;
-    padding: 14px 0;
+    margin: 0;
+    padding: 10px 22px 0;
     list-style: none;
-    border-top: 1px solid var(--color-border);
-    border-bottom: 1px solid var(--color-border);
   }
 
   .metrics li {
     display: flex;
     flex-direction: column;
+    align-items: center;
   }
 
   .metrics strong {
@@ -555,39 +586,100 @@ const plain = (value: string) =>
     text-transform: uppercase;
   }
 
-  .tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin: 0;
-    padding: 14px 22px 0;
-    list-style: none;
+  /* Muted and a size down from the blurb: an aside to the name, not a second title.
+     margin-left: auto sends it to the far end of the line, so it sits against the
+     card's right edge. It never shrinks for the name, but it's capped at half the
+     line, so a long list wraps within itself rather than squeezing the name out. */
+  .genres {
+    flex: none;
+    max-width: 50%;
+    margin: 0 0 0 auto;
+    text-align: right;
+    color: var(--color-muted);
+    font-size: 12px;
+    letter-spacing: 0.04em;
   }
 
-  .tags-heading {
+  /* The heading over all the groups: centered, in full ink, with a rule running out to
+     each side. The rules are flex items that split the leftover width between them. */
+  .responsibilities {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     margin: 0;
-    padding: 14px 22px 0;
-    color: var(--color-muted);
+    padding: 18px 22px 0;
+    color: var(--color-txt);
     font-size: 11px;
     letter-spacing: 0.12em;
     text-transform: uppercase;
   }
 
-  /* The heading already provides the gap above the row. */
-  .tags-heading + .tags {
-    padding-top: 6px;
+  .responsibilities::before,
+  .responsibilities::after {
+    flex: 1;
+    height: 1px;
+    background: var(--color-border);
+    content: '';
   }
 
-  .tags li {
+  /* One line of chips that wraps, starting at the card's left edge under the heading,
+     so every line begins on the same vertical as the blurb and the roles above it. */
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 12px 22px 0;
+    list-style: none;
+  }
+
+  /* Colour is what tells the disciplines apart now that no labels divide them, so each
+     chip takes its own: full strength for the word, a dimmed version of the same hue
+     for the outline, and a trace of it inside. The fill stays faint on purpose, since
+     five solid colours across a card would shout louder than the artwork above them.
+     The fallback keeps a chip readable if a tag outside the five ever lands here. */
+  .chips li {
+    --chip-color: var(--color-muted);
+
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    border: 1px solid var(--color-border);
+    height: 21px;
+    padding: 0 9px;
+    border: 1px solid color-mix(in srgb, var(--chip-color) 65%, transparent);
     border-radius: 100px;
-    color: var(--color-muted);
-    font-size: 11.5px;
+    background: color-mix(in srgb, var(--chip-color) 10%, transparent);
+    color: var(--chip-color);
+    font-size: 10.5px;
     letter-spacing: 0.04em;
-    line-height: 1.4;
+  }
+
+  /* The discipline's mark, sized to the word beside it and held a little back, so the
+     chip still reads as a word with a mark on it rather than as two things. gap is on
+     the icon rather than the chip, which keeps a chip without one from carrying a
+     phantom space. */
+  .chips li :global(svg) {
+    height: 9px;
+    margin-right: 5px;
+    opacity: 0.8;
+  }
+
+  .chips li[data-category='design'] {
+    --chip-color: var(--color-design);
+  }
+
+  .chips li[data-category='programming'] {
+    --chip-color: var(--color-programming);
+  }
+
+  .chips li[data-category='art'] {
+    --chip-color: var(--color-art);
+  }
+
+  .chips li[data-category='audio'] {
+    --chip-color: var(--color-audio);
+  }
+
+  .chips li[data-category='production'] {
+    --chip-color: var(--color-production);
   }
 </style>

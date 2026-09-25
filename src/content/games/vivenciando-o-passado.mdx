@@ -1,0 +1,92 @@
+---
+order: 10
+title: Vivenciando o Passado
+img: ./vivenciando-o-passado.webp
+alt: "The Valongo bay in 1830 rebuilt in 3D, with sailboats on the water in front of a row of colonial houses"
+tags: [private, in development, project lead, game developer, game designer, educational, vr, unity, xr interaction toolkit, fmod, uff,
+  interaction design, level design,
+  gameplay programming, tools programming, ui programming,
+  technical art,
+  project management]
+startDate: 2025
+team: "18+"
+metrics:
+  - label: Exhibited
+    value: SBPC 2026
+roles: "Project lead, game developer and game designer"
+blurb: "Live the Atlantic slave trade through a child's eyes, in 1830s Rio de Janeiro."
+description: "Vivenciando o Passado (Experiencing the Past) is an educational virtual reality experience for Meta Quest 3 about the Atlantic slave trade, set in Rio de Janeiro's Valongo complex in 1830. The player lives it in first person, from a child's point of view.<br><br>I lead its development at UFF's Media Lab, between the historians who research it and the programmers who build it."
+private: This experience isn't publicly available.
+---
+
+import TwoColumn from '../../components/mdx/TwoColumn.astro';
+import coal from './vivenciando-o-passado/coal.webp';
+import poster from './vivenciando-o-passado/sbpc-poster.webp';
+import team from './vivenciando-o-passado/sbpc-team.webp';
+import visitorBadge from './vivenciando-o-passado/sbpc-visitor-badge.webp';
+import visitor from './vivenciando-o-passado/sbpc-visitor.webp';
+import guiding from './vivenciando-o-passado/sbpc-guiding.webp';
+
+### The project
+
+Vivenciando o Passado is a research project at Universidade Federal Fluminense, under its UNESCO Chair on Global and Social Inequalities. Historians and computing students are building an immersive VR experience for Meta Quest 3 about the Atlantic slave trade and Rio de Janeiro's Valongo complex, where enslaved Africans were landed and sold, as it stood in 1830.
+
+<TwoColumn image={poster} alt='The project poster at SBPC 2026, with the heading "Uma Experiência XR" over the lines "Não é um jogo, não é um filme, não é um tour", beside renders of the harbor, a ship and the Valongo shop' caption="The project poster at SBPC 2026" side="right">
+
+It isn't a game, a film or a tour. The player takes part in scenes from a child's point of view, interacting with characters whose words and surroundings come from historical documentation.
+
+</TwoColumn>
+
+### My role
+
+I'm the project lead and one of its developers. My job is to turn the historians' research into an experience that runs on the headset, and to coordinate the programmers building it.
+
+### What I did
+
+<TwoColumn image={team} alt="Eleven people posing together in front of the Instituto de História booth at SBPC 2026, with Roger third from the left in a white shirt and glasses" caption="At the Instituto de História booth. I'm third from the left.">
+
+**Stepping up to lead.** I didn't join as project lead. We're all busy people, and keeping the team organized and motivated, the project afloat and the clients satisfied was hard, so I stepped up and started organizing everything. I led four programmers working on Git feature branches, and turned the research team's documentation into 12 scheduled technical milestones.
+
+</TwoColumn>
+
+**Making the history work in VR.** The historians are very particular about the experience they want, and I negotiate with them a lot to keep it viable in VR. In one scene the player walks in a line of enslaved people and can only move forward, but it's the player who moves the whole line forward, and their hands are left untied, because in VR the player needs their hands free.
+
+The hardest part is dialogue. Every line has to be true to the period and teach something, so it goes through many people before it reaches us, and very few lines have arrived so far.
+
+<TwoColumn side="right" image={coal} alt='The VR view in the slave shop scene: a girl stands before the player, whose red virtual hands hold a lump of coal, under the text "Pega o carvão da minha mão"' caption="The shop scene: a girl asks the player to take the coal from her hand">
+
+**The first version, 2025.** I set up the basic VR controls, added the characters and idle animations to the slave shop scene, and built the dialogue system. It had trigger zones, speech bubbles that follow the actors, animations during dialogue, and an importer that pulled the historians' lines from Google Sheets. I also added the scene timer.
+
+</TwoColumn>
+
+**The second version, 2026.** I rigged most of the characters and set up their animators. In the shop scene I added walking, teleporting, the player's hands, collision with NPCs and the final cutscene. I also built the Valongo scene and scene 3, and added lost objects to find.
+
+**Rebuilding the codebase.** We weren't following a shared structure, and the code was getting hard to change. The first code had one script per scene, with that scene's script written into it, so changing a line of dialogue meant editing C#. In September 2026 I rewrote every script in the project, 81 files and 5,742 lines, around three ideas:
+
+- Characters, places, gestures, signals and chapters are ScriptableObject assets that scene components point to, so a scene's script never references scene objects directly. The project has 17 characters, 37 gestures and 16 places.
+- Scene scripts are data. A sequence is a list of steps edited in the Inspector, built from 12 step types such as Say, MoveTo, PlayGesture, TeleportPlayer and WaitForSignal, with a custom editor for authoring them.
+- Session systems start themselves before any scene loads, so pressing Play in any scene runs the same systems as a real build.
+
+I backed the rewrite with 13 automated tests, and wrote a README in Portuguese that walks the team through everyday tasks without writing new code. Non-programmers now have a much easier time writing sequences and dialogue, which make up the flow of every scene.
+
+### Outcome
+
+<TwoColumn image={visitorBadge} alt="A congress participant with an SBPC badge, standing in the Quest 3 headset with a controller in each hand" caption="A congress participant trying it" side="left">
+
+The experience was exhibited to the public at SBPC 2026, Brazil's national science congress, hosted at UFF in July 2026. Kids, teenagers and adults tried it and enjoyed it.
+
+</TwoColumn>
+
+<TwoColumn image={visitor} alt="A smiling team member seated in the Quest 3 headset, holding a controller out in front of her" caption="A team member trying it at the booth" side="right">
+
+I had told the team to keep everything as simple as possible, and it paid off. Sessions lasted about a minute, nobody felt any discomfort, and we didn't need to teach teleporting at all.
+
+</TwoColumn>
+
+<TwoColumn image={guiding} alt="Roger, in a white shirt, gesturing as he explains the controls to a team member seated in the headset" caption="Me explaining the controls" side="left">
+
+Watching people play showed us one problem: with the headset on, people couldn't find the trigger, and I had to guide their fingers to it. We're changing how the experience shows its controls because of that.
+
+</TwoColumn>
+
+*Screenshots from the project's partial report. SBPC 2026 photos from the Instituto de História's official Instagram, [@iht_uff](https://www.instagram.com/iht_uff/), in a post with [@escrithashistoriauff](https://www.instagram.com/escrithashistoriauff/) and [@nereidauff](https://www.instagram.com/nereidauff/).*

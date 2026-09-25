@@ -15,13 +15,36 @@ const person = {
   '@type': 'Person',
   '@id': `${site.url}/#person`,
   name: site.author,
+  // Spelled out because "Egito" is also the Portuguese word for Egypt. Marking it as a
+  // family name tells a search engine this is a surname, not the country.
+  givenName: 'Roger',
+  familyName: 'Egito',
   url: site.url,
-  jobTitle: 'Technical Game Designer and Developer',
+  image: `${site.url}/android-chrome-512x512.png`,
+  // Only what the banner already shows. addressCountry takes the two-letter code.
+  address: {
+    '@type': 'PostalAddress',
+    addressRegion: site.location.region,
+    addressCountry: site.location.countryCode,
+  },
+  jobTitle: 'Game Designer and Unity Developer',
   description: site.description,
   sameAs: site.social.map((s) => s.url),
 };
 
-const graph = extra ? [person, extra] : [person];
+// Without this, Google labels results from a github.io subdomain "GitHub", the name of
+// the parent domain. It has to be on the home page to count. It's on every page here
+// because that costs nothing and saves checking which page is which.
+// https://developers.google.com/search/docs/appearance/site-names
+const website = {
+  '@type': 'WebSite',
+  '@id': `${site.url}/#website`,
+  name: site.title,
+  url: `${site.url}/`,
+  author: { '@id': person['@id'] },
+};
+
+const graph = extra ? [website, person, extra] : [website, person];
 ---
 
 {/* is:inline because this is data for crawlers, not a script for Astro to bundle. */}

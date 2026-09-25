@@ -1,12 +1,13 @@
 // @ts-check
 import { defineConfig, fontProviders } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
+import mdx from '@astrojs/mdx';
 
 export default defineConfig({
   // `site` is what makes the sitemap and the canonical/og URLs absolute.
   site: 'https://roger-egito.github.io',
 
-  integrations: [sitemap()],
+  integrations: [sitemap(), mdx()],
 
   // Fetches a game page when someone hovers its card, so opening it in a new tab (or
   // browsing without JavaScript) is instant. Only fires on intent, so it isn't
