@@ -593,6 +593,15 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
     text-align: left;
   }
 
+  /* Footage placed in a write-up. It takes the same inset as a list (see below), and
+     the rounded corners of the screenshots. */
+  .long-form :global(video) {
+    display: block;
+    width: 100%;
+    margin-block: var(--space-gap);
+    border-radius: var(--radius);
+  }
+
   .long-form :global(h2),
   .long-form :global(h3) {
     margin: var(--space-gap) 0 0.5em;
@@ -624,7 +633,10 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
     list-style: none;
   }
 
-  .long-form :global(ol) {
+  /* A video sits in the same inset, so a clip reads as a block set inside the article
+     rather than a full-bleed banner. */
+  .long-form :global(ol),
+  .long-form :global(video) {
     max-width: calc((100% + 552px) / 2);
     margin-inline: auto;
   }

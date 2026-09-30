@@ -258,6 +258,8 @@ export const tags = {
   narrative: { category: 'genre' },
   educational: { category: 'genre' },
   vr: { category: 'genre', label: 'VR' },
+  survival: { category: 'genre' },
+  sandbox: { category: 'genre' },
 
   // platforms — where it's published, or that it isn't
   steam: { category: 'platform', icon: 'steam' },
@@ -296,6 +298,8 @@ export const tags = {
   uff: { category: 'client', label: 'UFF' },
   // Your own face, since on a personal project you are the client.
   personal: { category: 'client', label: 'Personal Project', icon: 'profile.webp' },
+  // A client who asked not to be named, so the icon is an anonymous figure.
+  'personal client': { category: 'client', label: 'Personal Client', icon: 'user-secret' },
 } as const satisfies Record<string, Tag>;
 
 export type TagId = keyof typeof tags;

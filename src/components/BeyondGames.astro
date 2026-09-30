@@ -1,0 +1,213 @@
+---
+/**
+ * Work that isn't a shipped game: the tabletop system, and the research once its
+ * details are in. One entry per block, full width, stacked.
+ *
+ * Everything written here about Wander comes from the design documents themselves
+ * (Wander Rules.docx and Fichas v14.xlsx). Nothing about its status, its table history
+ * or where it might be published is claimed, because those documents don't say.
+ */
+import StarRule from "./StarRule.astro";
+import Icon from "./Icon.astro";
+
+/** The parts of the system worth showing someone who reads game design for a living. */
+const mechanics = [
+  {
+    icon: "dice",
+    title: "One roll, read as a question",
+    body: `Every test is 2d10 plus an attribute plus a discipline, against a difficulty the
+      GM picks by answering "could they?" in plain words. Yes is 5, probably yes is 10,
+      maybe is 15, probably not is 20, unlikely is 25, and almost impossible is 30.`,
+  },
+  {
+    icon: "burst",
+    title: "Dice that explode and implode",
+    body: `A 10 adds another d10 and can chain. A 1 subtracts one instead, and that
+      subtracted die can explode on its way down. Two 10s pass the test outright and
+      refill Motivation. Two 1s fail it, and the GM owes the table a complication that
+      makes the scene better rather than a punishment.`,
+  },
+  {
+    icon: "scale-unbalanced",
+    title: "Advantage by the handful",
+    body: `Each advantage adds a d10 and drops the lowest, each disadvantage adds one and
+      drops the highest, and the two cancel out one for one. Seven advantages against
+      five disadvantages is simply a roll with two.`,
+  },
+  {
+    icon: "comments",
+    title: "Plot Points",
+    body: `Earned at character creation, whenever the GM wants to reward good play, and on
+      every critical success. Spend one to ask the GM a question they have to answer
+      honestly, as though the character worked it out, or to declare something about the
+      world true: that tigers live in this region, that the local smith is an old friend.`,
+  },
+  {
+    icon: "route",
+    title: "Travel that tightens",
+    body: `A region's danger is a die size, from a d20 for safe ground down to a d4 for the
+      worst of it. Roll it each day on the road: a 1 means an encounter, and anything
+      else raises the threat for tomorrow. The longer nothing happens, the more the road
+      owes you.`,
+  },
+  {
+    icon: "table-list",
+    title: "Numbers built to be done in your head",
+    body: `The weapon tables carry their own design rules: a weapon's damage times its
+      level is held constant so upgrades stay meaningful, and experience costs climb
+      triangularly so a player can work out the next step without a calculator.
+      Character sheets are on their fourteenth revision, the equipment tables on their
+      seventh.`,
+  },
+];
+
+const facts = [
+  { label: "Type", value: "Tabletop RPG" },
+  { label: "Role", value: "Sole designer" },
+  { label: "Written in", value: "Portuguese" },
+  { label: "Core roll", value: "2d10 + attribute + discipline" },
+  { label: "Disciplines", value: "9, each with its own abilities" },
+];
+---
+
+<section id="beyond">
+  <div class="container">
+    <h2 class="section-heading">Beyond Games</h2>
+    <StarRule />
+
+    <article class="entry">
+      <p class="kicker">Tabletop RPG</p>
+      <h3 class="entry-title">Wander</h3>
+
+      <p class="lead">
+        A tabletop role-playing system I'm designing and writing, built around a single
+        roll that reads like a question and a journey that grows more dangerous the
+        longer it stays quiet. Its stated influences are ICO, Shadow of the Colossus,
+        Monster Hunter and Dark Souls: games about a long way to go and a world that
+        doesn't explain itself.
+      </p>
+
+      <ul class="mechanics">
+        {
+          mechanics.map((item) => (
+            <li>
+              <p class="mechanic-title">
+                <Icon name={item.icon} />
+                {item.title}
+              </p>
+              <p class="mechanic-body">{item.body}</p>
+            </li>
+          ))
+        }
+      </ul>
+
+      <dl class="facts">
+        {
+          facts.map((fact) => (
+            <div>
+              <dt>{fact.label}</dt>
+              <dd>{fact.value}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </article>
+  </div>
+</section>
+
+<style>
+  .entry {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 26px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-raised);
+    text-align: left;
+  }
+
+  .kicker {
+    margin: 0 0 4px;
+    color: var(--color-muted);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .entry-title {
+    margin: 0 0 10px;
+    font-size: 1.6em;
+    text-transform: none;
+  }
+
+  .lead {
+    margin: 0 0 22px;
+    font-size: 17px;
+    line-height: 1.55;
+  }
+
+  /* Two columns of mechanics on a wide screen, one on a phone. Each is a short claim
+     and the sentence that backs it up. */
+  .mechanics {
+    display: grid;
+    gap: 18px 26px;
+    margin: 0 0 24px;
+    padding: 0;
+    list-style: none;
+  }
+
+  @media (min-width: 640px) {
+    .mechanics {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .mechanic-title {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 0 0 4px;
+    color: var(--color-txt);
+    font-family: var(--font-heading), sans-serif;
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .mechanic-title :global(svg) {
+    flex-shrink: 0;
+    width: 13px;
+    height: 11px;
+    fill: currentColor;
+    opacity: 0.7;
+  }
+
+  .mechanic-body {
+    margin: 0;
+    color: var(--color-muted);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* The same shape as a game page's summary row: label over value, spread across. */
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 32px;
+    margin: 0;
+    padding-top: 18px;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .facts dt {
+    color: var(--color-muted);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .facts dd {
+    margin: 2px 0 0;
+    font-size: 14px;
+  }
+</style>

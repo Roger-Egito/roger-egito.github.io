@@ -2,6 +2,7 @@
 import { Image } from "astro:assets";
 import { getCollection } from "astro:content";
 import StarRule from "./StarRule.astro";
+import FilterBar from "./FilterBar.astro";
 import Icon from "./Icon.astro";
 import TagIcon from "./TagIcon.astro";
 import {
@@ -12,6 +13,10 @@ import {
   tagsIn,
   yearRange,
 } from "../config/tags";
+import { buildMenus, filterIdsFor, searchPartsFor } from "../config/filters";
+
+// What the bar over the grid can offer, worked out from the games that exist.
+const menus = buildMenus(await getCollection("games"));
 
 // Highest order first, which matches the order the grid used to show.
 const games = (await getCollection("games")).sort(
@@ -74,6 +79,7 @@ const plain = (value: string) =>
 
 <script>
   import "../scripts/hover-preview";
+  import "../scripts/portfolio-filter";
   // The technology icons beside the year carry data-tip, same as the social buttons.
   import "../scripts/tips";
 </script>
@@ -83,12 +89,14 @@ const plain = (value: string) =>
     <h2 class="section-heading">Portfolio</h2>
     <StarRule />
 
+    <FilterBar menus={menus} total={games.length} />
+
     {
       /* Every card is lazy: the hero stands a full screen tall and the grid begins
         directly beneath it, so none of these are on screen at load. Eager-loading the
         first row only had them competing with the banner and the opening clip. */
     }
-    <ul class="grid">
+    <ul class="grid" data-portfolio-grid>
       {
         games.map((game) => {
           const d = game.data;
@@ -99,20 +107,25 @@ const plain = (value: string) =>
           const responsibilities = responsibilityChipsIn(d.tags);
           const blurb = blurbFor(d);
           const storeList = storesFor(d);
+          // Name, blurb and tags separately: the script ranks a match on the name above
+          // one on the blurb, and that above one on a tag.
+          const search = searchPartsFor(d, blurb);
 
           return (
             <li>
               <article
                 class:list={["card", previewFor(game.id) && "has-preview"]}
+                data-filters={JSON.stringify(filterIdsFor(d))}
+                data-search-title={search.title}
+                data-search-blurb={search.blurb}
+                data-search-tags={search.tags}
               >
-                {/* Real href so the link still works with JS off or in a new tab.
-                    modal.ts catches normal clicks and opens the dialog instead. */}
-                <a
-                  href={`/games/${game.id}/`}
-                  class="card-link"
-                  data-game={game.id}
-                  aria-haspopup="dialog"
-                >
+                {/* The block the link covers: artwork, provenance, name, blurb. The
+                    link itself is on the name and stretches over all of it (see
+                    .card-link::after), which is what lets the icons in here be real
+                    buttons. A button inside an anchor is invalid markup, and browsers
+                    pull it back out of the link when they parse it. */}
+                <div class="clickable">
                   <div class="shot">
                     <Image
                       src={d.img}
@@ -151,7 +164,14 @@ const plain = (value: string) =>
                         {icons.length > 0 && (
                           <span class="tech">
                             {icons.map((tag) => (
-                              <TagIcon tag={tag} />
+                              <button
+                                type="button"
+                                class="icon-filter"
+                                data-card-filter={tag.id}
+                                aria-label={`Filter by ${tag.label}`}
+                              >
+                                <TagIcon tag={tag} />
+                              </button>
                             ))}
                           </span>
                         )}
@@ -162,7 +182,17 @@ const plain = (value: string) =>
                         card's right edge: it answers "what kind of game", which belongs
                         with the title more than with the list of what I did on it. */}
                     <div class="title-line">
-                      <h3 class="title" set:html={d.title} />
+                      {/* Real href so the link still works with JS off or in a new tab.
+                          modal.ts catches normal clicks and opens the dialog instead. */}
+                      <h3 class="title">
+                        <a
+                          href={`/games/${game.id}/`}
+                          class="card-link"
+                          data-game={game.id}
+                          aria-haspopup="dialog"
+                          set:html={d.title}
+                        />
+                      </h3>
                       {genres.length > 0 && (
                         <p class="genres">
                           {genres.map((genre) => genre.label).join(" · ")}
@@ -172,7 +202,7 @@ const plain = (value: string) =>
 
                     {blurb && <p class="blurb">{blurb}</p>}
                   </div>
-                </a>
+                </div>
 
                 {/* Outside the card's link because an <a> inside another <a> is invalid
                     markup and browsers tear it apart — which is why these sit under the
@@ -213,16 +243,23 @@ const plain = (value: string) =>
                   </ul>
                 )}
 
-                {/* Outside the link on purpose: these become filter buttons later, and
-                    a button inside an anchor is invalid markup. */}
+                {/* Outside the link, because each chip is a button that filters the
+                    grid by that tag. */}
                 {responsibilities.length > 0 && (
                   <Fragment>
                     <p class="responsibilities">Responsibilities</p>
                     <ul class="chips">
                       {responsibilities.map((tag) => (
-                        <li data-tag={tag.id} data-category={tag.category}>
-                          {tag.chipIcon && <Icon name={tag.chipIcon} />}
-                          {tag.label}
+                        <li>
+                          <button
+                            type="button"
+                            data-card-filter={tag.id}
+                            data-category={tag.category}
+                            aria-label={`Filter by ${tag.label}`}
+                          >
+                            {tag.chipIcon && <Icon name={tag.chipIcon} />}
+                            {tag.label}
+                          </button>
                         </li>
                       ))}
                     </ul>
@@ -234,6 +271,11 @@ const plain = (value: string) =>
         })
       }
     </ul>
+
+    {/* Only on screen once every card is filtered out. */}
+    <p class="no-results" data-filter-empty hidden>
+      No games match those filters.
+    </p>
   </div>
 </section>
 
@@ -249,6 +291,12 @@ const plain = (value: string) =>
   .grid > li {
     display: flex;
     margin: 0 0 15px;
+  }
+
+  /* Filtered out. The rule above sets a display, and a display beats the hidden
+     attribute, so a card the filter had dropped stayed right where it was. */
+  .grid > li[hidden] {
+    display: none;
   }
 
   @media (min-width: 640px) {
@@ -314,8 +362,10 @@ const plain = (value: string) =>
     transform: translateY(-3px);
   }
 
-  .card-link {
-    display: block;
+  /* Holds the link's own shade and the fade under it. The anchor inside is only as
+     big as the game's name, so this is what the stretched link covers. */
+  .clickable {
+    position: relative;
     /* A shade darker than the card, marking out the part that opens the game. Solid
        down to the Team Size line, then a quick fade into the card's color. */
     background: linear-gradient(
@@ -323,8 +373,21 @@ const plain = (value: string) =>
       var(--color-raised-dark) calc(100% - var(--fade)),
       var(--color-raised)
     );
+  }
+
+  /* The name is the link, and its ::after covers the whole block above, so a click
+     anywhere on the artwork or the text opens the game. Anything in there that has to
+     stay clickable in its own right lifts itself above this with a z-index. */
+  .card-link {
     color: inherit;
     text-decoration: none;
+  }
+
+  .card-link::after {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    content: "";
   }
 
   .shot {
@@ -387,6 +450,16 @@ const plain = (value: string) =>
     opacity: 0;
   }
 
+  .no-results {
+    margin: 30px 0 0;
+    color: var(--color-muted);
+    text-align: center;
+  }
+
+  .no-results[hidden] {
+    display: none;
+  }
+
   /* --- the panel under the artwork ------------------------------------------ */
 
   .info {
@@ -428,6 +501,19 @@ const plain = (value: string) =>
     align-items: center;
     gap: 24px;
     margin-left: auto;
+  }
+
+  /* Above the link's ::after, or the click would open the game instead of filtering
+     by the icon. No fill or border of its own: the icon is the button. */
+  .icon-filter {
+    position: relative;
+    z-index: 2;
+    display: inline-flex;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    cursor: var(--cursor-default);
   }
 
   /* The genres keep their spot on the first line, and a long name wraps its last
@@ -639,6 +725,12 @@ const plain = (value: string) =>
      five solid colours across a card would shout louder than the artwork above them.
      The fallback keeps a chip readable if a tag outside the five ever lands here. */
   .chips li {
+    display: flex;
+  }
+
+  /* Each chip filters the grid by its own tag, so it answers the pointer the way the
+     other buttons on the page do: it grows, and it springs back under a press. */
+  .chips button {
     --chip-color: var(--color-muted);
 
     display: inline-flex;
@@ -649,37 +741,70 @@ const plain = (value: string) =>
     border-radius: 100px;
     background: color-mix(in srgb, var(--chip-color) 10%, transparent);
     color: var(--chip-color);
+    font-family: inherit;
     font-size: 10.5px;
     letter-spacing: 0.04em;
+    cursor: var(--cursor-default);
+    transition: transform 0.6s ease, background-color var(--transition);
+  }
+
+  .chips button:hover,
+  .chips button:focus-visible {
+    background: color-mix(in srgb, var(--chip-color) 22%, transparent);
+    transform: scale(1.08);
+  }
+
+  .chips button:active {
+    transform: scale(1.02);
+    transition-duration: 0.08s;
+  }
+
+  /* Already filtering by this one. Filled in its own colour, so the card shows which
+     of its tags the grid is currently held to. */
+  .chips button[data-on] {
+    background: color-mix(in srgb, var(--chip-color) 30%, transparent);
+    font-weight: 700;
+  }
+
+  /* What the search matched. A ring rather than a fill, so a chip can be both matched
+     and filtered without the two states fighting over the same background. */
+  .chips button[data-match],
+  .icon-filter[data-match] {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-txt) 55%, transparent);
+    border-radius: 100px;
+  }
+
+  .icon-filter[data-match] :global(.tag-icon) {
+    opacity: 1;
   }
 
   /* The discipline's mark, sized to the word beside it and held a little back, so the
      chip still reads as a word with a mark on it rather than as two things. gap is on
      the icon rather than the chip, which keeps a chip without one from carrying a
      phantom space. */
-  .chips li :global(svg) {
+  .chips button :global(svg) {
     height: 9px;
     margin-right: 5px;
     opacity: 0.8;
   }
 
-  .chips li[data-category='design'] {
+  .chips button[data-category='design'] {
     --chip-color: var(--color-design);
   }
 
-  .chips li[data-category='programming'] {
+  .chips button[data-category='programming'] {
     --chip-color: var(--color-programming);
   }
 
-  .chips li[data-category='art'] {
+  .chips button[data-category='art'] {
     --chip-color: var(--color-art);
   }
 
-  .chips li[data-category='audio'] {
+  .chips button[data-category='audio'] {
     --chip-color: var(--color-audio);
   }
 
-  .chips li[data-category='production'] {
+  .chips button[data-category='production'] {
     --chip-color: var(--color-production);
   }
 </style>

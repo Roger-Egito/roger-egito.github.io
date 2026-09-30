@@ -79,11 +79,13 @@ p {
 
 img,
 svg,
-iframe {
+iframe,
+video {
   max-width: 100%;
 }
 
-img {
+img,
+video {
   height: auto;
 }
 
