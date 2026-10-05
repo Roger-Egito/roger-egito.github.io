@@ -404,7 +404,9 @@ const withoutGroupWord = (label: string, group: string) => {
  */
 export const responsibilityChipsIn = (names: readonly string[]) =>
   responsibilities.flatMap((category) => {
-    const { label, chipIcon } = categories[category];
+    // Typed as Category, since only the disciplines define chipIcon and the literal
+    // types of the others don't mention it.
+    const { label, chipIcon }: Category = categories[category];
     return tagsIn(names, category).map((tag) => ({
       ...tag,
       label: dropsGroupWord.includes(category) ? withoutGroupWord(tag.label, label) : tag.label,
