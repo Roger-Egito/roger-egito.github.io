@@ -14,22 +14,18 @@ export interface Link {
 export const site = {
   title: 'Roger Egito',
   url: 'https://roger-egito.github.io',
-  description: 'Portfolio of game designer and developer Roger Egito.',
+  description: 'Portfolio of game designer and Unity developer Roger Egito.',
   author: 'Roger Egito',
-  skills: 'Technical Game Designer & Unity Developer',
-  location: 'RJ, Brazil',
+  skills: 'Game Designer & Unity Developer',
+  /**
+   * Shown as "RJ, Brazil" in the banner, and read by StructuredData for search engines.
+   * Kept as parts so both come from the same place. No city on purpose: the page
+   * doesn't show one, so the data doesn't either.
+   */
+  location: { region: 'RJ', country: 'Brazil', countryCode: 'BR' },
   timezone: 'UTC-03:00',
   email: 'rogeregito@outlook.com',
   slogan: 'Creating games with heart and soul',
-
-  /**
-   * Games whose preview clip should stay out of the hero rotation, by slug (the
-   * markdown filename — 'cursed-blight.md' is 'cursed-blight'). The clip still plays
-   * as a hover preview on its portfolio card either way; this only pulls it from the
-   * full-screen reel, for a game whose footage doesn't read well blown up that big, or
-   * spoils too much, or whatever the reason.
-   */
-  heroExcludes: ["covid-35"] as string[],
 
   /** Where the contact form posts to. */
   contactAction: 'https://formspree.io/f/xldnwyla',
@@ -47,7 +43,7 @@ export const site = {
     umami: '913e43fb-62a5-46f8-8ce3-3249ef11d660',
   },
 
-  footerNote: 'Games developed by Roger Egito (fully or partially), not restricted by NDA.',
+  footerNote: 'Everything here I made alone or as part of a team. Work under NDA isn\'t shown.',
 
   social: [
     { icon: 'itch-io', label: 'itch.io', url: 'https://egito.itch.io' },

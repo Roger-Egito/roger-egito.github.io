@@ -3,6 +3,7 @@ import { getImage } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import Header from '../components/Header.astro';
 import PortfolioGrid from '../components/PortfolioGrid.astro';
+import BeyondGames from '../components/BeyondGames.astro';
 import Footer from '../components/Footer.astro';
 import GameDialogs from '../components/GameDialogs.astro';
 import AboutDialog from '../components/AboutDialog.astro';
@@ -21,6 +22,7 @@ const preview = await getImage({ src: banner, width: 1200, height: 630, format: 
   <SiteNav />
   <Header />
   <PortfolioGrid />
+  <BeyondGames />
   <Footer />
   <ScrollTop />
   <GameDialogs />

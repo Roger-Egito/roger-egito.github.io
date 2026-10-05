@@ -21,10 +21,15 @@
  *   - keep running once you've scrolled past, or once the tab is in the background
  *   - run at all for someone who asked for less motion, or who's on a metered
  *     connection — they keep the still, the slogan and no download
+ *
+ * Every clip comes in several qualities, and hero-quality.ts picks one per clip. This
+ * file only reports to it: how long each download took, and whenever playback stalls.
  */
 
+import { createQuality, type Source, type Tier } from './hero-quality';
+
 interface Clip {
-  src: string;
+  sources: Source[];
   slug: string;
   credit: string;
 }
@@ -59,8 +64,63 @@ if (reel && !wantsLessMotion && !savingData) run(reel);
 
 function run(reel: HTMLElement) {
   const clips: Clip[] = JSON.parse(reel.dataset.clips ?? '[]');
+  const tiers: Tier[] = JSON.parse(reel.dataset.tiers ?? '[]');
   const [a, b] = reel.querySelectorAll('video');
-  if (!clips.length || !a || !b) return;
+  if (!clips.length || !tiers.length || !a || !b) return;
+
+  const quality = createQuality(reel, tiers);
+
+  // Each file is timed only the first time it downloads. A repeat is likely coming from
+  // the browser's cache, which says nothing about the network.
+  const timed = new Set<string>();
+  const stopTiming = new Map<HTMLVideoElement, () => void>();
+
+  /**
+   * Times a download from start to fully buffered, and reports the speed. A browser that
+   * stops buffering early, having decided it has enough, never reports at all, which is
+   * the safe way round: no measurement means no change.
+   */
+  const time = (video: HTMLVideoElement, source: Source) => {
+    const started = performance.now();
+    const check = () => {
+      const { buffered, duration } = video;
+      if (buffered.length !== 1 || !Number.isFinite(duration)) return;
+      if (buffered.start(0) > 0.1 || buffered.end(0) < duration - 0.1) return;
+      const seconds = (performance.now() - started) / 1000;
+      quality.measured((source.bytes * 8) / 1000 / seconds);
+      stop();
+    };
+    const events = ['progress', 'suspend', 'canplaythrough'] as const;
+    const stop = () => {
+      for (const name of events) video.removeEventListener(name, check);
+      stopTiming.delete(video);
+    };
+    for (const name of events) video.addEventListener(name, check);
+    stopTiming.set(video, stop);
+  };
+
+  /** Point a video at the right quality of a clip, timing it if it's a new download. */
+  const load = (video: HTMLVideoElement, clip: Clip) => {
+    stopTiming.get(video)?.();
+    const source = quality.pick(clip.sources);
+    // The <video> tags say preload="none" so nothing downloads with the page. Once a clip
+    // is chosen, it's wanted in full, so the browser is told to go ahead.
+    video.preload = 'auto';
+    video.src = source.src;
+    if (!timed.has(source.src)) {
+      timed.add(source.src);
+      time(video, source);
+    }
+  };
+
+  // One step down per clip at most, however many times that clip stalls, so a single bad
+  // patch doesn't drop two tiers at once.
+  let lastStalled = '';
+  const stalled = (video: HTMLVideoElement) => {
+    if (video.currentSrc === lastStalled) return;
+    lastStalled = video.currentSrc;
+    quality.stalled();
+  };
 
   // Shuffled once and then left alone, so every pass runs in the same order.
   const order = shuffle(clips.length);
@@ -87,7 +147,7 @@ function run(reel: HTMLElement) {
   const prime = (index: number) => {
     if (queued === index) return;
     queued = index;
-    back.src = clips[index].src;
+    load(back, clips[index]);
     back.load();
   };
 
@@ -125,8 +185,14 @@ function run(reel: HTMLElement) {
     moving = true;
 
     const target = at(position + step);
+    const hadHeadStart = queued === target;
     prime(target); // a clip shorter than PRELOAD_AT never got the chance
     announce(clips[target]);
+
+    // Its turn has come and it still can't show a frame, despite the head start. The
+    // outgoing clip would sit frozen on its last frame meanwhile, so this counts as a
+    // stall. Not for a d-pad press: asking early is no fault of the connection.
+    if (hadHeadStart && !pressed && back.readyState < 2) stalled(back);
 
     const begin = () => {
       if (mine !== generation) return; // superseded while it was loading
@@ -181,6 +247,14 @@ function run(reel: HTMLElement) {
 
     // Safety net: timeupdate stops firing if a clip is cut short or stalls at the end.
     clip.addEventListener('ended', () => clip === front && handover(1));
+
+    // Playback ran out of data. Only for the clip on screen, and only once it has
+    // actually started, since a clip waiting for its very first frame is just loading.
+    clip.addEventListener('waiting', () => {
+      if ('active' in clip.dataset && onScreen && !clip.seeking && clip.currentTime > 0.1) {
+        stalled(clip);
+      }
+    });
   }
 
   // --- the d-pad -----------------------------------------------------------------
@@ -235,14 +309,15 @@ function run(reel: HTMLElement) {
       b.pause();
       return;
     }
-    if (!front.getAttribute('src')) begin(front, clips[at(position)].src);
-    else front.play().catch(() => {});
+    if (!front.getAttribute('src')) {
+      load(front, clips[at(position)]);
+      start(front);
+    } else front.play().catch(() => {});
   });
 }
 
-/** Load a clip and only fade it in once it's really playing, so no black frame shows. */
-function begin(video: HTMLVideoElement, src: string) {
-  video.src = src;
+/** Play the first clip and only fade it in once it's really playing, so no black frame shows. */
+function start(video: HTMLVideoElement) {
   video
     .play()
     .then(() => {

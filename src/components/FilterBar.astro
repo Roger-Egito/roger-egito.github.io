@@ -1,0 +1,493 @@
+---
+/**
+ * The bar over the portfolio grid: what's filtering right now on the left, the menus
+ * to add a filter in the middle, and the search box on the right.
+ *
+ * Everything here is markup and styling. portfolio-filter.ts does the work, and the
+ * bar hides itself until that script says it's running, so a visitor with no
+ * JavaScript sees the full grid instead of controls that do nothing.
+ */
+import Icon from "./Icon.astro";
+import type { FilterMenu } from "../config/filters";
+
+interface Props {
+  menus: FilterMenu[];
+  /** How many games the grid holds, for the "showing x of y" line. */
+  total: number;
+}
+
+const { menus, total } = Astro.props;
+---
+
+<div class="filter-bar" data-filter-bar hidden>
+  {/* Live region: with the grid changing under them, someone using a screen reader
+      gets told what's left rather than having to go and count. */}
+  <p class="count" data-filter-count aria-live="polite">
+    Showing all {total} games
+  </p>
+
+  <div class="controls">
+    {/* The chips for what's already on. Filled by the script, empty at rest. */}
+    <div class="active" data-active-filters aria-label="Active filters"></div>
+
+    <div class="menus">
+      {
+        menus.map((menu) => (
+          <div class="menu" data-menu={menu.id}>
+            <button
+              type="button"
+              class="menu-button"
+              data-menu-button
+              aria-expanded="false"
+              aria-haspopup="true"
+            >
+              {menu.label}
+              <Icon name="chevron-down" />
+            </button>
+
+            <div class="panel" data-menu-panel hidden>
+              {menu.options && (
+                <ul class="options">
+                  {menu.options.map((option) => (
+                    <li>
+                      <button
+                        type="button"
+                        class="option"
+                        data-filter={option.id}
+                        data-category={option.category}
+                        aria-pressed="false"
+                      >
+                        <span class="option-label">{option.label}</span>
+                        <span class="option-count">{option.count}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {/* Responsibilities: a discipline per row, its tags in a panel beside it
+                  on a wide screen and folded open underneath on a narrow one. */}
+              {menu.groups && (
+                <ul class="options">
+                  {menu.groups.map((group) => (
+                    <li class="group" data-group>
+                      <button
+                        type="button"
+                        class="option group-button"
+                        data-group-button
+                        aria-expanded="false"
+                      >
+                        <span class="option-label">{group.label}</span>
+                        <Icon name="chevron-right" />
+                      </button>
+
+                      <ul class="options subpanel" data-subpanel hidden>
+                        {group.options.map((option) => (
+                          <li>
+                            <button
+                              type="button"
+                              class="option"
+                              data-filter={option.id}
+                              data-category={option.category}
+                              aria-pressed="false"
+                            >
+                              <span class="option-label">{option.label}</span>
+                              <span class="option-count">{option.count}</span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        ))
+      }
+    </div>
+
+    <form class="search" data-search-form role="search">
+      {/* Labelled rather than placeholder-only: a placeholder disappears the moment
+          you type, taking the only description of the field with it. */}
+      <label class="visually-hidden" for="portfolio-search">Search the portfolio</label>
+      <input
+        type="search"
+        id="portfolio-search"
+        data-search-input
+        placeholder="Search"
+        autocomplete="off"
+      />
+      {/* The typing already filters. This submits too, which is what closes the
+          keyboard on a phone and gives anyone expecting a button something to press. */}
+      <button type="submit" class="search-button" aria-label="Search">
+        <Icon name="magnifying-glass" />
+      </button>
+    </form>
+  </div>
+</div>
+
+<style>
+  /* Hidden until the script removes the attribute, so the controls never appear
+     without anything behind them. */
+  .filter-bar[hidden] {
+    display: none;
+  }
+
+  .filter-bar {
+    margin: 0 0 30px;
+  }
+
+  .count {
+    margin: 0 0 10px;
+    color: var(--color-muted);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  /* Chips, menus, search. They stack in that order on a phone and sit on one line from
+     the tablet breakpoint up, with the menus taking the middle. */
+  .controls {
+    display: grid;
+    gap: 10px;
+  }
+
+  /* The chips take only what they need, the search only what it needs, and the menus
+     take everything in between: they start at the left edge and run until the search
+     stops them. With no chips there's nothing on the left, so the menus start at the
+     page's own left edge rather than floating in the middle of it. */
+  @media (min-width: 768px) {
+    .controls {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: start;
+    }
+  }
+
+  /* Capped, so a pile of filters pushes the menus across but never squeezes them out
+     of the bar entirely. */
+  .active {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 6px;
+    max-width: min(45vw, 420px);
+  }
+
+  .active:empty {
+    display: none;
+  }
+
+  .menus {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  /* Centred only while they're on their own row, which is the phone layout. */
+  @media (max-width: 767px) {
+    .menus {
+      justify-content: center;
+    }
+  }
+
+  .menu {
+    position: relative;
+  }
+
+  .menu-button,
+  .search-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-raised);
+    color: var(--color-txt);
+    font-family: inherit;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition: border-color var(--transition), background-color var(--transition);
+  }
+
+  .menu-button:hover,
+  .menu-button:focus-visible,
+  .menu-button[aria-expanded="true"],
+  .search-button:hover,
+  .search-button:focus-visible {
+    border-color: var(--color-txt);
+  }
+
+  .menu-button :global(svg) {
+    width: 9px;
+    height: 9px;
+    fill: currentColor;
+    opacity: 0.7;
+    transition: transform var(--transition);
+  }
+
+  .menu-button[aria-expanded="true"] :global(svg) {
+    transform: rotate(180deg);
+  }
+
+  /* The dropdown. Anchored to its button, above the grid, and capped in height so a
+     long list scrolls inside the panel rather than running off the screen. */
+  .panel {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 6px);
+    left: 0;
+    min-width: 200px;
+    max-height: min(60vh, 420px);
+    padding: 6px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-raised);
+    box-shadow: 0 10px 24px var(--color-drop-shadow);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .panel[hidden] {
+    display: none;
+  }
+
+  /* Kept inside the viewport by the script, which flips this on when a panel would
+     otherwise run off the right edge. */
+  .panel[data-align="right"] {
+    left: auto;
+    right: 0;
+  }
+
+  .options {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 7px 9px;
+    border: 0;
+    border-radius: var(--radius);
+    background: none;
+    color: var(--color-txt);
+    font-family: inherit;
+    font-size: 13px;
+    text-align: left;
+    transition: background-color var(--transition);
+  }
+
+  .option:hover,
+  .option:focus-visible {
+    background: var(--color-well);
+  }
+
+  .option-label {
+    flex: 1;
+  }
+
+  .option-count {
+    color: var(--color-muted);
+    font-size: 11px;
+  }
+
+  /* An option already on. The tick is drawn rather than written, so the label never
+     shifts sideways when it turns on. */
+  .option[aria-pressed="true"] {
+    background: color-mix(in srgb, var(--color-txt) 12%, transparent);
+    font-weight: 700;
+  }
+
+  .option[aria-pressed="true"]::after {
+    color: var(--color-muted);
+    content: "✓";
+  }
+
+  .group-button :global(svg) {
+    width: 8px;
+    height: 8px;
+    fill: currentColor;
+    opacity: 0.7;
+    transition: transform var(--transition);
+  }
+
+  /* Wide enough for a second panel: the discipline's tags sit beside the list. Narrow,
+     and they fold open underneath instead, because a panel to the right of a panel
+     runs off a phone screen. */
+  .subpanel[hidden] {
+    display: none;
+  }
+
+  .subpanel {
+    padding: 2px 0 2px 12px;
+  }
+
+  .group-button[aria-expanded="true"] :global(svg) {
+    transform: rotate(90deg);
+  }
+
+  @media (min-width: 768px) {
+    /* A flyout is positioned outside its panel, and a panel that scrolls its own
+       content clips anything that leaves it. Responsibilities is five rows tall, so it
+       has nothing to scroll anyway: the sub-panel does its own scrolling below. */
+    .menu[data-menu="responsibilities"] .panel {
+      max-height: none;
+      overflow: visible;
+    }
+
+    .group {
+      position: relative;
+    }
+
+    .subpanel {
+      position: absolute;
+      z-index: 21;
+      top: -6px;
+      left: 100%;
+      min-width: 190px;
+      max-height: min(60vh, 420px);
+      padding: 6px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      background: var(--color-raised);
+      box-shadow: 0 10px 24px var(--color-drop-shadow);
+      overflow-y: auto;
+    }
+
+    .subpanel[data-align="left"] {
+      left: auto;
+      right: 100%;
+    }
+
+    .group-button[aria-expanded="true"] :global(svg) {
+      transform: none;
+    }
+  }
+
+  /* Search sits at the right end of the bar, and the field takes whatever the button
+     leaves. */
+  .search {
+    display: flex;
+    gap: 6px;
+  }
+
+  @media (min-width: 768px) {
+    .search {
+      justify-content: flex-end;
+    }
+  }
+
+  .search input {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 260px;
+    padding: 7px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-raised);
+    color: var(--color-txt);
+    font-family: inherit;
+    font-size: 13px;
+  }
+
+  .search input:focus-visible {
+    border-color: var(--color-txt);
+    outline: none;
+  }
+
+  .search-button :global(svg) {
+    width: 12px;
+    height: 12px;
+    fill: currentColor;
+  }
+
+  /* --- the chips for what's filtering right now ---------------------------------
+     Written by portfolio-filter.ts, so these are :global: a scoped rule only reaches
+     elements that were in the page at build time. Shaped like the chips on a card, in
+     the same colour where the tag has one, with an X to say a click takes it off. */
+  .active :global(.active-filter) {
+    --chip-color: var(--color-txt);
+
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 9px;
+    border: 1px solid color-mix(in srgb, var(--chip-color) 65%, transparent);
+    border-radius: 100px;
+    background: color-mix(in srgb, var(--chip-color) 14%, transparent);
+    color: var(--chip-color);
+    font-family: inherit;
+    font-size: 11.5px;
+    letter-spacing: 0.04em;
+    /* The label is a name, so it breaks to another chip's line rather than across two
+       lines of its own: "Ludomancer Studio" split over two rows reads as two filters. */
+    white-space: nowrap;
+    transition: background-color var(--transition);
+  }
+
+  .active :global(.active-filter:hover),
+  .active :global(.active-filter:focus-visible) {
+    background: color-mix(in srgb, var(--chip-color) 26%, transparent);
+  }
+
+  .active :global(.active-filter .remove) {
+    font-size: 10px;
+    opacity: 0.8;
+  }
+
+  /* The five disciplines wear their own colour, the way they do on a card. Everything
+     else keeps the page's ink, so the bar doesn't turn into a rainbow. */
+  .active :global(.active-filter[data-category='design']) {
+    --chip-color: var(--color-design);
+  }
+
+  .active :global(.active-filter[data-category='programming']) {
+    --chip-color: var(--color-programming);
+  }
+
+  .active :global(.active-filter[data-category='art']) {
+    --chip-color: var(--color-art);
+  }
+
+  .active :global(.active-filter[data-category='audio']) {
+    --chip-color: var(--color-audio);
+  }
+
+  .active :global(.active-filter[data-category='production']) {
+    --chip-color: var(--color-production);
+  }
+
+  .active :global(.clear-filters) {
+    padding: 4px 9px;
+    border: 0;
+    background: none;
+    color: var(--color-muted);
+    font-family: inherit;
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    text-decoration: underline;
+    text-transform: uppercase;
+  }
+
+  .active :global(.clear-filters:hover),
+  .active :global(.clear-filters:focus-visible) {
+    color: var(--color-txt);
+  }
+
+  /* --- what the search matched ---------------------------------------------------
+     Written into the cards by portfolio-filter.ts, so it lives here as a global rather
+     than in the grid's own styles. Light on dark rather than the usual black on
+     yellow, which on this page would read as a highlighter over the text. */
+  :global(.card mark) {
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--color-txt) 26%, transparent);
+    color: inherit;
+  }
+</style>

@@ -2,17 +2,21 @@
 import { Image } from "astro:assets";
 import { getCollection } from "astro:content";
 import StarRule from "./StarRule.astro";
+import FilterBar from "./FilterBar.astro";
 import Icon from "./Icon.astro";
 import TagIcon from "./TagIcon.astro";
 import {
-  chipTags,
-  chipsHeading,
   iconsOn,
   resolve,
+  responsibilityChipsIn,
   stores,
   tagsIn,
   yearRange,
 } from "../config/tags";
+import { buildMenus, filterIdsFor, searchPartsFor } from "../config/filters";
+
+// What the bar over the grid can offer, worked out from the games that exist.
+const menus = buildMenus(await getCollection("games"));
 
 // Highest order first, which matches the order the grid used to show.
 const games = (await getCollection("games")).sort(
@@ -59,6 +63,13 @@ const storesFor = (data: (typeof games)[number]["data"]) =>
     return link ? [{ url: link.url, store: resolve(tag) }] : [];
   });
 
+/**
+ * Off while I work out a better home for the numbers. The entries keep their `metrics`
+ * and the schema still checks them, so nothing is lost: flip this to true and the
+ * banner comes back exactly as it was.
+ */
+const showMetrics = false;
+
 const plain = (value: string) =>
   value
     .replace(/<[^>]*>/g, " ")
@@ -68,6 +79,7 @@ const plain = (value: string) =>
 
 <script>
   import "../scripts/hover-preview";
+  import "../scripts/portfolio-filter";
   // The technology icons beside the year carry data-tip, same as the social buttons.
   import "../scripts/tips";
 </script>
@@ -77,36 +89,43 @@ const plain = (value: string) =>
     <h2 class="section-heading">Portfolio</h2>
     <StarRule />
 
+    <FilterBar menus={menus} total={games.length} />
+
     {
       /* Every card is lazy: the hero stands a full screen tall and the grid begins
         directly beneath it, so none of these are on screen at load. Eager-loading the
         first row only had them competing with the banner and the opening clip. */
     }
-    <ul class="grid">
+    <ul class="grid" data-portfolio-grid>
       {
         games.map((game) => {
           const d = game.data;
           const dates = yearRange(d.startDate, d.endDate);
           const client = tagsIn(d.tags, "client")[0];
           const icons = iconsOn(d.tags, "right");
-          const roles = tagsIn(d.tags, "role");
-          const tags = chipTags(d.tags);
+          const genres = tagsIn(d.tags, "genre");
+          const responsibilities = responsibilityChipsIn(d.tags);
           const blurb = blurbFor(d);
           const storeList = storesFor(d);
+          // Name, blurb and tags separately: the script ranks a match on the name above
+          // one on the blurb, and that above one on a tag.
+          const search = searchPartsFor(d, blurb);
 
           return (
             <li>
               <article
                 class:list={["card", previewFor(game.id) && "has-preview"]}
+                data-filters={JSON.stringify(filterIdsFor(d))}
+                data-search-title={search.title}
+                data-search-blurb={search.blurb}
+                data-search-tags={search.tags}
               >
-                {/* Real href so the link still works with JS off or in a new tab.
-                    modal.ts catches normal clicks and opens the dialog instead. */}
-                <a
-                  href={`/games/${game.id}/`}
-                  class="card-link"
-                  data-game={game.id}
-                  aria-haspopup="dialog"
-                >
+                {/* The block the link covers: artwork, provenance, name, blurb. The
+                    link itself is on the name and stretches over all of it (see
+                    .card-link::after), which is what lets the icons in here be real
+                    buttons. A button inside an anchor is invalid markup, and browsers
+                    pull it back out of the link when they parse it. */}
+                <div class="clickable">
                   <div class="shot">
                     <Image
                       src={d.img}
@@ -145,49 +164,45 @@ const plain = (value: string) =>
                         {icons.length > 0 && (
                           <span class="tech">
                             {icons.map((tag) => (
-                              <TagIcon tag={tag} />
+                              <button
+                                type="button"
+                                class="icon-filter"
+                                data-card-filter={tag.id}
+                                aria-label={`Filter by ${tag.label}`}
+                              >
+                                <TagIcon tag={tag} />
+                              </button>
                             ))}
                           </span>
                         )}
                       </p>
                     )}
 
-                    <h3 class="title" set:html={d.title} />
+                    {/* Genre shares the name's line as a small aside, pushed to the
+                        card's right edge: it answers "what kind of game", which belongs
+                        with the title more than with the list of what I did on it. */}
+                    <div class="title-line">
+                      {/* Real href so the link still works with JS off or in a new tab.
+                          modal.ts catches normal clicks and opens the dialog instead. */}
+                      <h3 class="title">
+                        <a
+                          href={`/games/${game.id}/`}
+                          class="card-link"
+                          data-game={game.id}
+                          aria-haspopup="dialog"
+                          set:html={d.title}
+                        />
+                      </h3>
+                      {genres.length > 0 && (
+                        <p class="genres">
+                          {genres.map((genre) => genre.label).join(" · ")}
+                        </p>
+                      )}
+                    </div>
 
                     {blurb && <p class="blurb">{blurb}</p>}
-
-                    {roles.length > 0 && (
-                      <p class="roles">
-                        <Icon name="pen-ruler" />
-                        <span>
-                          {roles.map((role) => role.label).join(" · ")}
-                        </span>
-                      </p>
-                    )}
-
-                    {d.team && (
-                      <p class="team">
-                        <Icon name="user" />
-                        <span>
-                          <b>Team Size:</b> {d.team}
-                        </span>
-                      </p>
-                    )}
-
-                    {/* Only a couple of games have numbers worth showing; the strip and
-                        its rules disappear entirely for the rest. */}
-                    {d.metrics && d.metrics.length > 0 && (
-                      <ul class="metrics">
-                        {d.metrics.map((metric) => (
-                          <li>
-                            <strong>{metric.value}</strong>
-                            <span>{metric.label}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
                   </div>
-                </a>
+                </div>
 
                 {/* Outside the card's link because an <a> inside another <a> is invalid
                     markup and browsers tear it apart — which is why these sit under the
@@ -214,16 +229,37 @@ const plain = (value: string) =>
                   </ul>
                 )}
 
-                {/* Outside the link on purpose: these become filter buttons later, and
-                    a button inside an anchor is invalid markup. */}
-                {tags.length > 0 && (
+                {/* Only a couple of games have numbers worth showing, and the strip
+                    disappears entirely for the rest. Out here with the store buttons
+                    rather than inside the card's link, so it can sit below them. */}
+                {showMetrics && d.metrics && d.metrics.length > 0 && (
+                  <ul class="metrics">
+                    {d.metrics.map((metric) => (
+                      <li>
+                        <strong>{metric.value}</strong>
+                        <span>{metric.label}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {/* Outside the link, because each chip is a button that filters the
+                    grid by that tag. */}
+                {responsibilities.length > 0 && (
                   <Fragment>
-                    <!--<p class="tags-heading">{chipsHeading}</p> -->
-                    <ul class="tags">
-                      {tags.map((tag) => (
-                        <li data-tag={tag.id} data-category={tag.category}>
-                          {tag.icon && <TagIcon tag={tag} inline />}
-                          {tag.label}
+                    <p class="responsibilities">Responsibilities</p>
+                    <ul class="chips">
+                      {responsibilities.map((tag) => (
+                        <li>
+                          <button
+                            type="button"
+                            data-card-filter={tag.id}
+                            data-category={tag.category}
+                            aria-label={`Filter by ${tag.label}`}
+                          >
+                            {tag.chipIcon && <Icon name={tag.chipIcon} />}
+                            {tag.label}
+                          </button>
                         </li>
                       ))}
                     </ul>
@@ -235,6 +271,11 @@ const plain = (value: string) =>
         })
       }
     </ul>
+
+    {/* Only on screen once every card is filtered out. */}
+    <p class="no-results" data-filter-empty hidden>
+      No games match those filters.
+    </p>
   </div>
 </section>
 
@@ -250,6 +291,12 @@ const plain = (value: string) =>
   .grid > li {
     display: flex;
     margin: 0 0 15px;
+  }
+
+  /* Filtered out. The rule above sets a display, and a display beats the hidden
+     attribute, so a card the filter had dropped stayed right where it was. */
+  .grid > li[hidden] {
+    display: none;
   }
 
   @media (min-width: 640px) {
@@ -281,7 +328,16 @@ const plain = (value: string) =>
 
   /* The artwork sits flush in the top of a panel a shade lighter than the page, with
      the border running round the whole thing so picture and text read as one object. */
+  /* --fade is how far the link's darker shade takes to become the card's own colour,
+     measured up from the bottom of the link. Long rather than a hairline: over 14px the
+     change read as a seam you could miss, and the point is for the part you click to
+     feel like its own panel settling into the card. The blurb is the last thing in the
+     link, and the wash runs through the empty space under it. 32px rather than the 48
+     it was: with the roles and the team gone, that space is all the card has left down
+     there, and 48 of it read as a hole. */
   .card {
+    --fade: 32px;
+
     display: flex;
     flex-direction: column;
     width: 100%;
@@ -306,13 +362,32 @@ const plain = (value: string) =>
     transform: translateY(-3px);
   }
 
+  /* Holds the link's own shade and the fade under it. The anchor inside is only as
+     big as the game's name, so this is what the stretched link covers. */
+  .clickable {
+    position: relative;
+    /* A shade darker than the card, marking out the part that opens the game. Solid
+       down to the Team Size line, then a quick fade into the card's color. */
+    background: linear-gradient(
+      to bottom,
+      var(--color-raised-dark) calc(100% - var(--fade)),
+      var(--color-raised)
+    );
+  }
+
+  /* The name is the link, and its ::after covers the whole block above, so a click
+     anywhere on the artwork or the text opens the game. Anything in there that has to
+     stay clickable in its own right lifts itself above this with a z-index. */
   .card-link {
-    display: block;
     color: inherit;
     text-decoration: none;
-    /* One of only two places the eye appears: you're looking at a game, not
-       navigating. The other is the hero footage. */
-    cursor: var(--cursor-pointer);
+  }
+
+  .card-link::after {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    content: "";
   }
 
   .shot {
@@ -375,6 +450,16 @@ const plain = (value: string) =>
     opacity: 0;
   }
 
+  .no-results {
+    margin: 30px 0 0;
+    color: var(--color-muted);
+    text-align: center;
+  }
+
+  .no-results[hidden] {
+    display: none;
+  }
+
   /* --- the panel under the artwork ------------------------------------------ */
 
   .info {
@@ -388,7 +473,7 @@ const plain = (value: string) =>
     flex-wrap: wrap;
     align-items: center;
     gap: 10px;
-    margin: 0 0 8px;
+    margin: 0 0 6px;
     color: var(--color-muted);
     font-size: 12px;
     letter-spacing: 0.1em;
@@ -418,54 +503,61 @@ const plain = (value: string) =>
     margin-left: auto;
   }
 
+  /* Above the link's ::after, or the click would open the game instead of filtering
+     by the icon. No fill or border of its own: the icon is the button. */
+  .icon-filter {
+    position: relative;
+    z-index: 2;
+    display: inline-flex;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    cursor: var(--cursor-default);
+  }
+
+  /* The genres keep their spot on the first line, and a long name wraps its last
+     words onto a second line under itself instead of pushing the genres down. */
+  .title-line {
+    display: flex;
+    align-items: baseline;
+    column-gap: 10px;
+    margin: 0 0 4px;
+  }
+
+  /* 1.4em rather than the 1.2em it was: at 1.2 the name stood only 3px over the
+     blurb under it, which is too small a step to read as a rank. */
   .title {
-    margin: 0 0 6px;
-    font-size: 1.2em;
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    font-size: 1.4em;
     /* The site's headings are uppercase, but a game's name is a name, so it keeps its
        own capitalisation. */
     text-transform: none;
   }
 
+  /* Last thing inside the link now that the roles and the team size are gone, so the
+     space under it is the one the gradient washes through. */
   .blurb {
-    margin: 0 0 12px;
+    margin: 0 0 var(--fade);
     color: var(--color-txt);
     font-size: 15px;
-    line-height: 1.45;
+    line-height: 1.5;
   }
 
-  /* Roles and team are the same kind of line, so they share a shape and their icons
-     share a fixed-width slot — that's what keeps the two glyphs on one left edge even
-     though a pen and a person are different widths. */
-  .roles,
-  .team {
-    display: flex;
-    align-items: baseline;
-    gap: 7px;
-    margin: 0 0 6px;
-    color: var(--color-muted);
-    font-size: 13.5px;
-  }
-
-  .team {
-    margin-bottom: 14px;
-  }
-
-  .roles :global(svg),
-  .team :global(svg) {
-    flex-shrink: 0;
-    width: 14px;
-    height: 11px;
-    fill: currentColor;
-  }
-
-  /* One button per storefront, stacked, sitting outside the card's own link. The 22px
-     matches .info's padding, which is what keeps them on the same left edge as the
-     roles and team lines above even though they're no longer inside that block.
-     align-items keeps each button the width of its own label rather than the column. */
+  /* The titles I held, in full ink rather than the grey the team size wears up in the
+     eyebrow. They used to be the same size and colour as each other, 6px apart, which
+     made a single grey block out of two different claims. This is the last line inside
+     the card's link, so it carries the fade to the card's own colour. */
+  /* One button per storefront, stacked and centered, sitting outside the card's own
+     link. align-items keeps each button the width of its own label rather than the
+     column. */
   .stores {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
+    margin-top: -6px;
     /* 3 rather than 8 because each button's layout box is --lift times its resting
        size (see .store), leaving about 5px of empty box below one and above the next.
        Together that reads as the 8px this used to be. */
@@ -500,8 +592,10 @@ const plain = (value: string) =>
     padding: calc(8px * var(--lift)) calc(13px * var(--lift));
     font-size: calc(13.5px * var(--lift));
     line-height: 1.2;
-    /* Grows rightward from the column it shares with the lines above, rather than from
-       its middle, so a hovered button doesn't drift out of that left edge. */
+    /* Grows to the right, off its own left edge, so the button lines up with the text
+       above it at rest and stays lined up while it lifts. Growing from the middle would
+       hold it a few pixels in from that edge, since the box is --lift times the size
+       the button is drawn at. */
     transform-origin: left center;
     transform: scale(calc(1 / var(--lift)));
   }
@@ -525,69 +619,192 @@ const plain = (value: string) =>
     fill: currentColor;
   }
 
-  /* Ruled off top and bottom so the numbers read as a fact sheet rather than more
-     prose. Only a couple of games carry any. */
+  /* Not on the page at the moment: showMetrics above is false while the numbers look
+     for a better home. Kept whole so turning them back on is a one-word change.
+
+     The numbers that make the case: downloads, plays, how long it took. Only three of
+     the games carry any, which is the argument for framing them rather than leaving
+     them as another line of text — the frame marks the ones with something to show.
+
+     A banner, not a panel: darker than the card so it reads as its own object, with
+     both ends notched inward the way a ribbon's are. The notch is cut by clip-path,
+     which is also why there's no border to go with it. A border is painted before the
+     clip and would come away cut in half along the diagonals. */
   .metrics {
     display: flex;
     flex-wrap: wrap;
-    gap: 18px;
-    margin: 0 0 14px;
-    padding: 14px 0;
+    justify-content: center;
+    gap: 26px;
+    margin: 14px 22px 2px;
+    padding: 12px 34px 11px;
+    background: var(--color-well);
+    clip-path: polygon(
+      0 0,
+      100% 0,
+      calc(100% - 16px) 50%,
+      100% 100%,
+      0 100%,
+      16px 50%
+    );
     list-style: none;
-    border-top: 1px solid var(--color-border);
-    border-bottom: 1px solid var(--color-border);
   }
 
   .metrics li {
     display: flex;
     flex-direction: column;
+    align-items: center;
+    gap: 1px;
   }
 
+  /* The number is the loudest thing on the card after the name. 24px against the
+     title's 21 is deliberate: the eye should land on the name, then on this. */
   .metrics strong {
     color: var(--color-txt);
-    font-size: 15px;
+    font-size: 24px;
+    font-family: var(--font-heading), sans-serif;
+    line-height: 1.1;
   }
 
   .metrics span {
     color: var(--color-muted);
-    font-size: 11.5px;
-    letter-spacing: 0.06em;
+    font-size: 10px;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
   }
 
-  .tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin: 0;
-    padding: 14px 22px 0;
-    list-style: none;
+  /* Muted and a size down from the blurb: an aside to the name, not a second title.
+     margin-left: auto sends it to the far end of the line, so it sits against the
+     card's right edge. It never shrinks for the name, but it's capped at half the
+     line, so a long list wraps within itself rather than squeezing the name out. */
+  .genres {
+    flex: none;
+    max-width: 50%;
+    margin: 0 0 0 auto;
+    text-align: right;
+    color: var(--color-muted);
+    font-size: 12px;
+    letter-spacing: 0.04em;
   }
 
-  .tags-heading {
+  /* The heading over all the groups: centered, in full ink, with a rule running out to
+     each side. The rules are flex items that split the leftover width between them. */
+  .responsibilities {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     margin: 0;
     padding: 14px 22px 0;
-    color: var(--color-muted);
+    color: var(--color-txt);
     font-size: 11px;
     letter-spacing: 0.12em;
     text-transform: uppercase;
   }
 
-  /* The heading already provides the gap above the row. */
-  .tags-heading + .tags {
-    padding-top: 6px;
+  .responsibilities::before,
+  .responsibilities::after {
+    flex: 1;
+    height: 1px;
+    background: var(--color-border);
+    content: '';
   }
 
-  .tags li {
+  /* One line of chips that wraps, starting at the card's left edge under the heading,
+     so every line begins on the same vertical as the blurb and the roles above it. */
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 12px 22px 0;
+    list-style: none;
+  }
+
+  /* Colour is what tells the disciplines apart now that no labels divide them, so each
+     chip takes its own: full strength for the word, a dimmed version of the same hue
+     for the outline, and a trace of it inside. The fill stays faint on purpose, since
+     five solid colours across a card would shout louder than the artwork above them.
+     The fallback keeps a chip readable if a tag outside the five ever lands here. */
+  .chips li {
+    display: flex;
+  }
+
+  /* Each chip filters the grid by its own tag, so it answers the pointer the way the
+     other buttons on the page do: it grows, and it springs back under a press. */
+  .chips button {
+    --chip-color: var(--color-muted);
+
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    border: 1px solid var(--color-border);
+    height: 21px;
+    padding: 0 9px;
+    border: 1px solid color-mix(in srgb, var(--chip-color) 65%, transparent);
     border-radius: 100px;
-    color: var(--color-muted);
-    font-size: 11.5px;
+    background: color-mix(in srgb, var(--chip-color) 10%, transparent);
+    color: var(--chip-color);
+    font-family: inherit;
+    font-size: 10.5px;
     letter-spacing: 0.04em;
-    line-height: 1.4;
+    cursor: var(--cursor-default);
+    transition: transform 0.6s ease, background-color var(--transition);
+  }
+
+  .chips button:hover,
+  .chips button:focus-visible {
+    background: color-mix(in srgb, var(--chip-color) 22%, transparent);
+    transform: scale(1.08);
+  }
+
+  .chips button:active {
+    transform: scale(1.02);
+    transition-duration: 0.08s;
+  }
+
+  /* Already filtering by this one. Filled in its own colour, so the card shows which
+     of its tags the grid is currently held to. */
+  .chips button[data-on] {
+    background: color-mix(in srgb, var(--chip-color) 30%, transparent);
+    font-weight: 700;
+  }
+
+  /* What the search matched. A ring rather than a fill, so a chip can be both matched
+     and filtered without the two states fighting over the same background. */
+  .chips button[data-match],
+  .icon-filter[data-match] {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-txt) 55%, transparent);
+    border-radius: 100px;
+  }
+
+  .icon-filter[data-match] :global(.tag-icon) {
+    opacity: 1;
+  }
+
+  /* The discipline's mark, sized to the word beside it and held a little back, so the
+     chip still reads as a word with a mark on it rather than as two things. gap is on
+     the icon rather than the chip, which keeps a chip without one from carrying a
+     phantom space. */
+  .chips button :global(svg) {
+    height: 9px;
+    margin-right: 5px;
+    opacity: 0.8;
+  }
+
+  .chips button[data-category='design'] {
+    --chip-color: var(--color-design);
+  }
+
+  .chips button[data-category='programming'] {
+    --chip-color: var(--color-programming);
+  }
+
+  .chips button[data-category='art'] {
+    --chip-color: var(--color-art);
+  }
+
+  .chips button[data-category='audio'] {
+    --chip-color: var(--color-audio);
+  }
+
+  .chips button[data-category='production'] {
+    --chip-color: var(--color-production);
   }
 </style>

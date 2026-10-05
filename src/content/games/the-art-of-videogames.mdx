@@ -1,0 +1,77 @@
+---
+order: 1
+title: The Art of Videogames
+img: ./the-art-of-videogames.webp
+video: https://www.youtube.com/embed/jmcXMFhv-Rk?si=hVjol0YHjgkTYJy3
+tags: [private, solo developer, narrative, rpg maker, personal,
+  level design, narrative design, puzzle design,
+  narrative writing,
+  gameplay programming]
+startDate: 2015
+team: "1"
+roles: "Solo developer"
+blurb: "Learn about games to save Towney from an evil vampire."
+description: "At the end of my English course I could present on any topic, so I chose games. Instead of slides, I thought, “What if I used a game to present the idea of games as art?” The result is a narrative walking simulator that makes the argument by being one, ending in a puzzle challenge.<br><br>I made it alone in RPG Maker, writing every line and designing all 32 levels."
+private: Due to the various copyrighted content used in the creation of the game, I will not be making the game publicly playable.
+---
+
+import TwoColumn from '../../components/mdx/TwoColumn.astro';
+import museum from './the-art-of-videogames/museum.webp';
+import julia from './the-art-of-videogames/julia.webp';
+import nighttime from './the-art-of-videogames/nighttime.webp';
+import colorPuzzle from './the-art-of-videogames/color-puzzle.webp';
+import captain from './the-art-of-videogames/captain.webp';
+
+### The project
+
+<TwoColumn image={museum} alt="A museum room with pictures on the walls, where Carl says: Really liking those movies, huh? next to choices reading Example of good cinematic, Example of good game without cinematic, and Go away" caption="Making the argument inside the game">
+
+At the end of my English course I could give a presentation on any subject, and I chose video games as art. Instead of slides, I made a game in English that makes the argument itself: a narrative walking simulator where the player learns about games to save Towney from an evil vampire, ending in a puzzle challenge.
+
+It was my way of letting the medium speak for itself. The game makes the argument by being what it argues for. It shows every aspect of games, uses music from many different games, and tries to be beautiful. It tells a story, with interesting characters, funny and sad moments, and backstories, and it proves games can teach by teaching.
+
+It also had to work for the person playing it in class: my teacher, who wasn't a gamer. That's why it's a walking simulator. Anyone could walk through it, and no challenge could stop the presentation halfway.
+
+</TwoColumn>
+
+### My role
+
+I was the solo developer. The goal was a complete narrative experience, built alone in RPG Maker, that I could present to the class.
+
+### What I did
+
+Everything except the art and audio assets is mine: all 32 levels, the puzzles and every line of dialogue. The game's logic is built almost entirely with RPG Maker's event scripting, apart from a few short JavaScript calls: 32 maps, 1,782 event pages and about 8,700 event commands.
+
+<TwoColumn image={julia} alt="Julia, a witch, in her cluttered house, saying: You should visit Towney, it's south from here" caption="Julia sends the player to Towney" side="right">
+
+**Story structure.** A storyline variable tracks the player's progress through the main story, with separate threads for side characters such as Julia and the Captain.
+
+The villain, Selene, is a vampire because she drains the happiness from the villages. She's an immortal being who has corrupted the meaning of games. Her powers turn out to be a curse as well: at the end of the game, Roger becomes the vampire.
+
+</TwoColumn>
+
+<TwoColumn image={nighttime} alt="Towney's casino lit in pink and purple, with the message NIGHTTIME HAS ARRIVED!!!" caption="Night falls on Towney">
+
+**Staging.** I staged scenes with move routes, map transfers and pictures, and set the mood with weather, dynamic lighting and timed events.
+
+</TwoColumn>
+
+<TwoColumn image={colorPuzzle} alt="A purple cave with red, blue and yellow orbs marked with question marks, three colored pressure plates, a Reset switch and Selene waiting at the top" caption="The color puzzle before the final fight" side="right">
+
+**Levels and puzzles.** I designed all 32 levels and built the puzzles, including position tracking for red, blue and yellow objects, backed by an in-game hint system.
+
+</TwoColumn>
+
+<TwoColumn image={captain} alt="Captain Story in a library, saying: For example, let me tell you a story. A long time ago, in the endless ocean, a young marine boy found an unknown land" caption="Captain Story, one of the side characters">
+
+**Writing.** I wrote all of the dialogue, 1,145 messages and 48 choices.
+
+</TwoColumn>
+
+### Outcome
+
+I presented it as my final presentation for the course. My class found it very creative, though they only saw a small part of the game. The longplay video shows the rest. It isn't publicly playable because it uses copyrighted content.
+
+If I made it for a presentation again, I'd cut about 95% of it. It would be a linear experience instead of a town full of different choices, and any walking would be close to a straight line.
+
+*Screenshots from the game's longplay video.*

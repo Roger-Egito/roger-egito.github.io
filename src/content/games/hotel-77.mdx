@@ -1,0 +1,91 @@
+---
+order: 6
+title: Hotel 77
+img: ./hotel-77.webp
+video: https://www.youtube.com/embed/s3v9tAh8GnM?si=wPh1Nl-ceR_vYxvI
+tags: [steam, level designer, game developer, horror, narrative, unity, ludomancer,
+  content design, level design, narrative design,
+  dialogue writing, narrative writing,
+  gameplay programming,
+  trailer production]
+startDate: 2024
+team: "~10"
+roles: "Level designer and game developer"
+blurb: "Resolve the mystery of these haunted corridors to escape the loop."
+description: "Hotel 77 is a first-person narrative horror game set in a haunted hotel trapped in a time loop. Players walk its shifting corridors, spot the anomalies, and make the right choice to move time forward.<br><br>I designed the hotel's bedrooms and several of its rooms, created 17 of its anomaly variants, wrote its lore, and cut its trailers."
+urlSteam: <iframe src="https://store.steampowered.com/widget/2960360/" frameborder="0" width="646" height="190"></iframe>
+---
+
+import TwoColumn from '../../components/mdx/TwoColumn.astro';
+import lobby from './hotel-77/lobby.webp';
+import corridor from './hotel-77/corridor.webp';
+import getOut from './hotel-77/get-out.webp';
+import redHallway from './hotel-77/red-hallway.webp';
+import bedroom from './hotel-77/bedroom.webp';
+import shadowMan from './hotel-77/shadow-man.webp';
+import evilTv from './hotel-77/evil-tv.webp';
+
+### The project
+
+<TwoColumn image={lobby} alt="Dim hotel lobby with a ceiling lamp, wood paneling and a camcorder timestamp reading Jul 7 1997, 00:00" caption="The hotel at the start of the loop">
+
+Hotel 77 is a first-person narrative horror game from Ludomancer Studio, set in a haunted hotel caught in a time loop. Players walk its shifting corridors, spot what is wrong, and have to make the right choice to move time forward.
+
+The team had about ten people, and the game is localized into ten languages with full English audio.
+
+</TwoColumn>
+
+### My role
+
+I worked on it in two stretches. In December 2024 I worked on the hotel's level design, and in December 2025 I came back to build the bedrooms and a new set of anomalies.
+
+### What I did
+
+<TwoColumn image={corridor} alt="Long hotel corridor lined with doors, wall lamps, shelves of vases and an armchair" caption="One of the hotel's corridors" side="right">
+
+**Level design.** In the first pass I built and polished several of the hotel's rooms, including the Outlast room, the skull room and the dark room, added locked doors, and placed the carpets and the letter. My level design branch was merged in January 2025.
+
+</TwoColumn>
+
+<TwoColumn image={bedroom} alt="A hotel bedroom with green striped wallpaper, a made bed, a bedside lamp, an armchair and a curtained window" caption="The bedroom I designed, the same behind all 8 doors">
+
+In the second pass I designed and built all of the hotel's bedrooms, starting from the basic bedroom. The bedroom is the same behind all 8 doors, so players don't have to memorize much. Only one door in the hallway is unlocked, so they don't have to check all 8 either. The unlocked door is random, except when the anomaly is in a bedroom: then that bedroom always spawns behind the same door.
+
+</TwoColumn>
+
+<TwoColumn image={getOut} alt='Hallway with "GET OUT" smeared across the wall above a door, between two statues' caption="GET OUT, one of my hallway anomalies" side="right">
+
+**Anomalies.** I created 17 anomaly variants and 4 themed room variants across both passes. In the hallways, mine include blood handprints around the fire alarm, luggage turned into coffins, a dead ghost sitting at the start of the hallway, GET OUT written across the wall, statues that turn to watch you, a skull inside a diver helmet, and Nevermore, where the same helmet hides a bloody raven. In the bedrooms, they include a bloody bathtub, an evil TV, a hole in the wardrobe, a lamp that is simply wrong, and a crying zombie.
+
+</TwoColumn>
+
+<TwoColumn image={evilTv} alt="An old television on a bedroom dresser, its screen filled by a giant staring eye" caption="The evil TV, one of my bedroom anomalies">
+
+To me, a good anomaly rewards paying attention. It doesn't try to jumpscare you hard. You get a little scared when you realize what's wrong with the room. Some of mine are obvious and scary on purpose, and some are really hard to spot. I always added a black substance near the anomaly, to make it a tiny bit easier to see and to give all of them a shared motif. When an anomaly is a jumpscare, it should feel unique. In my Outlast room, the power goes out partway through and your night vision switches on by itself.
+
+</TwoColumn>
+
+<TwoColumn image={shadowMan} alt="A dark hotel room seen past stacked luggage, with a tall shadowy figure silhouetted against the only lit wall at the far end" caption="The shadow man, from the trailer" side="right">
+
+My favorite is the shadow man, in my dark room. The lights are off and a huge shadow stands at the far end, looking at you. It gives an immediate "oh no" feeling without being a jumpscare. Walk toward it, and the lights come back on and it's gone.
+
+Not every anomaly made it. Each one went through review, and two of mine were cut. A shadow hiding behind the luggage, given away only by its breathing, was too hard to spot. A door left ajar with a baby crying behind it overlapped with another developer's crying baby.
+
+</TwoColumn>
+
+<TwoColumn image={redHallway} alt="The same hotel hallway lit entirely in red" caption="Every loop can change the hotel">
+
+**Anomaly behaviors.** I wrote eight scripts to bring the anomalies to life: objects and heads that turn to face the player, triggers that fire when the player gets close, props that vanish on approach or after a timer, a random door unlocker, a rotation reset trigger, and a manager for the lamp anomaly.
+
+</TwoColumn>
+
+**Writing and trailers.**
+
+- Created the hotel's lore, wrote the letter and the audio logs that tell its backstory, and added 18 new entries for my dialogue to the game's localization tables.
+- Cut trailers for the game and helped fix bugs.
+
+### Outcome
+
+The game is finished and with the publisher, and its Steam page is live while it waits for release.
+
+*Screenshots from the game's Steam page.*
