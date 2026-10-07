@@ -294,13 +294,22 @@ if (bar && grid) {
 
   const writeUrl = (replace = false) => {
     const params = new URLSearchParams(location.search);
-    if (active.size) params.set('f', [...active].join(','));
-    else params.delete('f');
-    if (query) params.set('q', searchInput.value);
-    else params.delete('q');
+    params.delete('f');
+    params.delete('q');
 
-    const search = params.toString();
-    const url = `${location.pathname}${search ? `?${search}` : ''}${location.hash}`;
+    // Written by hand rather than with URLSearchParams.toString(), which turns every
+    // comma into %2C. These addresses show up in the analytics as the record of what
+    // people filter and search for, so they're kept readable: ?f=unity,python&q=war
+    // rather than ?f=unity%2Cpython. Each part is still escaped, and the comma left
+    // bare between them is exactly what readUrl splits on.
+    const part = (value: string) => encodeURIComponent(value).replace(/%20/g, '+');
+    const own = [
+      active.size ? `f=${[...active].map(part).join(',')}` : '',
+      query ? `q=${part(searchInput.value.trim())}` : '',
+      params.toString(),
+    ].filter(Boolean);
+
+    const url = `${location.pathname}${own.length ? `?${own.join('&')}` : ''}${location.hash}`;
     // replaceState while typing, so a search doesn't leave one history entry per letter.
     history[replace ? 'replaceState' : 'pushState']({}, '', url);
   };
@@ -394,12 +403,14 @@ if (bar && grid) {
   searchInput.addEventListener('input', () => {
     // Filtering happens on the keystroke itself: ten cards is nothing to sort through,
     // and any wait at all reads as the box ignoring you. Only the address bar is held
-    // back, since rewriting it every letter is the one part with a real cost.
+    // back, and for longer than it takes to type: each address it settles on is
+    // counted as a view, so it waits until the typing has stopped, and a search for
+    // "war" is recorded once as ?q=war rather than as w, wa and war.
     query = searchInput.value.trim().toLowerCase();
     apply();
 
     clearTimeout(typing);
-    typing = window.setTimeout(() => writeUrl(true), 250);
+    typing = window.setTimeout(() => writeUrl(true), 1000);
   });
 
   searchForm.addEventListener('submit', (event) => {
