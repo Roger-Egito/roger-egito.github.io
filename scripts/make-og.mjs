@@ -12,10 +12,15 @@
  *
  * How: opens the running site in headless Chrome at 1200x630, the size every major
  * preview crops to, drawn at 2x and scaled down so the type comes out sharp. Hides the
- * parts that only exist in development or only make sense live (Astro's dev toolbar,
- * the scrollbar, the scroll arrow), steps the reel to the chosen game with the hero's
- * own "next" button, freezes the clip at the chosen second, and saves the frame to
+ * parts that only exist in development or only make sense live (Astro's dev toolbar, the
+ * scrollbar, the navbar, the reel's dots), stretches the hero to fill the whole frame
+ * the way it fills a screen, steps the reel to the chosen game with the hero's own
+ * "next" button, freezes the clip at the chosen second, and saves the frame to
  * src/assets/og-preview.jpg, which index.astro hands to Head.
+ *
+ * The hero on the page is shorter than a screen now, so the featured row shows under it
+ * (see DESIGN.md). Without the stretch the preview would be two thirds hero and a strip
+ * of cards cut off at the bottom.
  *
  * Needs Chrome or Edge installed. Set CHROME_PATH if yours isn't in a standard place.
  */
@@ -30,7 +35,7 @@ const arg = (name, fallback) => {
   return at > -1 ? process.argv[at + 1] : fallback;
 };
 
-/** Matched against the hero's credit line, so any part of the game's name works. */
+/** Matched against the name of the game showing, so any part of it works. */
 const game = arg('game', 'Cursed Blight');
 /** Seconds into that game's clip. */
 const at = Number(arg('at', '3'));
@@ -120,21 +125,23 @@ try {
 
   await run(`(() => {
     const style = document.createElement('style');
-    style.textContent = 'astro-dev-toolbar, .scroll-cue { display: none !important } html { scrollbar-width: none }';
+    style.textContent = 'astro-dev-toolbar, .site-nav, [data-hero-dots], .hero .featured { display: none !important } html { scrollbar-width: none } .hero { display: flex; flex-direction: column; justify-content: center; min-height: 100vh !important }';
     document.head.append(style);
   })()`);
 
-  // Step the reel with its own button until the credit line names the game.
+  // Step the reel with its own button until the current dot names the game. The dots
+  // are hidden in the picture, but they still say which game is up.
+  const showing = `document.querySelector('[data-hero-dots] .dot[aria-current]')?.getAttribute('aria-label')?.replace(/^Show /, '') ?? ''`;
   const want = game.toLowerCase();
   let credit = '';
   for (let step = 0; step < 12; step++) {
-    credit = await run(`document.querySelector('[data-hero-credit]')?.textContent.trim() ?? ''`);
+    credit = await run(showing);
     if (credit.toLowerCase().includes(want)) break;
     await run(`document.querySelector('[data-pad="next"]').click()`);
     await sleep(1500);
   }
   if (!credit.toLowerCase().includes(want)) {
-    throw new Error(`No game in the hero matches "${game}". Last credit line: "${credit}".`);
+    throw new Error(`No game in the hero matches "${game}". Last one showing: "${credit}".`);
   }
 
   // Let the crossfade finish, then freeze the visible clip on the chosen second.
@@ -150,9 +157,9 @@ try {
   await sleep(300);
 
   // A seek near the end of a clip makes the reel start its handover to the next game,
-  // and the frame would then be the wrong game under a credit line read a moment ago.
+  // and the frame would then be the wrong game under a name read a moment ago.
   // So look again, after the seek, and refuse to save if it moved on.
-  const after = await run(`document.querySelector('[data-hero-credit]')?.textContent.trim() ?? ''`);
+  const after = await run(showing);
   if (!after.toLowerCase().includes(want)) {
     throw new Error(
       `At ${at}s the reel had already moved on to "${after}". Pick an earlier second.`

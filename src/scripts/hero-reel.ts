@@ -1,6 +1,6 @@
 /**
  * Plays the game clips behind the hero, and everything that hangs off which one is up:
- * the line of credit under the name, clicking through to that game, and the d-pad.
+ * the dots under the name, clicking through to that game, and the d-pad.
  *
  * Two <video> elements take turns. One is on screen; the other quietly loads the clip
  * that's coming up and is faded in over the top just before the current one runs out,
@@ -20,7 +20,7 @@
  *     it's needed, not at the start
  *   - keep running once you've scrolled past, or once the tab is in the background
  *   - run at all for someone who asked for less motion, or who's on a metered
- *     connection — they keep the still, the slogan and no download
+ *     connection — they keep the still and no download
  *
  * Every clip comes in several qualities, and hero-quality.ts picks one per clip. This
  * file only reports to it: how long each download took, and whenever playback stalls.
@@ -31,7 +31,8 @@ import { createQuality, type Source, type Tier } from './hero-quality';
 interface Clip {
   sources: Source[];
   slug: string;
-  credit: string;
+  /** The game's name, for the dots' labels. */
+  title: string;
 }
 
 /** Seconds left on the current clip when the next one starts downloading. */
@@ -135,12 +136,26 @@ function run(reel: HTMLElement) {
   let generation = 0; // bumped per command, so a superseded one bows out
   let onScreen = false;
 
-  const credit = document.querySelector<HTMLElement>('[data-hero-credit]');
+  // One dot per game, in the running order, so they read left to right the way the reel
+  // plays them and say plainly that there's more than the one on screen. Made here
+  // rather than in the markup because the order is only decided now, and with no reel
+  // (reduced motion, data saver) there's nothing for them to step through.
+  const dotBox = document.querySelector<HTMLElement>('[data-hero-dots]');
+  const dots = order.map((index, slot) => {
+    const dot = document.createElement('button');
+    dot.type = 'button';
+    dot.className = 'dot';
+    dot.dataset.slot = String(slot);
+    dot.setAttribute('aria-label', `Show ${clips[index].title}`);
+    dotBox?.append(dot);
+    return dot;
+  });
 
   /** Everything that has to follow the clip on screen. */
   const announce = (clip: Clip) => {
     reel.dataset.slug = clip.slug;
-    if (credit) credit.textContent = clip.credit;
+    const slot = order.indexOf(clips.indexOf(clip));
+    dots.forEach((dot, i) => dot.toggleAttribute('aria-current', i === slot));
   };
 
   /** Fetch a clip into the back element, a little ahead of needing it. */
@@ -266,6 +281,18 @@ function run(reel: HTMLElement) {
     if (key.dataset.pad === 'prev') handover(-1, true);
   });
 
+  // --- the dots ------------------------------------------------------------------
+  // A dot is a slot in the running order. The step to it is measured from wherever the
+  // reel has really got to, so any fade still running is finished first.
+  dotBox?.addEventListener('click', (event) => {
+    const dot = (event.target as HTMLElement | null)?.closest<HTMLElement>('.dot');
+    if (!dot) return;
+    cutFade();
+    const here = ((position % order.length) + order.length) % order.length;
+    const step = Number(dot.dataset.slot) - here;
+    if (step) handover(step, true);
+  });
+
   // Clicking the footage opens that game, by way of the card that already knows how.
   // Only the bare backdrop counts: the panel behind the text is a barrier, so a click
   // anywhere on it — selecting the email, say — stays where it landed.
@@ -298,8 +325,8 @@ function run(reel: HTMLElement) {
     if (slug) document.querySelector<HTMLElement>(`a[data-game="${CSS.escape(slug)}"]`)?.click();
   });
 
-  // Say who we're about to show before the first frame arrives, so the slogan the page
-  // was served with is never the thing anyone reads.
+  // Mark the dot and the click-through for the first clip before its first frame
+  // arrives.
   announce(clips[at(0)]);
 
   startWhenVisible(reel, (visible) => {
@@ -328,34 +355,20 @@ function start(video: HTMLVideoElement) {
     });
 }
 
-/** Down jumps to the portfolio; Up brings the nav bar in and out. */
+/**
+ * Down jumps to the portfolio; Up goes to the search box over the grid. Up used to bring
+ * the navbar in and out, but the navbar is always there now (see DESIGN.md).
+ */
 function wireNav() {
-  const nav = document.getElementById('site-nav');
-
-  const setOpen = (open: boolean) => {
-    if (!nav) return;
-    if (open) {
-      nav.hidden = false;
-      // Next frame, so the browser has a closed state to animate away from.
-      requestAnimationFrame(() => (nav.dataset.open = ''));
-    } else {
-      delete nav.dataset.open;
-    }
-  };
-
   document.addEventListener('click', (event) => {
     const key = (event.target as HTMLElement | null)?.closest<HTMLElement>('[data-pad]');
     if (!key) return;
     if (key.dataset.pad === 'down') {
       document.getElementById('portfolio')?.scrollIntoView({ behavior: 'smooth' });
     }
-    if (key.dataset.pad === 'up') setOpen(!(nav && 'open' in nav.dataset));
-  });
-
-  // It stays put when a link in it is followed — the sections are all on one page, so
-  // closing it would mean pressing Up again for every jump.
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && nav && 'open' in nav.dataset) setOpen(false);
+    if (key.dataset.pad === 'up') {
+      document.querySelector<HTMLInputElement>('[data-search-input]')?.focus();
+    }
   });
 }
 

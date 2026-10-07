@@ -8,6 +8,7 @@ import Base from '../../layouts/Base.astro';
 import Icon from '../../components/Icon.astro';
 import GameDetails from '../../components/GameDetails.astro';
 import Footer from '../../components/Footer.astro';
+import SiteNav from '../../components/SiteNav.astro';
 import StructuredData from '../../components/StructuredData.astro';
 import { site, pageTitle, plainText } from '../../config/site';
 import { sortTags, tagsIn, yearRange } from '../../config/tags';
@@ -48,6 +49,7 @@ const work = {
 ---
 
 <Base title={pageTitle(title)} description={description} image={preview.src}>
+  <SiteNav />
   <main class="container">
     {/* Inside main rather than above it, so it shares the article's centring and lands
         on the same left edge at every breakpoint — the container steps 750/970/1170

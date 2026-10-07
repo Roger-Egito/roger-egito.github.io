@@ -177,6 +177,18 @@ window.addEventListener('popstate', () => {
 {
   baseTitle = document.title;
 
+  // The navbar's About link, followed from a game's own page, which has no About dialog
+  // of its own: it lands here as /#about. The hash comes back out of the address once
+  // the dialog is open, so a reload doesn't open it again.
+  if (location.hash === '#about') {
+    const about = document.getElementById('about-dialog');
+    if (about instanceof HTMLDialogElement) {
+      history.replaceState(history.state, '', location.pathname + location.search);
+      about.showModal();
+      about.querySelector<HTMLElement>('.sheet')?.focus();
+    }
+  }
+
   // Overlay dialogs with no URL behind them still close on a click outside the card.
   // Esc is the browser's own doing and needs nothing here.
   for (const dialog of document.querySelectorAll<HTMLDialogElement>(

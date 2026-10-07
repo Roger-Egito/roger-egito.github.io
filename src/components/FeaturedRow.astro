@@ -1,0 +1,93 @@
+---
+/**
+ * The featured games, standing on the hero's footage under my name (see DESIGN.md).
+ * Which ones is the `featured` flag in each game's front matter. The grid below still
+ * lists every game, these included: this row is a spotlight, the grid is the catalog.
+ *
+ * Tall cards, like a store's capsules, with no title over the row: the hero above is
+ * the heading. On a phone it turns into a strip you swipe sideways, with the next card
+ * peeking in from the edge to say there's more. That's the browser's own scrolling with
+ * snap points, so it needs no script and works with touch, trackpad and keyboard alike.
+ */
+import { getCollection } from "astro:content";
+import GameCard from "./GameCard.astro";
+
+const featured = (await getCollection("games", (game) => game.data.featured)).sort(
+  (a, b) => b.data.order - a.data.order
+);
+---
+
+{
+  featured.length > 0 && (
+    <section class="featured" aria-label="Featured games">
+      <div class="container">
+        <ul class="row">
+          {featured.map((game) => (
+            <li>
+              <GameCard game={game} size="featured" />
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}
+
+<style>
+  .featured {
+    padding: 0 0 56px;
+  }
+
+  .row {
+    display: flex;
+    gap: 14px;
+    margin: 0;
+    padding: 0 0 12px;
+    list-style: none;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 15px;
+    /* The strip runs to the screen's edges, so the peeking card visibly continues past
+       the container's padding instead of being cut off at it. */
+    margin-inline: -15px;
+    padding-inline: 15px;
+  }
+
+  .row > li {
+    display: flex;
+    flex: 0 0 60%;
+    scroll-snap-align: start;
+  }
+
+  /* Side by side once there's room, centred, each at a capsule's width rather than a
+     third of the page: tall cards a third of 1170px wide would be taller than the
+     screen. */
+  @media (min-width: 768px) {
+    .row {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(0, 290px);
+      justify-content: center;
+      gap: 24px;
+      margin-inline: 0;
+      padding: 0;
+      overflow: visible;
+    }
+
+    .row > li {
+      flex: none;
+    }
+  }
+
+  /* The card being looked at hangs its detail panel over what's below, so it sits above
+     the rest. */
+  .row > li:hover,
+  .row > li:has(:focus-visible) {
+    z-index: 4;
+  }
+
+  .row > li {
+    position: relative;
+  }
+</style>

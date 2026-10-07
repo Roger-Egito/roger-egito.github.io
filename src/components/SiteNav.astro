@@ -1,87 +1,209 @@
 ---
-// Hidden until asked for. The up key on the hero's d-pad is what reveals it, so it
-// stays out of the way of a page that has never needed navigation to work.
-import { site } from '../config/site';
+/**
+ * The navbar. Always there, stuck to the top of every page (see DESIGN.md). It used to
+ * stay hidden until the d-pad's Up key asked for it, which meant most visitors never
+ * knew there was one. The search lives on the portfolio grid, next to what it filters.
+ *
+ * The links are written as addresses on the homepage ("/#portfolio") so the same bar
+ * works on a game's own page, where they lead back. About opens its dialog where there
+ * is one. Anywhere else it goes to /#about, and modal.ts opens the dialog on arrival.
+ *
+ * On a phone the links fold behind a menu button, and the name stays out.
+ */
+import Icon from "./Icon.astro";
+import { site } from "../config/site";
 
-// About is a dialog rather than a section now, and there's no contact section left to
-// jump to, so that one goes straight to the mail client.
+const cv = site.links.find((link) => link.icon === "file-lines");
+
 const links = [
-  { href: '#portfolio', label: 'Portfolio' },
-  { href: '#about-dialog', label: 'About', opens: '#about-dialog' },
-  { href: `mailto:${site.email}`, label: 'Contact' },
+  // Beyond Games joins these when its section is back on the homepage.
+  { href: "/#portfolio", label: "Portfolio" },
+  { href: "/#about", label: "About", opens: "#about-dialog" },
+  ...(cv ? [{ href: cv.url, label: "CV", external: true }] : []),
+  { href: `mailto:${site.email}`, label: "Contact" },
 ];
 ---
 
-<nav id="site-nav" class="site-nav" aria-label="Sections" hidden>
-  <ul>
-    {
-      links.map((link) => (
-        <li>
-          <a href={link.href} data-opens={link.opens}>
-            {link.label}
-          </a>
-        </li>
-      ))
-    }
-  </ul>
+<script>
+  import "../scripts/site-nav";
+</script>
+
+<nav id="site-nav" class="site-nav" aria-label="Site">
+  <div class="bar">
+    <a class="brand" href="/#page-top">{site.title}</a>
+
+    <ul class="links" id="site-nav-links">
+      {
+        links.map((link) => (
+          <li>
+            <a
+              href={link.href}
+              data-opens={link.opens}
+              target={link.external ? "_blank" : undefined}
+              rel={link.external ? "noopener" : undefined}
+            >
+              {link.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <button
+      type="button"
+      class="menu-toggle"
+      data-nav-toggle
+      aria-expanded="false"
+      aria-controls="site-nav-links"
+      aria-label="Menu"
+    >
+      <Icon name="bars" />
+    </button>
+  </div>
 </nav>
 
 <style>
+  /* Sticky rather than fixed, so it takes up its own room at the top instead of sitting
+     over the hero, and stays put once the page scrolls under it. Above the cards' detail
+     panels; below the dialogs, which live in the browser's top layer anyway. */
+  /* Steam's global header: a flat bar a shade darker than the page, no border. */
   .site-nav {
-    position: fixed;
-    z-index: 20;
+    position: sticky;
+    z-index: 30;
     top: 0;
-    left: 0;
-    width: 100%;
-    border-bottom: 2px groove var(--color-txt);
-    background-color: var(--color-bg);
-    /* Slides out of sight rather than disappearing, so opening and closing reads as
-       one movement. [hidden] is dropped the moment it's asked for; the transform is
-       what actually animates. */
-    translate: 0 -100%;
-    transition: translate 0.3s ease;
+    background-color: var(--color-header);
   }
 
-  .site-nav[data-open] {
-    translate: 0 0;
-  }
-
-  .site-nav ul {
+  .bar {
     display: flex;
-    justify-content: center;
-    gap: 2.5em;
-    margin: 0;
-    padding: 1.1em 0;
+    align-items: center;
+    gap: 18px;
+    max-width: 1170px;
+    height: 64px;
+    margin: 0 auto;
+    padding: 0 15px;
+  }
+
+  .brand {
+    flex: none;
+    color: var(--color-heading);
+    font-family: var(--font-heading), sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  /* Pushed to the far end, opposite the name. */
+  .links {
+    display: flex;
+    gap: 22px;
+    margin: 0 0 0 auto;
+    padding: 0;
     list-style: none;
   }
 
-  .site-nav a {
+  /* Steam's header links: uppercase, a size up from the body, turning blue when
+     pointed at. */
+  .links a {
+    /* inline-block so the lift has a box to scale. An inline element ignores transform. */
+    display: inline-block;
     color: var(--color-txt);
-    font-family: var(--font-heading), sans-serif;
-    font-weight: 700;
-    letter-spacing: 1px;
+    font-family: var(--font-body), sans-serif;
+    font-size: 16px;
+    font-weight: 400;
     text-decoration: none;
     text-transform: uppercase;
-    /* inline-block so the lift has a box to scale; an inline element ignores transform. */
-    display: inline-block;
-    transition: color var(--transition), transform 0.6s ease;
+    transition:
+      color var(--transition),
+      transform 0.6s ease;
   }
 
-  .site-nav a:hover,
-  .site-nav a:focus-visible {
-    color: var(--color-accent);
-    transform: scale(1.15);
+  .links a:hover,
+  .links a:focus-visible {
+    color: var(--color-action);
+    transform: scale(1.1);
   }
 
   /* Same press-and-spring as .btn. */
-  .site-nav a:active {
-    transform: scale(1.05);
+  .links a:active {
+    transform: scale(1.03);
     transition-duration: 0.08s;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .site-nav {
-      transition: none;
+  .menu-toggle {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 36px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    background: var(--color-raised);
+    color: var(--color-txt);
+    transition: border-color var(--transition);
+  }
+
+  .menu-toggle {
+    display: none;
+    margin-left: auto;
+    border-radius: var(--radius);
+  }
+
+  .menu-toggle:hover,
+  .menu-toggle:focus-visible,
+  .menu-toggle[aria-expanded="true"] {
+    border-color: var(--color-txt);
+  }
+
+  .menu-toggle :global(svg) {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+  }
+
+  /* Phone: the links leave the bar for a panel under it, opened by the menu button. The
+     name and the button keep the bar. */
+  @media (max-width: 860px) {
+    .bar {
+      gap: 10px;
+    }
+
+    .menu-toggle {
+      display: inline-grid;
+    }
+
+    .links {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      left: 0;
+      display: none;
+      flex-direction: column;
+      gap: 0;
+      padding: 6px 15px 14px;
+      background-color: var(--color-header);
+    }
+
+    .links[data-open] {
+      display: flex;
+    }
+
+    .links a {
+      padding: 10px 0;
+      font-size: 14px;
+    }
+
+    .links a:hover,
+    .links a:focus-visible {
+      transform: none;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .brand {
+      font-size: 14px;
     }
   }
 </style>

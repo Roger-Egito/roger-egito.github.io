@@ -426,6 +426,16 @@ export const creditsFor = (names: readonly string[], sole: readonly string[] = [
     .sort((a, b) => Number(b.held) - Number(a.held))
     .map(({ tag, held }) => (held ? `Sole ${tag.soleLabel ?? tag.label}` : tag.label));
 
+const listing = new Intl.ListFormat('en', { style: 'long', type: 'conjunction' });
+
+/**
+ * What I did on a game, as one phrase: "Game designer, game developer and art director".
+ * Every game states its own roles; a new one that hasn't yet falls back to listing its
+ * role tags, which are stored lowercase precisely so they read correctly here.
+ */
+export const rolesOf = (data: { roles?: string; tags: readonly string[] }) =>
+  data.roles ?? listing.format(tagsIn(data.tags, 'role').map((tag) => tag.id));
+
 /** Tags that should show an icon on the given side of a card's date. */
 export const iconsOn = (names: readonly string[], side: Exclude<IconSide, 'none'>) =>
   sortTags(names).filter((tag) => tag.icon && categories[tag.category].icons === side);

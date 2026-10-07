@@ -1,0 +1,889 @@
+---
+/**
+ * One game, as a card. The featured row and the portfolio grid both draw it, at two
+ * sizes, so the two can never drift apart.
+ *
+ * At rest a card is its artwork and, under it, what I did on the game. Everything else
+ * (name, year, stack, genre, blurb, store button, responsibilities) is the detail panel,
+ * which opens when you show interest, the way Steam's capsules do:
+ *
+ *   - grid: a small info screen beside the card, on whichever side has room
+ *   - featured: takes over the card's own frame, with the preview clip at its true 16:9
+ *     on top and the info under it, the way Steam's tall capsules turn over
+ *
+ * Hover or keyboard focus opens it, with a mouse. Without hover, on a phone or a tablet,
+ * the card stays just art and roles, and a tap opens the game's dialog, which carries
+ * everything the panel does and more (see DESIGN.md).
+ */
+import { Image } from "astro:assets";
+import type { CollectionEntry } from "astro:content";
+import Icon from "./Icon.astro";
+import TagIcon from "./TagIcon.astro";
+import {
+  iconsOn,
+  resolve,
+  responsibilityChipsIn,
+  rolesOf,
+  stores,
+  tagsIn,
+  yearRange,
+} from "../config/tags";
+import { filterIdsFor, searchPartsFor } from "../config/filters";
+
+interface Props {
+  game: CollectionEntry<"games">;
+  /** featured: the tall cards in the hero. grid: the catalog. */
+  size?: "featured" | "grid";
+  /**
+   * Carries what portfolio-filter.ts reads to filter and search. Only the grid's cards
+   * need it: the featured row repeats games the grid already lists.
+   */
+  filterable?: boolean;
+}
+
+const { game, size = "grid", filterable = false } = Astro.props;
+const d = game.data;
+
+// A game gets a hover preview just by having <slug>.mp4 sitting next to its markdown.
+// No front matter needed: drop the file in and it works, remove it and the card goes
+// back to a plain still. Vite hashes the URL for us.
+const previews = import.meta.glob<string>("../content/games/*.mp4", {
+  eager: true,
+  query: "?url",
+  import: "default",
+});
+const preview = previews[`../content/games/${game.id}.mp4`] as string | undefined;
+
+const plain = (value: string) =>
+  value
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+/**
+ * The card's line or two. `blurb` when it's set, otherwise the first paragraph of the
+ * full description, which is where each entry already opens with what the game is.
+ * Descriptions separate paragraphs with <br><br>.
+ */
+const blurb = d.blurb ?? plain((d.description ?? "").split(/<br\s*\/?>\s*<br\s*\/?>/i)[0]);
+
+/**
+ * The storefront rows, in the order set by `stores` in src/config/tags.ts. Name and icon
+ * come from each store's platform tag, so a card and the game's own page can never call
+ * the same storefront two different things.
+ */
+const storeList = stores.flatMap(({ field, tag }) => {
+  const link = d[field];
+  return link ? [{ url: link.url, store: resolve(tag) }] : [];
+});
+
+/**
+ * Off while I work out a better home for the numbers. The entries keep their `metrics`
+ * and the schema still checks them, so nothing is lost: flip this to true and the
+ * banner comes back exactly as it was.
+ */
+const showMetrics = false;
+
+const name = plain(d.title);
+const roles = rolesOf(d);
+const dates = yearRange(d.startDate, d.endDate);
+const client = tagsIn(d.tags, "client")[0];
+const icons = iconsOn(d.tags, "right");
+const genres = tagsIn(d.tags, "genre");
+const responsibilities = responsibilityChipsIn(d.tags);
+
+// Name, blurb and tags separately: the script ranks a match on the name above one on
+// the blurb, and that above one on a tag.
+const search = filterable ? searchPartsFor(d, blurb) : undefined;
+
+// The image is only ever as wide as its column, so the browser is told that, per size.
+// A featured card is tall, so its 16:9 artwork is drawn wider than the card to fill it.
+const sizes =
+  size === "featured"
+    ? "(min-width: 768px) 480px, 90vw"
+    : "(min-width: 1200px) 270px, (min-width: 992px) 30vw, (min-width: 640px) 48vw, 100vw";
+---
+
+<article
+  class:list={["card", preview && "has-preview"]}
+  data-size={size}
+  data-filters={filterable ? JSON.stringify(filterIdsFor(d)) : undefined}
+  data-search-title={search?.title}
+  data-search-blurb={search?.blurb}
+  data-search-tags={search?.tags}
+>
+  {/* The whole resting card is the link: artwork and roles. Real href so it still works
+      with JS off or in a new tab. modal.ts catches normal clicks and opens the dialog
+      instead. The name is in here for screen readers and search engines, since the
+      artwork usually carries it for everyone else. */}
+  <a
+    href={`/games/${game.id}/`}
+    class="card-link"
+    data-game={game.id}
+    aria-haspopup="dialog"
+  >
+    <h3 class="visually-hidden">{name}</h3>
+    <div class="shot" style={d.focus ? `--focus: ${d.focus}` : undefined}>
+      {/* Empty alt: the name above already says what this is. */}
+      <Image src={d.img} alt="" widths={[400, 800]} sizes={sizes} loading="lazy" />
+      {/* The preview clip. A grid card plays it here, in its own artwork, which is
+          already 16:9. A featured card's artwork is tall, so its clip plays in the
+          panel instead, uncropped. */}
+      {preview && size === "grid" && (
+        <video
+          class="preview"
+          data-src={preview}
+          muted
+          loop
+          playsinline
+          preload="none"
+          aria-hidden="true"
+          tabindex="-1"
+        />
+      )}
+    </div>
+    <p class="roles">{roles}</p>
+  </a>
+
+  {/* The detail panel. Outside the link, because the store button leaves the site and
+      each chip and icon is a button that filters the grid: an <a> or a <button> inside
+      another <a> is invalid markup and browsers tear it apart. */}
+  <div class="details">
+    {/* Covers the panel's empty parts, so a click on it opens the game just as a click
+        on the card does. The buttons sit above it. Out of the tab order and hidden from
+        screen readers: the card's own link is the one they get. */}
+    <a
+      href={`/games/${game.id}/`}
+      class="details-link"
+      data-game={game.id}
+      tabindex="-1"
+      aria-hidden="true"
+    />
+
+    {/* The featured card's clip, at its own 16:9 over a black band, with the 16:9
+        artwork under it until the clip has frames to show. */}
+    {size === "featured" && (
+      <div class="media">
+        <Image src={d.img} alt="" widths={[400, 800]} sizes="290px" />
+        {preview && (
+          <video
+            class="preview"
+            data-src={preview}
+            muted
+            loop
+            playsinline
+            preload="none"
+            aria-hidden="true"
+            tabindex="-1"
+          />
+        )}
+      </div>
+    )}
+
+    <div class="info">
+    {/* Shown, not announced: the link already gave screen readers the name. */}
+    <p class="title" aria-hidden="true" set:html={d.title} />
+
+    {(dates || client || icons.length > 0) && (
+      <p class="eyebrow">
+        {dates && <span class="year">{dates}</span>}
+        {/* A client with a logo is just another icon in the row on the right. One
+            without a logo has to say its name here instead. */}
+        {client && !client.icon && <span class="client">{client.label}</span>}
+        {icons.length > 0 && (
+          <span class="tech">
+            {icons.map((tag) => (
+              <button
+                type="button"
+                class="icon-filter"
+                data-card-filter={tag.id}
+                aria-label={`Filter by ${tag.label}`}
+              >
+                <TagIcon tag={tag} />
+              </button>
+            ))}
+          </span>
+        )}
+      </p>
+    )}
+
+    {genres.length > 0 && (
+      <p class="genres">
+        {genres.map((genre) => (
+          <span class="genre">{genre.label}</span>
+        ))}
+      </p>
+    )}
+
+    {blurb && <p class="blurb">{blurb}</p>}
+
+    {storeList.length > 0 && (
+      <ul class="stores">
+        {storeList.map(({ url, store }) => (
+          <li>
+            <a class="store" href={url} target="_blank" rel="noopener">
+              <TagIcon tag={store} inline />
+              <span>Go to {store.label}'s store page.</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )}
+
+    {showMetrics && d.metrics && d.metrics.length > 0 && (
+      <ul class="metrics">
+        {d.metrics.map((metric) => (
+          <li>
+            <strong>{metric.value}</strong>
+            <span>{metric.label}</span>
+          </li>
+        ))}
+      </ul>
+    )}
+
+    {responsibilities.length > 0 && (
+      <Fragment>
+        <p class="responsibilities">Responsibilities:</p>
+        <ul class="chips">
+          {responsibilities.map((tag) => (
+            <li>
+              <button
+                type="button"
+                data-card-filter={tag.id}
+                data-category={tag.category}
+                aria-label={`Filter by ${tag.label}`}
+              >
+                {tag.chipIcon && <Icon name={tag.chipIcon} />}
+                {tag.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </Fragment>
+    )}
+    </div>
+  </div>
+</article>
+
+<style>
+  /* A Steam capsule: the artwork, and a dark strip under it, square-cornered and with no
+     outline. Left-aligned whatever it sits in: the hero centres its own text, and the
+     featured cards are inside it. */
+  .card {
+    position: relative;
+    width: 100%;
+    border-radius: 2px;
+    background: var(--color-raised);
+    text-align: left;
+    transition: background-color var(--transition);
+  }
+
+  /* Engaged: pointed at, or holding keyboard focus somewhere inside. :focus-visible
+     rather than :focus-within, so clicking a chip with the mouse doesn't leave the
+     panel stuck open after the pointer has gone. Steam lights a capsule up rather than
+     lifting it, so this does the same. */
+  .card:hover,
+  .card:has(:focus-visible) {
+    background: var(--color-raised-dark);
+  }
+
+  .card-link {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .card-link:hover {
+    color: inherit;
+  }
+
+  /* The panel opening is what shows keyboard focus, plus a ring in link blue. */
+  .card-link:focus-visible {
+    outline: 2px solid var(--color-link);
+    outline-offset: 2px;
+  }
+
+  .shot {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background: var(--color-well);
+    border-radius: 2px 2px 0 0;
+    overflow: hidden;
+  }
+
+  /* Tall, like a store's capsule. The 16:9 artwork is cropped to fit, around the point
+     the game's `focus` names. */
+  .card[data-size="featured"] .shot {
+    aspect-ratio: 2 / 3;
+  }
+
+  /* Held slightly back until you engage with it, then it comes to full and pushes in a
+     little. It grows inside its own frame, so nothing around it has to move. */
+  .shot :global(img),
+  .preview {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: var(--focus, center);
+  }
+
+  .shot :global(img) {
+    opacity: 0.88;
+    transition:
+      transform 0.5s ease,
+      opacity 0.3s ease;
+  }
+
+  .card:hover .shot :global(img),
+  .card:has(:focus-visible) .shot :global(img) {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+
+  /* The clip sits exactly on top of the still and the two cross-fade, on the same
+     condition as the lift. .has-preview keeps cards with no clip from fading their still
+     into nothing. */
+  .preview {
+    opacity: 0;
+    transition: opacity var(--transition);
+  }
+
+  .card.has-preview:hover .preview,
+  .card.has-preview:has(:focus-visible) .preview {
+    opacity: 1;
+  }
+
+  .card.has-preview:hover .shot :global(img),
+  .card.has-preview:has(:focus-visible) .shot :global(img) {
+    opacity: 0;
+  }
+
+  /* The strip under the artwork: what I did on it. */
+  .roles {
+    margin: 0;
+    padding: 8px 10px 9px;
+    color: var(--color-txt);
+    font-size: 13px;
+    line-height: 1.35;
+    transition: color var(--transition);
+  }
+
+  .card:hover .roles,
+  .card:has(:focus-visible) .roles {
+    color: var(--color-heading);
+  }
+
+  /* --- the detail panel ------------------------------------------------------------
+     Steam's game hover box: a pale blue-grey card with dark text, the only light thing
+     on the page, so it reads at once as "about the thing you're pointing at". */
+
+  /* Out of the layout until it opens, not merely invisible. A hidden panel that still
+     had a box would hang off the right of the screen beside the last column and give
+     the page a horizontal scroll. */
+  .details {
+    display: none;
+    background: linear-gradient(to bottom, var(--color-popup), var(--color-popup-end));
+    color: var(--color-popup-ink);
+    font-size: 12px;
+  }
+
+  .info {
+    position: relative;
+    padding: 12px 14px 14px;
+  }
+
+  /* Under everything else in the panel, over its background. */
+  .details-link {
+    position: absolute;
+    inset: 0;
+  }
+
+  /* The buttons and links in the panel lift above that link so they keep their own
+     clicks. */
+  .info :is(button, a) {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Clicks on the info's words fall through to the link under them; only its buttons
+     and links keep their own. */
+  .info {
+    pointer-events: none;
+  }
+
+  .info :is(button, a) {
+    pointer-events: auto;
+  }
+
+  /* --- the featured card turned over --------------------------------------------- */
+
+  /* The clip's band: black, the clip's own 16:9, with the uncropped artwork standing in
+     until the clip has frames. */
+  .media {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background: var(--color-well);
+    border-radius: 2px 2px 0 0;
+    overflow: hidden;
+  }
+
+  .media :global(img),
+  .media .preview {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Dark, like Steam's turned-over capsule, so the type is the light-on-dark kind. */
+  .card[data-size="featured"] .info {
+    padding: 14px 18px 12px;
+  }
+
+  .card[data-size="featured"] .title {
+    margin: 0 0 4px;
+    color: var(--color-heading);
+    font-size: 22px;
+    font-weight: 700;
+  }
+
+  .card[data-size="featured"] .eyebrow {
+    margin-bottom: 10px;
+    color: var(--color-muted);
+    font-size: 12px;
+  }
+
+  .card[data-size="featured"] .genre {
+    padding: 3px 5px;
+    border-radius: 3px;
+    background: var(--color-border);
+    color: color-mix(in srgb, var(--color-heading) 80%, transparent);
+    font-size: 12px;
+  }
+
+  .card[data-size="featured"] .blurb {
+    color: var(--color-txt);
+  }
+
+  .card[data-size="featured"] .responsibilities {
+    color: var(--color-muted);
+  }
+
+  /* Steam's capsule tags are 12px with 3px corners. These keep their discipline's
+     colour, mixed into a translucent fill so the light label reads on the dark panel. */
+  .card[data-size="featured"] .chips button {
+    padding: 2px 5px;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--chip-color) 30%, transparent);
+    color: color-mix(in srgb, var(--color-heading) 85%, var(--chip-color));
+  }
+
+  .card[data-size="featured"] .chips button[data-on] {
+    box-shadow: inset 0 0 0 1px var(--chip-color);
+  }
+
+  /* The game's own name, as Steam titles its hover box. */
+  .title {
+    margin: 0 0 2px;
+    color: var(--color-popup-title);
+    font-size: 15px;
+    line-height: 1.2;
+  }
+
+  /* Year, client and stack on one line, as small as Steam's release date. The stack is
+     pushed to the far end so the two halves answer different questions: when and for
+     whom, against with what. */
+  .eyebrow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 10px;
+    font-size: 10px;
+  }
+
+  /* The gap is set by the hover, not by how the row looks at rest. An icon scaled 3x
+     grows by one full width on each side, so anything narrower than the gap stops
+     short of its neighbour instead of covering it. The widest mark is the gamepad at
+     20px. Change the scale in TagIcon, or add an icon wider than this, and it has to
+     follow. */
+  .tech {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-left: auto;
+  }
+
+  /* No fill or border of its own: the icon is the button. */
+  .icon-filter {
+    display: inline-flex;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    cursor: var(--cursor-default);
+  }
+
+  /* Steam's hover tags. */
+  .genres {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin: 0;
+    font-size: 11px;
+  }
+
+  .genre {
+    padding: 1px 4px;
+    border-radius: 2px;
+    background: var(--color-popup-tag);
+    color: var(--color-popup);
+  }
+
+  .blurb {
+    margin: 10px 0 12px;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  /* With a mouse, the panel floats over whatever is around the card, so nothing
+     reflows under the pointer. It fades and slides in on the way up, and out again on
+     the way down: allow-discrete holds off the switch back to display: none until the
+     fade has finished, and @starting-style is where each entrance starts from. */
+  @media (hover: hover) {
+    .details {
+      position: absolute;
+      z-index: 5;
+      box-shadow: 0 0 12px var(--color-drop-shadow);
+      opacity: 0;
+      transition:
+        opacity 0.2s ease,
+        translate 0.2s ease,
+        clip-path 0.3s ease,
+        display 0.3s allow-discrete;
+    }
+
+    .card:hover .details,
+    .card:has(:focus-visible) .details {
+      display: block;
+      opacity: 1;
+    }
+
+    @starting-style {
+      .card:hover .details,
+      .card:has(:focus-visible) .details {
+        opacity: 0;
+      }
+    }
+
+    /* Grid: a small info screen beside the card, the way Steam does it. Right by
+       default; card-popup.ts flips it to the left when the right has no room, or under
+       the card when neither side does, and lifts it when it would run off the bottom of
+       the screen. */
+    .card[data-size="grid"] .details {
+      top: calc(0px - var(--popup-lift, 0px));
+      left: calc(100% + 12px);
+      width: 300px;
+      translate: -6px 0;
+    }
+
+    .card[data-size="grid"][data-side="left"] .details {
+      left: auto;
+      right: calc(100% + 12px);
+      translate: 6px 0;
+    }
+
+    .card[data-size="grid"][data-side="below"] .details {
+      top: calc(100% + 12px);
+      left: 0;
+      width: auto;
+      right: 0;
+      translate: 0 -6px;
+    }
+
+    .card[data-size="grid"]:hover .details,
+    .card[data-size="grid"]:has(:focus-visible) .details {
+      translate: 0 0;
+    }
+
+    @starting-style {
+      .card[data-size="grid"]:hover .details,
+      .card[data-size="grid"]:has(:focus-visible) .details {
+        translate: -6px 0;
+      }
+
+      .card[data-size="grid"][data-side="left"]:hover .details,
+      .card[data-size="grid"][data-side="left"]:has(:focus-visible) .details {
+        translate: 6px 0;
+      }
+
+      .card[data-size="grid"][data-side="below"]:hover .details,
+      .card[data-size="grid"][data-side="below"]:has(:focus-visible) .details {
+        translate: 0 -6px;
+      }
+    }
+
+    /* The gap between card and panel, made part of the panel so the pointer can cross
+       it without the card losing its hover. */
+    .card[data-size="grid"] .details::before {
+      position: absolute;
+      top: 0;
+      right: 100%;
+      width: 14px;
+      height: 100%;
+      content: "";
+    }
+
+    .card[data-size="grid"][data-side="left"] .details::before {
+      right: auto;
+      left: 100%;
+    }
+
+    .card[data-size="grid"][data-side="below"] .details::before {
+      top: auto;
+      bottom: 100%;
+      left: 0;
+      width: 100%;
+      height: 14px;
+    }
+
+    /* Steam's little arrow on the panel's edge, pointing back at the card. It stays
+       level with the card's top part when the panel rides up. */
+    .card[data-size="grid"] .details::after {
+      position: absolute;
+      top: calc(24px + var(--popup-lift, 0px));
+      right: 100%;
+      border: 7px solid transparent;
+      border-right-color: var(--color-popup);
+      content: "";
+    }
+
+    .card[data-size="grid"][data-side="left"] .details::after {
+      right: auto;
+      left: 100%;
+      border-right-color: transparent;
+      border-left-color: var(--color-popup);
+    }
+
+    .card[data-size="grid"][data-side="below"] .details::after {
+      display: none;
+    }
+
+    /* Featured: the panel takes over the card's own frame, the way Steam's tall
+       capsules turn over. Clip on top at its true 16:9, info under it on a dark
+       gradient. min-height rather than a fixed height, so a game with a lot to say
+       runs a little past the frame instead of being cut off. */
+    .card[data-size="featured"] .details {
+      top: 0;
+      left: 0;
+      right: 0;
+      min-height: 100%;
+      border-radius: 2px;
+      background: radial-gradient(
+        160% 1235% at -45% 130%,
+        var(--color-header) 0%,
+        var(--color-capsule) 60%,
+        var(--color-capsule-light) 100%
+      );
+      color: var(--color-txt);
+      box-shadow: 0 0 0 1px var(--color-border), 0 12px 24px var(--color-drop-shadow);
+    }
+  }
+
+  /* No hover means no panel (it stays display: none from above): art and roles only,
+     and a tap opens the dialog. */
+
+  @media (prefers-reduced-motion: reduce) {
+    .details {
+      translate: none !important;
+      clip-path: none !important;
+      transition: none !important;
+    }
+  }
+
+  .stores {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 0 0 4px;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* Steam's green "Add to Cart", the one button on its page that leads to a purchase,
+     so it's the one that leads to a store here. */
+  .store {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 2px;
+    background: linear-gradient(to right, var(--color-buy) 5%, var(--color-buy-end) 95%);
+    color: var(--color-on-buy);
+    font-size: 13px;
+    line-height: 1.2;
+    text-decoration: none;
+    transform-origin: left center;
+    transition:
+      filter var(--transition),
+      transform 0.6s ease;
+  }
+
+  .store:hover,
+  .store:focus-visible {
+    background: linear-gradient(to right, var(--color-buy) 5%, var(--color-buy-end) 95%);
+    color: var(--color-heading);
+    filter: brightness(1.15);
+    transform: scale(1.05);
+  }
+
+  .store:active {
+    transform: scale(1.01);
+    transition-duration: 0.08s;
+  }
+
+  .store :global(svg) {
+    flex-shrink: 0;
+    width: 14px;
+    height: 11px;
+    fill: currentColor;
+  }
+
+  /* Not on the page at the moment: showMetrics above is false while the numbers look
+     for a better home. Kept whole so turning them back on is a one-word change. */
+  .metrics {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 26px;
+    margin: 14px 0 2px;
+    padding: 12px 34px 11px;
+    background: var(--color-popup-tag);
+    clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 50%, 100% 100%, 0 100%, 16px 50%);
+    list-style: none;
+  }
+
+  .metrics li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+  }
+
+  .metrics strong {
+    color: var(--color-popup);
+    font-size: 24px;
+    line-height: 1.1;
+  }
+
+  .metrics span {
+    color: var(--color-popup);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* Steam's "User tags:" label. */
+  .responsibilities {
+    margin: 10px 0 0;
+    font-size: 12px;
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin: 0;
+    padding: 4px 0 0;
+    list-style: none;
+  }
+
+  .chips li {
+    display: flex;
+  }
+
+  /* Steam's hover tags, each tinted with its discipline's colour so the disciplines
+     still tell apart at a glance. The tint is mixed into the panel's dark title colour,
+     which keeps the pale label at about 5:1 on every one of the five (worked out from
+     the colours, not measured on screen). Each chip filters the grid by its own tag. */
+  .chips button {
+    --chip-color: var(--color-muted);
+
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 5px;
+    border: 0;
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--chip-color) 45%, var(--color-popup-title));
+    color: var(--color-popup);
+    font-family: inherit;
+    font-size: 11px;
+    cursor: var(--cursor-default);
+    transition:
+      transform 0.6s ease,
+      filter var(--transition);
+  }
+
+  .chips button:hover,
+  .chips button:focus-visible {
+    filter: brightness(1.2);
+    transform: scale(1.08);
+  }
+
+  .chips button:active {
+    transform: scale(1.02);
+    transition-duration: 0.08s;
+  }
+
+  /* Already filtering by this one. */
+  .chips button[data-on] {
+    box-shadow: inset 0 0 0 1px var(--color-popup);
+    font-weight: 700;
+  }
+
+  /* What the search matched. A ring rather than a fill, so a chip can be both matched
+     and filtered without the two states fighting over the same background. */
+  .chips button[data-match],
+  .icon-filter[data-match] {
+    box-shadow: 0 0 0 2px var(--color-link);
+    border-radius: 2px;
+  }
+
+  .icon-filter[data-match] :global(.tag-icon) {
+    opacity: 1;
+  }
+
+  .chips button :global(svg) {
+    height: 9px;
+    margin-right: 4px;
+    fill: currentColor;
+  }
+
+  .chips button[data-category="design"] {
+    --chip-color: var(--color-design);
+  }
+
+  .chips button[data-category="programming"] {
+    --chip-color: var(--color-programming);
+  }
+
+  .chips button[data-category="art"] {
+    --chip-color: var(--color-art);
+  }
+
+  .chips button[data-category="audio"] {
+    --chip-color: var(--color-audio);
+  }
+
+  .chips button[data-category="production"] {
+    --chip-color: var(--color-production);
+  }
+</style>
+
+<script>
+  import "../scripts/card-popup";
+</script>

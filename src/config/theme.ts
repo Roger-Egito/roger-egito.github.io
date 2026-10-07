@@ -17,43 +17,93 @@
  *
  * The `rgb(0 0 0 / 0.5)` ones are see-through blacks; the last number is how solid
  * it is, from 0 (invisible) to 1 (fully opaque).
+ *
+ * The palette is Steam's. Each value below was read off store.steampowered.com's own
+ * computed styles (the search page and a game page, October 2026), so where a comment
+ * names a Steam element, that's where the number came from.
  */
 
 export const colors = {
   /* ── the page ──────────────────────────────────────────────────────────────── */
 
-  /** Behind everything. Also the colour of the browser's own bar on a phone. */
-  bg: '#151515',
-  /** Body text, headings, and most icons. */
-  txt: '#dddddd',
-  /** Quieter text: dates, captions, labels above the tags. */
-  muted: '#969696',
+  /** Behind everything. Also the colour of the browser's own bar on a phone. Steam's body. */
+  bg: '#1b2838',
+  /** Body text and most icons. Steam's body text. */
+  txt: '#c6d4df',
+  /** Headings and anything that has to stand out from the body text. */
+  heading: '#ffffff',
+  /** Quieter text: dates, captions, labels above the tags. Steam's release date. */
+  muted: '#8f98a0',
+
+  /* ── the bars ──────────────────────────────────────────────────────────────── */
+
+  /** The navbar. Steam's global header. */
+  header: '#171d25',
+  /** The filter bar over the grid, darkest at its edges. Steam's store menu bar. */
+  menuBar: '#182535',
+  menuBarEdge: '#192330',
+  /** Behind the search box in the filter bar. */
+  searchFill: 'rgb(255 255 255 / 0.125)',
+  /** The search button, and the navbar link you're pointing at. Steam's search button. */
+  action: '#1a9fff',
+
+  /* ── links and buttons ─────────────────────────────────────────────────────── */
+
+  /** Links, and the text on a plain button. Steam's blue button and its tags. */
+  link: '#67c1f5',
+  /** A plain button's fill, and a tag's. */
+  linkFill: 'rgb(103 193 245 / 0.2)',
+  /** The store button: Steam's green "Add to Cart", left to right. */
+  buy: '#75b022',
+  buyEnd: '#588a1b',
+  /** Text on the store button. */
+  onBuy: '#d2efa9',
 
   /* ── cards and panels ──────────────────────────────────────────────────────── */
 
-  /** A portfolio card's body. Slightly lighter than the page so it reads as a panel. */
-  raised: '#1d1d1d',
   /**
-   * The top of a card, the part you click to open the game: art, name, blurb, roles.
-   * A shade darker than `raised`, so the clickable part reads as one block apart from
-   * the buttons and details under it.
+   * The strip under a card's artwork, menus and panels. A step darker than the page,
+   * the way Steam's search rows are (20% black over the page).
    */
-  raisedDark: '#191919',
-  /** The hairline around a card, and the rules above and below the numbers strip. */
-  border: '#333333',
+  raised: '#16202d',
+  /** Darker again: Steam's highlighted row (40% black over the page). */
+  raisedDark: '#101822',
+  /** Hairlines between things. Steam's 10% white panel border. */
+  border: 'rgb(255 255 255 / 0.1)',
   /** Behind a card's artwork while the image is still loading. */
-  well: '#101010',
+  well: '#0e141c',
+
+  /* ── the hover popup ───────────────────────────────────────────────────────── */
+
+  /** The info panel beside a hovered card, top to bottom. Steam's game hover box. */
+  popup: '#e3eaef',
+  popupEnd: '#c7d5e0',
+  /** Text in it, and its title. */
+  popupInk: '#30455a',
+  popupTitle: '#222d3d',
+  /** Its tags. Steam's hover tag. */
+  popupTag: 'rgb(38 54 69 / 0.6)',
+
+  /**
+   * A featured card turned over, from the bottom-left corner out. Steam draws this
+   * panel as a three-stop radial gradient starting from `header`'s dark; the shape is
+   * measured, but its colours follow whichever sale skin is up (brown, in October 2026).
+   * These two are the store's own blues instead: `capsuleLight` is Steam's classic
+   * #2a475e, from memory rather than measured, and `capsule` sits between it and the page.
+   */
+  capsule: '#1f3349',
+  capsuleLight: '#2a475e',
 
   /* ── buttons and rules ─────────────────────────────────────────────────────── */
 
-  /** Filled buttons, and the footer bar. */
-  surface: '#181b1e',
+  /** The footer bar. Steam's footer. */
+  surface: '#0f1924',
   /** Text sitting on top of `surface`. */
   onSurface: '#ffffff',
-  /** The pale fill a button flips to when you point at it. */
-  accent: '#f1f3f4',
-  /** The decorative star rule under each section heading. */
-  rule: '#dddddd',
+  /** What a link or an icon button turns when you point at it. */
+  accent: '#ffffff',
+  /** The rule under each section heading, fading out to the right. */
+  rule: '#3b6e8c',
   /** The line under each contact-form field. */
   field: '#eeeeee',
 

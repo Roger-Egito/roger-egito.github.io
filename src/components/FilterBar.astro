@@ -1,7 +1,8 @@
 ---
 /**
- * The bar over the portfolio grid: what's filtering right now on the left, the menus
- * to add a filter in the middle, and the search box on the right.
+ * The bar over the portfolio grid, built like Steam's store menu bar: the menus to add
+ * a filter on the left, the search box on the right, and what's filtering right now in
+ * a row of its own underneath, where Steam lists the terms a search is held to.
  *
  * Everything here is markup and styling. portfolio-filter.ts does the work, and the
  * bar hides itself until that script says it's running, so a visitor with no
@@ -27,9 +28,6 @@ const { menus, total } = Astro.props;
   </p>
 
   <div class="controls">
-    {/* The chips for what's already on. Filled by the script, empty at rest. */}
-    <div class="active" data-active-filters aria-label="Active filters"></div>
-
     <div class="menus">
       {
         menus.map((menu) => (
@@ -115,7 +113,7 @@ const { menus, total } = Astro.props;
         type="search"
         id="portfolio-search"
         data-search-input
-        placeholder="Search"
+        placeholder="Search the portfolio"
         autocomplete="off"
       />
       {/* The typing already filters. This submits too, which is what closes the
@@ -125,6 +123,9 @@ const { menus, total } = Astro.props;
       </button>
     </form>
   </div>
+
+  {/* The chips for what's already on. Filled by the script, empty at rest. */}
+  <div class="active" data-active-filters aria-label="Active filters"></div>
 </div>
 
 <style>
@@ -134,45 +135,54 @@ const { menus, total } = Astro.props;
     display: none;
   }
 
+  /* The bar, then the active filters, then the count, the order Steam's search page
+     reads in. */
   .filter-bar {
-    margin: 0 0 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0 0 24px;
   }
 
   .count {
-    margin: 0 0 10px;
+    order: 2;
+    margin: 0;
     color: var(--color-muted);
     font-size: 12px;
-    letter-spacing: 0.08em;
-    text-align: center;
-    text-transform: uppercase;
   }
 
-  /* Chips, menus, search. They stack in that order on a phone and sit on one line from
-     the tablet breakpoint up, with the menus taking the middle. */
+  /* Steam's store menu bar: dark blue, darkest at the edges and lifting toward the
+     middle of its bottom edge, with a soft shadow under it. The gradient is Steam's own,
+     measured off the page; the stops are its values with the colours swapped for ours. */
   .controls {
     display: grid;
-    gap: 10px;
+    gap: 6px;
+    padding: 6px;
+    background: radial-gradient(
+      107.95% 57.49% at 50% 100%,
+      color-mix(in srgb, var(--color-menu-bar) 20%, transparent) 0%,
+      color-mix(in srgb, var(--color-menu-bar) 52%, transparent) 5%,
+      color-mix(in srgb, var(--color-menu-bar) 85%, transparent) 20%,
+      var(--color-menu-bar) 60%,
+      var(--color-menu-bar-edge) 100%
+    );
+    box-shadow: 0 2px 2px var(--color-drop-shadow);
   }
 
-  /* The chips take only what they need, the search only what it needs, and the menus
-     take everything in between: they start at the left edge and run until the search
-     stops them. With no chips there's nothing on the left, so the menus start at the
-     page's own left edge rather than floating in the middle of it. */
+  /* Menus from the left, the search on the right, on one line from the tablet
+     breakpoint up. */
   @media (min-width: 768px) {
     .controls {
-      grid-template-columns: auto minmax(0, 1fr) auto;
-      align-items: start;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 440px);
+      align-items: center;
     }
   }
 
-  /* Capped, so a pile of filters pushes the menus across but never squeezes them out
-     of the bar entirely. */
   .active {
+    order: 1;
     display: flex;
     flex-wrap: wrap;
-    align-content: flex-start;
     gap: 6px;
-    max-width: min(45vw, 420px);
   }
 
   .active:empty {
@@ -182,43 +192,32 @@ const { menus, total } = Astro.props;
   .menus {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  /* Centred only while they're on their own row, which is the phone layout. */
-  @media (max-width: 767px) {
-    .menus {
-      justify-content: center;
-    }
   }
 
   .menu {
     position: relative;
   }
 
-  .menu-button,
-  .search-button {
+  /* Steam's menu entries: plain words with a chevron, no box until pointed at. */
+  .menu-button {
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    padding: 7px 12px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius);
-    background: var(--color-raised);
-    color: var(--color-txt);
+    height: 34px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 2px;
+    background: none;
+    color: var(--color-heading);
     font-family: inherit;
-    font-size: 12px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    transition: border-color var(--transition), background-color var(--transition);
+    font-size: 13px;
+    transition: background-color var(--transition);
   }
 
   .menu-button:hover,
   .menu-button:focus-visible,
-  .menu-button[aria-expanded="true"],
-  .search-button:hover,
-  .search-button:focus-visible {
-    border-color: var(--color-txt);
+  .menu-button[aria-expanded="true"] {
+    background: var(--color-border);
   }
 
   .menu-button :global(svg) {
@@ -244,8 +243,8 @@ const { menus, total } = Astro.props;
     max-height: min(60vh, 420px);
     padding: 6px;
     border: 1px solid var(--color-border);
-    border-radius: var(--radius);
-    background: var(--color-raised);
+    border-radius: 2px;
+    background: var(--color-header);
     box-shadow: 0 10px 24px var(--color-drop-shadow);
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -275,18 +274,19 @@ const { menus, total } = Astro.props;
     width: 100%;
     padding: 7px 9px;
     border: 0;
-    border-radius: var(--radius);
+    border-radius: 2px;
     background: none;
     color: var(--color-txt);
     font-family: inherit;
     font-size: 13px;
     text-align: left;
-    transition: background-color var(--transition);
+    transition: background-color var(--transition), color var(--transition);
   }
 
   .option:hover,
   .option:focus-visible {
-    background: var(--color-well);
+    background: var(--color-link-fill);
+    color: var(--color-heading);
   }
 
   .option-label {
@@ -301,7 +301,8 @@ const { menus, total } = Astro.props;
   /* An option already on. The tick is drawn rather than written, so the label never
      shifts sideways when it turns on. */
   .option[aria-pressed="true"] {
-    background: color-mix(in srgb, var(--color-txt) 12%, transparent);
+    background: var(--color-link-fill);
+    color: var(--color-link);
     font-weight: 700;
   }
 
@@ -355,8 +356,8 @@ const { menus, total } = Astro.props;
       max-height: min(60vh, 420px);
       padding: 6px;
       border: 1px solid var(--color-border);
-      border-radius: var(--radius);
-      background: var(--color-raised);
+      border-radius: 2px;
+      background: var(--color-header);
       box-shadow: 0 10px 24px var(--color-drop-shadow);
       overflow-y: auto;
     }
@@ -371,40 +372,60 @@ const { menus, total } = Astro.props;
     }
   }
 
-  /* Search sits at the right end of the bar, and the field takes whatever the button
-     leaves. */
+  /* Steam's store search: a faint white field with the bright blue button fused to its
+     right end. */
   .search {
     display: flex;
-    gap: 6px;
-  }
-
-  @media (min-width: 768px) {
-    .search {
-      justify-content: flex-end;
-    }
+    border-radius: 2px;
+    background: var(--color-search-fill);
   }
 
   .search input {
     flex: 1 1 auto;
     min-width: 0;
-    max-width: 260px;
-    padding: 7px 12px;
+    height: 34px;
+    padding: 0 10px;
     border: 1px solid var(--color-border);
-    border-radius: var(--radius);
-    background: var(--color-raised);
-    color: var(--color-txt);
+    border-right: 0;
+    border-radius: 2px 0 0 2px;
+    background: none;
+    color: var(--color-heading);
     font-family: inherit;
     font-size: 13px;
   }
 
+  .search input::placeholder {
+    color: var(--color-muted);
+    font-style: italic;
+  }
+
   .search input:focus-visible {
-    border-color: var(--color-txt);
+    border-color: var(--color-link);
     outline: none;
   }
 
+  .search-button {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 0;
+    border-radius: 0 2px 2px 0;
+    background: var(--color-action);
+    color: var(--color-heading);
+    transition: filter var(--transition);
+  }
+
+  .search-button:hover,
+  .search-button:focus-visible {
+    filter: brightness(1.15);
+  }
+
   .search-button :global(svg) {
-    width: 12px;
-    height: 12px;
+    width: 15px;
+    height: 15px;
     fill: currentColor;
   }
 
@@ -412,20 +433,21 @@ const { menus, total } = Astro.props;
      Written by portfolio-filter.ts, so these are :global: a scoped rule only reaches
      elements that were in the page at build time. Shaped like the chips on a card, in
      the same colour where the tag has one, with an X to say a click takes it off. */
+  /* Steam's search term chip: a dark square-cornered block with the term in link blue,
+     or in its discipline's colour where it has one. */
   .active :global(.active-filter) {
-    --chip-color: var(--color-txt);
+    --chip-color: var(--color-link);
 
     display: inline-flex;
     align-items: center;
-    gap: 7px;
-    padding: 4px 9px;
-    border: 1px solid color-mix(in srgb, var(--chip-color) 65%, transparent);
-    border-radius: 100px;
-    background: color-mix(in srgb, var(--chip-color) 14%, transparent);
+    gap: 8px;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 2px;
+    background: var(--color-drop-shadow);
     color: var(--chip-color);
     font-family: inherit;
-    font-size: 11.5px;
-    letter-spacing: 0.04em;
+    font-size: 12px;
     /* The label is a name, so it breaks to another chip's line rather than across two
        lines of its own: "Ludomancer Studio" split over two rows reads as two filters. */
     white-space: nowrap;
@@ -434,7 +456,7 @@ const { menus, total } = Astro.props;
 
   .active :global(.active-filter:hover),
   .active :global(.active-filter:focus-visible) {
-    background: color-mix(in srgb, var(--chip-color) 26%, transparent);
+    background: color-mix(in srgb, var(--chip-color) 20%, transparent);
   }
 
   .active :global(.active-filter .remove) {
@@ -470,10 +492,8 @@ const { menus, total } = Astro.props;
     background: none;
     color: var(--color-muted);
     font-family: inherit;
-    font-size: 11.5px;
-    letter-spacing: 0.06em;
+    font-size: 12px;
     text-decoration: underline;
-    text-transform: uppercase;
   }
 
   .active :global(.clear-filters:hover),
@@ -483,11 +503,11 @@ const { menus, total } = Astro.props;
 
   /* --- what the search matched ---------------------------------------------------
      Written into the cards by portfolio-filter.ts, so it lives here as a global rather
-     than in the grid's own styles. Light on dark rather than the usual black on
-     yellow, which on this page would read as a highlighter over the text. */
+     than in the grid's own styles. A tint of the link blue rather than the usual
+     yellow, so it reads on both the dark card and the light info panel. */
   :global(.card mark) {
-    border-radius: 3px;
-    background: color-mix(in srgb, var(--color-txt) 26%, transparent);
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--color-link) 40%, transparent);
     color: inherit;
   }
 </style>

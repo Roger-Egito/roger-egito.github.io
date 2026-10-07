@@ -2,6 +2,7 @@
 import { getImage } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import Header from '../components/Header.astro';
+import FeaturedRow from '../components/FeaturedRow.astro';
 import PortfolioGrid from '../components/PortfolioGrid.astro';
 import BeyondGames from '../components/BeyondGames.astro';
 import Footer from '../components/Footer.astro';
@@ -23,7 +24,9 @@ const preview = await getImage({ src: ogPreview, width: 1200, height: 630, forma
 
 <Base title={pageTitle('Portfolio')} image={preview.src}>
   <SiteNav />
-  <Header />
+  <Header>
+    <FeaturedRow />
+  </Header>
   <PortfolioGrid />
   {/* Hidden for now. Put it back by uncommenting this line. */}
   {/* <BeyondGames /> */}

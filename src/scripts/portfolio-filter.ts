@@ -110,12 +110,12 @@ if (bar && grid) {
 
   /**
    * Wraps every run of the search text in a <mark>, inside the card's own words: the
-   * name, the blurb, the genres and the tags. Walking text nodes rather than touching
+   * roles under the artwork, and the name, blurb, genres and tags in its info panel. Walking text nodes rather than touching
    * innerHTML, so the markup around them survives, and the original is kept so the
    * next search starts from clean text instead of a card marked up three times over.
    */
   const originals = new WeakMap<HTMLElement, string>();
-  const markable = '.title a, .blurb, .genres, .chips button';
+  const markable = '.roles, .title, .blurb, .genres, .chips button';
 
   const highlight = (card: HTMLElement, needle: string) => {
     /* A card says less than it's searched by: the tech icons are pictures, and a chip
@@ -241,7 +241,12 @@ if (bar && grid) {
     const keep = new Set<Element>();
     const ranked: { li: Element; rank: number; home: number }[] = [];
     for (const [home, card] of cards.entries()) {
-      if (!matches(card)) continue;
+      if (!matches(card)) {
+        // Cleared on the way out too, so a card that comes back later never carries
+        // the marks of a search that's over.
+        highlight(card, '');
+        continue;
+      }
       // The <li> is what the grid lays out, so that's what has to go.
       const li = card.closest('li') ?? card;
       keep.add(li);
@@ -425,7 +430,9 @@ if (bar && grid) {
 
   /* ------------------------------------------- filters clicked on a card ------- */
 
-  grid.addEventListener('click', (event) => {
+  // On the whole page rather than the grid, so the featured row's chips and icons filter
+  // the grid too.
+  document.addEventListener('click', (event) => {
     const chip = (event.target as HTMLElement).closest<HTMLElement>('[data-card-filter]');
     if (!chip) return;
     event.preventDefault();

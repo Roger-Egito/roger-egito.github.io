@@ -19,10 +19,14 @@ export default defineConfig({
 
   // Fonts get downloaded at build time and served from our own domain, so there's no
   // request to Google on page load and no flash of unstyled text.
+  //
+  // One family for everything, the way Steam sets everything in Motiva Sans. Motiva is
+  // Valve's licensed face and can't be served from here, so Lato stands in: an open
+  // humanist sans close to it in width and weight (my judgment, not a measurement).
   fonts: [
     {
       provider: fontProviders.google(),
-      name: 'Montserrat',
+      name: 'Lato',
       cssVariable: '--font-heading',
       weights: [700],
     },
@@ -30,7 +34,7 @@ export default defineConfig({
       provider: fontProviders.google(),
       name: 'Lato',
       cssVariable: '--font-body',
-      weights: [400, 700],
+      weights: [300, 400, 700],
     },
   ],
 

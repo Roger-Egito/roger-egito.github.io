@@ -183,11 +183,22 @@ const games = defineCollection({
     z.object({
       /** Position in the grid, highest shows first. */
       order: z.number(),
+      /**
+       * Shown again in the featured row under the hero, at a larger size. Three at most
+       * read as a row; the grid below still lists every game, featured or not.
+       */
+      featured: z.boolean().default(false),
       /** Can contain <br>. */
       title: z.string(),
       img: image(),
       /** Defaults to something sensible built from the title. */
       alt: z.string().optional(),
+      /**
+       * Where the tall featured card crops `img`, as a CSS object-position ("30% center").
+       * The artwork is 16:9 and the card isn't, so only a slice of it fits. Centered
+       * when left out.
+       */
+      focus: z.string().optional(),
       /** YouTube embed URL (not the watch one). Shows instead of the image if set. */
       video: z.string().optional(),
       /**

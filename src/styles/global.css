@@ -14,6 +14,9 @@
 
 html {
   scroll-behavior: smooth; /* replaces the old jQuery easing scroll */
+  /* The navbar is stuck to the top, so anything scrolled to (an anchor, a focused
+     field) stops short of it instead of landing underneath. */
+  scroll-padding-top: 80px;
   cursor: var(--cursor-default);
 }
 
@@ -58,6 +61,7 @@ body {
   line-height: var(--line-height);
 }
 
+/* White and in the sentence's own case, the way Steam titles its sections and games. */
 h1,
 h2,
 h3,
@@ -65,11 +69,10 @@ h4,
 h5,
 h6 {
   margin: 0;
-  color: var(--color-txt);
+  color: var(--color-heading);
   font-family: var(--font-heading), 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-weight: 700;
   line-height: var(--line-height-heading);
-  text-transform: uppercase;
 }
 
 p {
@@ -90,7 +93,11 @@ video {
 }
 
 a {
-  color: var(--color-txt);
+  color: var(--color-link);
+}
+
+a:hover {
+  color: var(--color-accent);
 }
 
 :focus-visible {
@@ -137,81 +144,42 @@ section {
 
 /* --- section heading + its little divider --- */
 
-/* 3em, except on phones narrow enough that a long single word in a game's name
-   ("Vivenciando") would be wider than the column at that size. */
+/* Steam's section title: left-aligned, white, not much bigger than the text under it.
+   The page is about the work, and a heading this size gets out of its way. */
 .section-heading {
   margin: 0;
-  font-size: min(3em, 10vw);
-  text-align: center;
+  font-size: 24px;
+  font-weight: 400;
+  text-align: left;
 }
 
-/* A rule with the gamepad sitting on top of it, masking the middle. Same trick the
-   old stylesheet used with an ::after pseudo-element. */
-/* 5px tall rather than the 0 it used to be, because the line is drawn by the two
-   pseudo-elements below instead of by a border-top on this element — and an absolutely
-   positioned line contributes no height. Same 5px on the page either way. */
+/* Under each section heading: Steam's thin blue rule, strongest on the left and fading
+   out to the right. StarRule still renders its gamepad, kept out of sight here, so the
+   old divider is one rule away if it ever comes back. */
 .star-rule {
-  position: relative;
-  height: 5px;
-  /* Explicit width, not just a max: the line is drawn by absolutely positioned
-     pseudo-elements, so this box has no content of its own. In normal flow `auto`
-     filled the container and the max-width capped it, but as a grid item `auto` plus
-     auto margins means shrink-to-fit — which is zero, and the rule vanishes. */
   width: 100%;
-  max-width: 250px;
-  margin: 25px auto 30px;
+  height: 1px;
+  margin: 8px 0 18px;
   padding: 0;
   border: 0;
-  overflow: visible;
+  background: linear-gradient(to right, var(--color-rule), transparent);
 }
 
-/* Two halves with a real gap between them, rather than one unbroken line with the
-   gamepad painted over the middle. That used to mean giving the icon an opaque
-   background the color of the page, which is invisible against a flat backdrop but
-   shows up as a solid block the moment there's video behind it.
-
-   26.25px is half the space the icon used to mask: 37.5px wide at 30px tall, plus the
-   7.5px it sat clear of the line on each side. */
-.star-rule::before,
-.star-rule::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  height: 5px;
-  width: calc(50% - 26.25px);
-  background-color: var(--color-rule);
-}
-
-.star-rule::before {
-  left: 0;
-}
-
-.star-rule::after {
-  right: 0;
-}
-
-/* Absolutely positioned so it sits on the line without adding any height, which is
-   what the old ::after did. */
 .star-rule svg {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  box-sizing: content-box;
-  height: 30px;
-  padding: 0 7.5px;
-  color: var(--color-rule);
+  display: none;
 }
 
 /* --- buttons --- */
 
+/* Steam's blue button: a pale tint of the link colour with the label in it, filling
+   in solid when pointed at. */
 .btn {
   display: inline-block;
   padding: 18px 27px;
-  border: 1px solid var(--color-surface);
-  border-radius: 6px;
-  background-color: var(--color-surface);
-  color: var(--color-on-surface);
+  border: 0;
+  border-radius: 2px;
+  background-color: var(--color-link-fill);
+  color: var(--color-link);
   /* <button> doesn't inherit the page font on its own. */
   font-family: inherit;
   font-size: 19px;
@@ -222,12 +190,14 @@ section {
   /* The lift is the slow one the hero's name and the social buttons use; the fill
      brightens on the standard timing. Two speeds on purpose — the size settles after
      the colour, which is what stops the movement reading as a twitch. */
-  transition: filter var(--transition), transform 0.6s ease;
+  transition: background-color var(--transition), color var(--transition),
+    transform 0.6s ease;
 }
 
 .btn:hover,
 .btn:focus-visible {
-  filter: brightness(1.6);
+  background-color: var(--color-link);
+  color: var(--color-heading);
   transform: scale(1.15);
 }
 
@@ -239,16 +209,17 @@ section {
   transition-duration: 0.08s;
 }
 
-/* Circular outlined icon button, used for the social/CV links. */
+/* Square icon button for the social and CV links, in Steam's blue-button colours. */
 .btn-social {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 50px;
   height: 50px;
-  border: 2px solid var(--color-txt);
-  border-radius: 100%;
-  color: var(--color-txt);
+  border: 0;
+  border-radius: 2px;
+  background-color: var(--color-link-fill);
+  color: var(--color-link);
   transition: color var(--transition), background-color var(--transition),
     transform 0.6s ease, opacity var(--transition);
 }
@@ -260,19 +231,16 @@ section {
   height: 20px;
 }
 
-/* Filled with the page's own dark rather than the light ink colour, so a hovered
-   control reads as a hole punched in the surface instead of a white chip sitting on
-   top of it. The border and icon stay light against it. The lift is the same one the
-   portfolio cards and the hero's d-pad use, so everything pressable answers the
-   pointer the same way.
+/* Fills in solid, like the blue button. The lift is the same one the hero's d-pad
+   uses, so everything pressable answers the pointer the same way.
 
    This lives here rather than in Header.astro because these icons appear three times:
    the hero, the footer, and the footer again on every game page. */
 .btn-social:hover,
 .btn-social:focus-visible {
   transform: scale(1.25);
-  background-color: var(--color-bg);
-  color: var(--color-accent);
+  background-color: var(--color-link);
+  color: var(--color-heading);
 }
 
 /* Pressing dips below the hovered size and springs back on release — the shorter
