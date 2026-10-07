@@ -26,5 +26,11 @@ const { title, description, image } = Astro.props;
 
   <body id="page-top">
     <slot />
+
+    {/* Here rather than in a component so it's on every page, the game pages included:
+        it counts the About dialog and the CV, which the tracker can't see itself. */}
+    <script>
+      import '../scripts/analytics';
+    </script>
   </body>
 </html>

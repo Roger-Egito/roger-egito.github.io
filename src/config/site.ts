@@ -31,15 +31,12 @@ export const site = {
   contactAction: 'https://formspree.io/f/xldnwyla',
 
   /**
-   * Pageview counters. Both are cookieless and collect nothing personal, so there's no
-   * consent banner to put up. Running side by side for now to compare them on the
-   * same traffic. Drop the one that loses and its script goes with it.
+   * Pageview counter. Cookieless and collects nothing personal, so there's no consent
+   * banner to put up.
    *
-   * goatcounter: stats at https://roger-egito.goatcounter.com
    * umami: the website ID from Umami Cloud, stats at https://cloud.umami.is
    */
   analytics: {
-    goatcounter: 'https://roger-egito.goatcounter.com/count',
     umami: '913e43fb-62a5-46f8-8ce3-3249ef11d660',
   },
 

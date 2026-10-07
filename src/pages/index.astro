@@ -10,12 +10,15 @@ import AboutDialog from '../components/AboutDialog.astro';
 import ScrollTop from '../components/ScrollTop.astro';
 import SiteNav from '../components/SiteNav.astro';
 import StructuredData from '../components/StructuredData.astro';
-import banner from '../assets/banner.webp';
+// The hero itself, captured by scripts/make-og.mjs. Rerun it when the hero changes.
+import ogPreview from '../assets/og-preview.jpg';
 import { pageTitle } from '../config/site';
 
 // Preview card for when the homepage link gets shared. 1200x630 is the size
-// LinkedIn, Facebook and X all crop to.
-const preview = await getImage({ src: banner, width: 1200, height: 630, format: 'jpg' });
+// LinkedIn, Facebook and X all crop to. It used to be banner.webp, the sky behind the
+// hero, which on its own is an empty picture: the name and the footage that make it
+// the hero are drawn over it by the page, not baked into it.
+const preview = await getImage({ src: ogPreview, width: 1200, height: 630, format: 'jpg' });
 ---
 
 <Base title={pageTitle('Portfolio')} image={preview.src}>

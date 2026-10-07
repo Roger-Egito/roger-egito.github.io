@@ -48,22 +48,87 @@ const preview = image ? new URL(image, site.url).href : undefined;
 {preview && <meta property="og:image" content={preview} />}
 <meta name="twitter:card" content={preview ? 'summary_large_image' : 'summary'} />
 
-{/* Pageview counter. is:inline keeps Astro's hands off it, so the data- attribute it
-    looks itself up by survives. It skips anything served from localhost on its own, so
-    working on the site doesn't show up in the numbers. */}
-{
-  site.analytics.goatcounter && (
-    <script
-      is:inline
-      async
-      data-goatcounter={site.analytics.goatcounter}
-      src="https://gc.zgo.at/count.js"
-    />
-  )
-}
+{/* Keeps my own visits out of the numbers. Open any page once with ?no-track on a
+    device, give the password, and that browser stops being counted on every page of the
+    site. ?track turns counting back on, no password needed.
 
-{/* Umami counts localhost by default, unlike GoatCounter. data-domains limits it to the
-    live hostname so working on the site stays out of the numbers here too. */}
+    Umami already has an off switch of its own: it skips any browser with something in
+    umami.disabled in local storage, checked on every page and every event, dialogs and
+    the CV included. This flips that switch from a link, which is the only way to do it
+    on a phone, where there's no console to type into.
+
+    The password is checked against its SHA-256 rather than written out, so it isn't
+    sitting in the page source. That keeps it from casual eyes, nothing more: a single
+    word can be guessed against a hash, and the switch is only a convenience anyway.
+
+    It has to run before Umami, which is why it sits above it and isn't deferred. While
+    the password is being asked for, the switch is already on, so the visit carrying
+    the link isn't counted whatever the answer. A wrong answer puts the switch back the
+    way it was and sends you to the homepage. */}
+<script is:inline>
+  (() => {
+    const params = new URLSearchParams(location.search);
+    const off = params.has('no-track');
+    const on = params.has('track');
+    if (!off && !on) return;
+
+    let store;
+    try {
+      store = window.localStorage;
+      store.getItem('umami.disabled');
+    } catch {
+      // Storage blocked, a private window for instance. There's no switch to flip.
+      store = undefined;
+    }
+
+    // Out of the address bar, so the page reads as usual and the link isn't passed on
+    // by accident when the URL is copied from here.
+    const tidy = () => {
+      params.delete('no-track');
+      params.delete('track');
+      const rest = params.toString();
+      history.replaceState(null, '', location.pathname + (rest ? `?${rest}` : '') + location.hash);
+    };
+
+    if (on) {
+      store?.removeItem('umami.disabled');
+      tidy();
+      if (store) alert('This browser is counted in the analytics again.');
+      return;
+    }
+
+    const before = store?.getItem('umami.disabled') ?? null;
+    store?.setItem('umami.disabled', 'pending');
+
+    const answer = prompt('Password') ?? '';
+    const sha256 = async (text) =>
+      [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)))]
+        .map((byte) => byte.toString(16).padStart(2, '0'))
+        .join('');
+
+    sha256(answer).then((hash) => {
+      if (store && hash === '7e70e8f070cfb15dae6dae12034f3fd276283b14eb1f0d4f964123146aa3974b') {
+        store.setItem('umami.disabled', '1');
+        tidy();
+        alert('This browser is no longer counted in the analytics.');
+        return;
+      }
+      if (before === null) store?.removeItem('umami.disabled');
+      else store?.setItem('umami.disabled', before);
+      location.replace('/');
+    });
+  })();
+</script>
+
+{/* Pageview counter. is:inline keeps Astro's hands off it, so the data- attributes it
+    reads itself survive.
+
+    data-domains: Umami counts localhost by default, so this limits it to the live
+    hostname and working on the site stays out of the numbers.
+
+    Umami also follows the address bar, and the portfolio's filters and search write
+    into it (?f=unity,python&q=war). Each of those is counted as a view of its own on
+    purpose: it's the record of what people filter and search for. */}
 {
   site.analytics.umami && (
     <script
