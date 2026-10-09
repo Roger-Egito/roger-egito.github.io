@@ -109,6 +109,8 @@ export const colors = {
   backdrop: 'rgb(0 0 0 / 0.5)',
   /** Dims it further behind the "Close the game?" question, which sits on top of one. */
   backdropDeep: 'rgb(0 0 0 / 0.6)',
+  /** Behind an image opened for a closer look. Dark enough that the image is all there is. */
+  inspectBackdrop: 'rgb(0 0 0 / 0.85)',
   /** The drop shadow under a dialog. */
   dropShadow: 'rgb(0 0 0 / 0.31)',
   /** Sits behind the name and titles on the banner, so they stay readable over video. */

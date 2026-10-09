@@ -16,7 +16,7 @@ description: "Memories of War is a squad-based grid tactics game built around a 
 urlItchIo: <iframe frameborder="0" src="https://itch.io/embed/4304556?bg_color=551700&amp;fg_color=ffffff&amp;link_color=ff6120&amp;border_color=333333" width="552" height="167"><a href="https://yougogames.itch.io/memories-of-war">Memories of War by YouGo Games, Egito, anna frieiro</a></iframe>
 ---
 
-import TwoColumn from '../../components/mdx/TwoColumn.astro';
+import Media from '../../components/mdx/Media.astro';
 import movement from './memories-of-war/movement.webp';
 import battlefield from './memories-of-war/battlefield.webp';
 import statsTutorial from './memories-of-war/stats-tutorial.webp';
@@ -32,31 +32,31 @@ I was a game designer and the sole programmer. My job was to design the game's l
 
 ### What I did
 
-<TwoColumn image={movement} alt="A unit's movement range highlighted in green on the grid, with a Movement tooltip and the skill bar below" caption="Choosing where a unit moves">
+<Media image={movement} alt="A unit's movement range highlighted in green on the grid, with a Movement tooltip and the skill bar below" caption="Choosing where a unit moves">
 
 **Development.** The code I inherited was tightly coupled, threw frequent exceptions, and made little use of polymorphism. Some data came from ScriptableObjects and the rest didn't. I refactored the entire codebase, then developed the rest of the game in Unity myself.
 
 I reworked the classes so allies and enemies work the same way, built a better turn system, and rebuilt the whole attack and movement preview. I tried to reuse the existing attack and movement patterns, but ended up rewriting those too. Data is now a mix of ScriptableObjects and JSON, and the JSON doubles as the save data.
 
-</TwoColumn>
+</Media>
 
-<TwoColumn image={battlefield} alt="Battlefield of dirt paths and bushes with the player's squad in the middle and enemies closing in from both sides" caption="A battlefield mid-fight" side="right">
+<Media image={battlefield} alt="Battlefield of dirt paths and bushes with the player's squad in the middle and enemies closing in from both sides" caption="A battlefield mid-fight" side="right">
 
 **Levels that build on each other.** I designed the levels and the obstacles that shape them, each one building on the last. The first level is a single enemy and teaches the basics. The second splits the map in two, adds more enemies, and shows how walls two tiles thick get in the way of both moving and attacking. The third arranges the walls so that movement itself gets hard. Each level asks you to use what the one before it taught.
 
-</TwoColumn>
+</Media>
 
-<TwoColumn image={statsTutorial} alt="Tutorial overlay explaining the turn panel, stats and map, skills, help and end turn, including the rule Attack minus Defense equals Damage" caption="The tutorial explaining turns, stats and skills">
+<Media image={statsTutorial} alt="Tutorial overlay explaining the turn panel, stats and map, skills, help and end turn, including the rule Attack minus Defense equals Damage" caption="The tutorial explaining turns, stats and skills">
 
 **Balance.** I set the stats for every ally and enemy. They live in JSON, and I tuned them by playtesting the game a lot, making sure each character has its own specialty. Since I designed both the levels and the stats, playtesting let me balance them together. When a character was too strong or a level too hard, I could adjust either side.
 
-</TwoColumn>
+</Media>
 
-<TwoColumn image={heroStats} alt="A hooded mage character with a stats panel showing 5 health, 2 attack and 0 defense" caption="A hero's stats: 5 health, 2 attack, 0 defense" side="right">
+<Media image={heroStats} alt="A hooded mage character with a stats panel showing 5 health, 2 attack and 0 defense" caption="A hero's stats: 5 health, 2 attack, 0 defense" side="right">
 
 **Small numbers.** Stats used to run to values like 25 and 105, which felt bloated to me. I reworked them into small, simple numbers, so the player can do the math in their head and work out a fight at a glance, the way Hearthstone and Magic: The Gathering do.
 
-</TwoColumn>
+</Media>
 
 ### Outcome
 

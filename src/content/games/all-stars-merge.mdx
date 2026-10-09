@@ -19,7 +19,7 @@ description: "After Liz is suddenly fired, she starts over merging and selling s
 urlGooglePlay: https://play.google.com/store/apps/details?id=com.hermitcrabstudio.f2p.allstarsmerge&pcampaignid=web_share
 ---
 
-import TwoColumn from '../../components/mdx/TwoColumn.astro';
+import Media from '../../components/mdx/Media.astro';
 import mergeBoard from './all-stars-merge/merge-board.webp';
 import stadiumUpgrade from './all-stars-merge/stadium-upgrade.webp';
 import dailyMissions from './all-stars-merge/daily-missions.webp';
@@ -28,13 +28,13 @@ import stickerAlbum from './all-stars-merge/sticker-album.webp';
 
 ### The project
 
-<TwoColumn image={mergeBoard} alt="Merge board full of sports equipment, with customer requests and their coin rewards along the top" caption="The merge board">
+<Media image={mergeBoard} alt="Merge board full of sports equipment, with customer requests and their coin rewards along the top" caption="The merge board">
 
 All Stars Merge is a free-to-play merge game published on Google Play by Hermit Crab Game Studio. I worked on it for my client, Ludomancer Studio, which was developing the game for Hermit Crab.
 
 I joined in June 2025, on a codebase that had been in development since 2023, alongside a team of more than 20 people.
 
-</TwoColumn>
+</Media>
 
 ### My role
 
@@ -46,31 +46,31 @@ Between June and October 2025 I made 147 commits across 109 C# files.
 
 **Learning the codebase first.** I was the only programmer on the team at the time, on a tight schedule. Before building anything I took time to understand the architecture. Many developers had worked on the game over two years, and each system followed its own conventions.
 
-<TwoColumn image={stadiumUpgrade} alt="City map with an upgrade popup showing a gem reward, a coin cost and an Upgrade button" caption="Upgrading a stadium part" side="right">
+<Media image={stadiumUpgrade} alt="City map with an upgrade popup showing a gem reward, a coin cost and an Upgrade button" caption="Upgrading a stadium part" side="right">
 
 **Stadiums.** I built the stadium layer from its first scene: field evolution, upgradeable field parts with costs, the upgrade choice screen and its animation, stage swapping, the basketball and volleyball stadiums, and the transition animation between them. I also fixed the upgrade save so progress held between sessions.
 
-</TwoColumn>
+</Media>
 
-<TwoColumn image={dailyMissions} alt="Daily Missions screen with progress bars for spending gems, merging items, watching videos and delivering requests" caption="Daily missions and their rewards">
+<Media image={dailyMissions} alt="Daily Missions screen with progress bars for spending gems, merging items, watching videos and delivering requests" caption="Daily missions and their rewards">
 
 **Quests.** I implemented missions with task costs and rewards, a questline flow driven by ScriptableObjects, and the level 3 questlines, which I authored in PlayFab title data. I added quest completion notifications in both the merge and stadium scenes, consumed the right board items when a quest completed, marked quest items on the board, and added the quest drawer.
 
 I also rebuilt the daily tasks screen and its rewards.
 
-</TwoColumn>
+</Media>
 
-<TwoColumn image={cutscene} alt="Story cutscene with chat bubbles from Kai, Axel, Maya and the player, each with a character portrait" caption="A story cutscene with character portraits" side="right">
+<Media image={cutscene} alt="Story cutscene with chat bubbles from Kai, Axel, Maya and the player, each with a character portrait" caption="A story cutscene with character portraits" side="right">
 
 **Story.** I implemented the story cutscenes and the prologue, then restyled them and added character portraits with expressions, a skip button, and a new HQ introduction.
 
-</TwoColumn>
+</Media>
 
-<TwoColumn image={stickerAlbum} alt="Sticker album page with collected jerseys and shorts, empty numbered slots, and a page completion reward" caption="A sticker album page and its completion reward">
+<Media image={stickerAlbum} alt="Sticker album page with collected jerseys and shorts, empty numbered slots, and a page completion reward" caption="A sticker album page and its completion reward">
 
 **Sticker album.** I brought the album back online and extended it: more albums, stickers and packages, sticker page progression with page rewards, a three-pack opening animation, and collection notifications.
 
-</TwoColumn>
+</Media>
 
 **Store, economy and onboarding.**
 
