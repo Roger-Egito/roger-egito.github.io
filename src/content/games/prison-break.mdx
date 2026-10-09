@@ -17,7 +17,7 @@ description: "Use stealth and parkour to break out of a prison of cold, unfeelin
 urlItchIo: <iframe frameborder="0" src="https://itch.io/embed/2827746?bg_color=2A315A&amp;fg_color=CCE2E1&amp;link_color=E6336A&amp;border_color=333350" width="552" height="167"><a href="https://egito.itch.io/prison-break-escape-big-sister">Prison Break - Escape Big Sister by Egito</a></iframe>
 ---
 
-import TwoColumn from '../../components/mdx/TwoColumn.astro';
+import Media from '../../components/mdx/Media.astro';
 import hanging from './prison-break/hanging.webp';
 import spotted from './prison-break/spotted.webp';
 import hearing from './prison-break/hearing.webp';
@@ -35,7 +35,7 @@ My job was to design the game and build its core: the player, the enemies, the s
 
 I made 18 of the project's 33 commits between May and July 2024. The finished game is about 4,300 lines of Python across 28 modules.
 
-<TwoColumn image={hanging} alt="The red-haired player character hanging from the underside of a metal block while a soldier patrols the floor above" caption="Hanging out of a soldier's sight">
+<Media image={hanging} alt="The red-haired player character hanging from the underside of a metal block while a soldier patrols the floor above" caption="Hanging out of a soldier's sight">
 
 **Player controller.** I built the player controller with 19 states, including walking, running, crouch walking and crouch running, hanging, rolling, a backflip, and slide jumps.
 
@@ -45,21 +45,21 @@ Looking back, the states lived in a long chain of if and else checks, which is a
 
 I also wrote the collision system and integrated the Tiled maps.
 
-</TwoColumn>
+</Media>
 
-<TwoColumn image={spotted} alt="A soldier with a red exclamation mark over his head grabbing the player" caption="Spotted" side="right">
+<Media image={spotted} alt="A soldier with a red exclamation mark over his head grabbing the player" caption="Spotted" side="right">
 
 **Soldier AI.** Soldiers see through a vision area and two line-of-sight checks, one to the player's head and one to their feet, that tiles can block, and they give chase once they spot the player. Two checks because the player can cling to ceilings, where sometimes only their feet are in view.
 
-</TwoColumn>
+</Media>
 
-<TwoColumn image={hearing} alt="Soldiers with question marks over their heads inside overlapping sound circles, one of them spreading from the player" caption="Soldiers drawn toward a sound">
+<Media image={hearing} alt="Soldiers with question marks over their heads inside overlapping sound circles, one of them spreading from the player" caption="Soldiers drawn toward a sound">
 
 **Hearing.** I added parkour and speed, and wanted something to balance them and make the stealth more interesting. So the faster you go, the more noise you make, which turns speed into a risk and reward choice. I designed and built the hearing system. Whistling sends out an expanding sound sphere that draws soldiers toward where it came from, and a soldier who is already chasing sends out spheres of its own that alert the others.
 
-</TwoColumn>
+</Media>
 
-<TwoColumn image={level} alt="A dim prison level of metal crates, ladders and hanging lamps, with soldiers on patrol" caption="A prison level" side="right">
+<Media image={level} alt="A dim prison level of metal crates, ladders and hanging lamps, with soldiers on patrol" caption="A prison level" side="right">
 
 **Look and sound.** I added atmospheric lighting and an animated noise overlay generated with Pillow. I wrote the audio module, with music fades, sound effect channels and stingers, and added the music and sound effects.
 
@@ -67,7 +67,7 @@ I also wrote the collision system and integrated the Tiled maps.
 
 **Painless deaths.** When you die, you respawn almost instantly. Dying and trying again should feel like part of the game, not a failure state, the way it does in fast platformers like Super Meat Boy and Celeste.
 
-</TwoColumn>
+</Media>
 
 Cauã built the first maps, the stage transition system and its memory cleanup, the crouch walking sprite, and several bug fixes.
 

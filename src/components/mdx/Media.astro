@@ -1,0 +1,172 @@
+---
+// A picture or a clip in a game's long-form body in .mdx, either beside a block of text
+// or on its own, centred.
+//
+//   <Media image={setupScreen} alt="The settings screen" caption="Initial game settings">
+//
+//   Markdown text goes here. Leave a blank line after the opening tag, or MDX
+//   treats the text as plain inline content and ignores the Markdown in it.
+//
+//   </Media>
+//
+//   <Media video={gameplay} alt="Prototype footage" side="center" />
+//
+// `image` is an imported image, which goes through astro:assets so it gets resized and
+// converted like the rest of the site's art. `video` is an imported clip's URL
+// (`import gameplay from './clip.mp4?url'`), which plays muted and on a loop. Exactly
+// one of the two.
+//
+// `side` puts the media left or right of the text at desktop widths, or "center" for
+// media on its own. Below 768px the two columns stack, media first, since a phone has no
+// room for both side by side.
+//
+// Either kind is a button that opens the inspection screen (Lightbox.astro), which shows
+// it as tall as the screen, zooms, and steps through every picture and clip in the same
+// article.
+import { Image } from "astro:assets";
+import type { ImageMetadata } from "astro";
+
+type Props = {
+  /** Describes the media for screen readers. Required, since it carries content. */
+  alt: string;
+  /** Short line under the media. Optional. */
+  caption?: string;
+  /** Left or right of the text at desktop widths, or centred on its own. */
+  side?: "left" | "right" | "center";
+} & ({ image: ImageMetadata; video?: never } | { video: string; image?: never });
+
+const { image, video, alt, caption, side = "left" } = Astro.props;
+
+if (!image === !video) {
+  throw new Error(`<Media alt="${alt}"> needs exactly one of image or video.`);
+}
+
+// The column sizes alone never ask for more than 960px. The original's own width is in
+// the set too, for the inspection screen, which shows the image as tall as the screen.
+const widths = image
+  ? [...new Set([480, 960, image.width])].filter((width) => width <= image.width)
+  : [];
+
+// An image's shape is known at build time. A clip's isn't, so it has none here and
+// takes its column's full width.
+const ratio = image ? `--ratio: ${image.width / image.height}` : undefined;
+---
+
+<div class="media-block" data-side={side}>
+  <figure style={ratio}>
+    {/* A button, so the closer look is there from the keyboard too. Its name is the alt
+        text, the same for a picture and a clip. */}
+    <button
+      type="button"
+      class="inspect-open"
+      data-inspect
+      aria-haspopup="dialog"
+      aria-label={alt}
+    >
+      {
+        image ? (
+          <Image
+            src={image}
+            alt={alt}
+            widths={widths}
+            sizes={side === "center" ? "(min-width: 768px) 46rem, 90vw" : "(min-width: 768px) 26rem, 90vw"}
+            loading="lazy"
+          />
+        ) : (
+          <video src={video} autoplay muted loop playsinline preload="metadata" aria-hidden="true" />
+        )
+      }
+    </button>
+    {caption && <figcaption>{caption}</figcaption>}
+  </figure>
+  {
+    Astro.slots.has("default") && (
+      <div class="text">
+        <slot />
+      </div>
+    )
+  }
+</div>
+
+<style>
+  .media-block {
+    display: grid;
+    gap: var(--space-gap);
+    align-items: center;
+    margin: var(--space-gap) 0;
+    text-align: left;
+  }
+
+  figure {
+    margin: 0;
+  }
+
+  /* On its own, the media takes the same inset as a list in the write-up (see
+     .long-form ul in GameDetails.astro), so it reads as a block set inside the article
+     rather than a full-bleed banner. */
+  .media-block[data-side="center"] figure {
+    width: 100%;
+    max-width: calc((100% + 552px) / 2);
+    margin-inline: auto;
+  }
+
+  /* Full width, except a portrait phone screenshot beside text, which would tower over
+     it. Its width is capped at whatever keeps it 32rem tall. A clip has no --ratio, so
+     the cap falls away and it takes the full width. The width stays definite so the
+     browser reserves an image's space before it loads. Set on the button rather than
+     the media, so the button is exactly the picture's size and the empty column either
+     side of a portrait shot doesn't open anything. */
+  .inspect-open {
+    display: block;
+    width: min(100%, 32rem * var(--ratio, 1000));
+    margin-inline: auto;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius);
+    background: none;
+    cursor: var(--cursor-pointer);
+  }
+
+  img,
+  video {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius);
+    transition: filter var(--transition);
+  }
+
+  .inspect-open:hover :is(img, video),
+  .inspect-open:focus-visible :is(img, video) {
+    filter: brightness(1.12);
+  }
+
+  figcaption {
+    margin-top: 0.5em;
+    color: var(--color-muted);
+    font-size: 0.85em;
+    text-align: center;
+  }
+
+  /* The slot's first and last paragraphs would otherwise add their own margins on top
+     of the grid's, pushing the text off center next to the media. */
+  .text > :global(:first-child) {
+    margin-top: 0;
+  }
+
+  .text > :global(:last-child) {
+    margin-bottom: 0;
+  }
+
+  @media (min-width: 768px) {
+    .media-block:not([data-side="center"]) {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    /* Swap the visual order without changing the source order, so screen readers
+       still meet the media before the text that talks about it. */
+    .media-block[data-side="right"] figure {
+      order: 2;
+    }
+  }
+</style>

@@ -1,0 +1,234 @@
+---
+/**
+ * The inspection screen: one picture or clip from a game's write-up, as tall as the
+ * screen allows, centred over a dimmed page. lightbox.ts opens it from anything
+ * Media.astro put in a `.long-form` article, and steps through that article's pictures
+ * and clips alike.
+ *
+ * Clicking outside the image closes it, and so does Esc. The picture is three zones,
+ * each a button:
+ *
+ *   - left quarter: an arrow cursor, steps back. The left arrow key does the same.
+ *   - middle half: a magnifying glass, zooms to 2.5x and back. While zoomed, the
+ *     pointer pans the picture and the arrow zones step aside.
+ *   - right quarter: an arrow cursor, steps forward. So does the right arrow key.
+ *
+ * One per page, in the layout, rather than one per article: the homepage carries every
+ * game's article in its dialogs, and only one image is ever inspected at a time.
+ */
+import { faArrowLeft, faArrowRight } from "@fortawesome/free-solid-svg-icons";
+
+type Glyph = { icon: [number, number, unknown, unknown, string | string[]] };
+
+/**
+ * A cursor drawn from a Font Awesome icon (Font Awesome Free, icons under CC BY 4.0),
+ * white with a dark outline so it shows over light and dark screenshots alike.
+ * Inlined as a data URL, so there's no file to fetch. 32px, the largest size every
+ * desktop browser accepts, with the hotspot in the middle. The keyword after it is the
+ * fallback where a custom cursor can't be used.
+ */
+const cursor = ({ icon }: Glyph, fallback: string) => {
+  const [width, height, , , path] = icon;
+  const d = Array.isArray(path) ? path.join(" ") : path;
+  // Padding in the viewBox so the outline isn't cut off at the edges.
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" ` +
+    `viewBox="-48 -48 ${width + 96} ${height + 96}">` +
+    `<path d="${d}" fill="white" stroke="black" stroke-width="40" ` +
+    `stroke-linejoin="round" paint-order="stroke"/></svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}") 16 16, ${fallback}`;
+};
+
+const cursors =
+  `--cursor-prev: ${cursor(faArrowLeft as Glyph, "w-resize")}; ` +
+  `--cursor-next: ${cursor(faArrowRight as Glyph, "e-resize")}`;
+---
+
+<script>
+  import "../scripts/lightbox";
+</script>
+
+<dialog class="inspect" aria-label="Image viewer" style={cursors}>
+  {/* Holds focus while open, so the arrow keys and Esc land here rather than on one of
+      the zones, which would show a focus ring over part of the picture. */}
+  <figure class="frame" tabindex="-1">
+    {/* What gets zoomed. One of the two inside it shows at a time. */}
+    <div class="view" data-inspect-view>
+      <img data-inspect-image alt="" />
+      <video data-inspect-clip muted loop playsinline hidden></video>
+    </div>
+    {/* Under the arrow zones and as big as the picture, so it gets the middle half, and
+        all of it whenever the arrow zones are out of the way. */}
+    <button type="button" class="zone zoom" data-inspect-zoom aria-pressed="false" aria-label="Zoom"
+    ></button>
+    <button type="button" class="zone prev" data-inspect-step="-1" aria-label="Previous image"
+    ></button>
+    <button type="button" class="zone next" data-inspect-step="1" aria-label="Next image"
+    ></button>
+  </figure>
+  <p class="count" data-inspect-count aria-live="polite"></p>
+</dialog>
+
+<style>
+  /* The dialog is the whole screen, and anything on it that isn't the picture counts
+     as outside it. */
+  .inspect {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    overflow: hidden;
+    /* Centring lives here rather than with the display below. On close, [open] goes at
+       once but the dialog stays on screen for its fade-out, and with the centring tied
+       to [open] the picture dropped to the top-left corner for those 0.2s. */
+    place-items: center;
+    cursor: var(--cursor-default);
+  }
+
+  .inspect[open] {
+    display: grid;
+  }
+
+  /* Dragging a finger over a zoomed picture pans it instead of scrolling. */
+  .inspect[data-zoomed] {
+    touch-action: none;
+  }
+
+  .inspect::backdrop {
+    background: var(--color-inspect-backdrop);
+  }
+
+  /* While it's open the page behind doesn't scroll. The dialog itself can't scroll, so
+     the wheel would otherwise pass straight through to the page under it. */
+  :global(html:has(dialog.inspect[open])) {
+    overflow: hidden;
+  }
+
+  .inspect,
+  .inspect::backdrop {
+    transition:
+      opacity 0.2s ease,
+      overlay 0.2s allow-discrete,
+      display 0.2s allow-discrete;
+  }
+
+  .inspect:not([open]),
+  .inspect:not([open])::backdrop {
+    opacity: 0;
+  }
+
+  @starting-style {
+    .inspect[open],
+    .inspect[open]::backdrop {
+      opacity: 0;
+    }
+  }
+
+  /* Clips the zoomed picture to the size it has at 1x, so there's still an outside to
+     click to close. */
+  .frame {
+    position: relative;
+    margin: 0;
+    border-radius: var(--radius);
+    box-shadow: 0 10px 40px var(--color-drop-shadow);
+    outline: none;
+    overflow: hidden;
+  }
+
+  /* As tall as the screen allows, unless that would make it wider than the screen.
+     --ratio is the image's own width over height, set by lightbox.ts, which is what lets
+     a small screenshot grow to fill the height instead of sitting at its file size. */
+  .view {
+    width: min(96vw, 92dvh * var(--ratio, 1));
+    aspect-ratio: var(--ratio, auto);
+    /* Set by lightbox.ts from where the pointer is in the frame. Not transitioned, so
+       the view follows the pointer exactly; only the scale itself eases. */
+    transform-origin: var(--zoom-x, 50%) var(--zoom-y, 50%);
+    transition: transform 0.25s ease;
+  }
+
+  /* --zoom comes from lightbox.ts, which owns the number. */
+  .inspect[data-zoomed] .view {
+    transform: scale(var(--zoom));
+  }
+
+  .view > img,
+  .view > video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .view > [hidden] {
+    display: none;
+  }
+
+  /* The zones cover the picture exactly, so the picture itself never takes a click:
+     every click on it is one of these. */
+  .zone {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+
+  /* The browser's own magnifying glasses: plus to zoom in, minus to zoom back out. */
+  .zoom {
+    left: 0;
+    right: 0;
+    cursor: zoom-in;
+  }
+
+  .inspect[data-zoomed] .zoom {
+    cursor: zoom-out;
+  }
+
+  .prev,
+  .next {
+    z-index: 1;
+    width: 25%;
+  }
+
+  .prev {
+    left: 0;
+    cursor: var(--cursor-prev);
+  }
+
+  .next {
+    right: 0;
+    cursor: var(--cursor-next);
+  }
+
+  /* No stepping while zoomed in: the arrow zones leave, and the zoom zone, which is
+     the whole picture underneath them, takes every click. */
+  .zone[hidden],
+  .inspect[data-zoomed] :is(.prev, .next) {
+    display: none;
+  }
+
+  .zone:focus-visible {
+    outline: 2px solid var(--color-txt);
+    outline-offset: -4px;
+  }
+
+  /* Which picture of how many, and its caption, in the strip of backdrop under it. */
+  .count {
+    position: absolute;
+    right: 0;
+    bottom: 1vh;
+    left: 0;
+    margin: 0;
+    color: var(--color-txt);
+    font-size: 13px;
+    text-align: center;
+    text-shadow: 0 1px 4px var(--color-text-shadow);
+    pointer-events: none;
+  }
+</style>

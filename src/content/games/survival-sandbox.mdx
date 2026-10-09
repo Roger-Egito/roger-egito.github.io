@@ -20,14 +20,14 @@ description: "An unannounced top-down 2D survival sandbox in Unity 6, where ever
 private: This game is unannounced, so its name and client aren't shown.
 ---
 
-import TwoColumn from '../../components/mdx/TwoColumn.astro';
+import Media from '../../components/mdx/Media.astro';
 import gameplay from './survival-sandbox/gameplay.mp4?url';
 import world from './survival-sandbox/world.webp';
 import bench from './survival-sandbox/bench.webp';
 import fight from './survival-sandbox/fight.webp';
 import night from './survival-sandbox/night.webp';
 
-<video src={gameplay} autoplay muted loop playsinline preload="metadata" aria-label="Prototype footage: zooming out over a generated neighborhood, a bandit fight, a sword assembled on the crafting bench, and night falling"></video>
+<Media video={gameplay} side="center" alt="Prototype footage: zooming out over a generated neighborhood, a bandit fight, a sword assembled on the crafting bench, and night falling" />
 
 ### The project
 
@@ -43,33 +43,33 @@ I'm the sole programmer. My job was to turn the client's design into a playable 
 
 **One design document.** The design lived in many places: the client's GDD, slide decks, diagrams, and recordings of our specification sessions. I consolidated all of it into a single design document where every section names its sources, and I listed the questions the documents left open, so decisions were made before the code depended on them.
 
-<TwoColumn image={bench} alt="The crafting bench screen: a blade, a kitchen knife, a wooden pole and rope in the seven-cell grid, previewing a sword in the output slot, with the upgrade slots on the left and the bag below" caption="A blade, a knife, a pole and rope make a Sword">
+<Media image={bench} alt="The crafting bench screen: a blade, a kitchen knife, a wooden pole and rope in the seven-cell grid, previewing a sword in the output slot, with the upgrade slots on the left and the bag below" caption="A blade, a knife, a pole and rope make a Sword">
 
 **Tools that are the sum of their parts.** The core idea is that a tool's stats come from what it's made of. I built an item instance layer so each crafted tool can carry its own parts, durability and effects, and a seven-cell grid where the pattern of parts decides which tool comes out. Parts fold into stats in a fixed order, so the order they were placed in never changes the result.
 
-</TwoColumn>
+</Media>
 
-<TwoColumn image={world} alt="The whole generated world from above: a round map of grass, dirt paths and dead trees, with two neighborhoods of houses" caption="One seed's world. Every seed builds a different one" side="right">
+<Media image={world} alt="The whole generated world from above: a round map of grass, dirt paths and dead trees, with two neighborhoods of houses" caption="One seed's world. Every seed builds a different one" side="right">
 
 **A world from a seed.** The world is generated from a seed, so the same seed always builds the same world. It has a round boundary, terrain autotiled a quarter tile at a time, and houses placed as neighborhoods: a core house far from any other core, with more houses grown beside it by the design's rules. A world 90 tiles in radius generates in about a second and a half in the editor.
 
-</TwoColumn>
+</Media>
 
-<TwoColumn image={fight} alt="Two bandits beside the player, the red area of a bandit's swing covering him" caption="A bandit's swing, telegraphed in red">
+<Media image={fight} alt="Two bandits beside the player, the red area of a bandit's swing covering him" caption="A bandit's swing, telegraphed in red">
 
 **Enemies you learn to read.** The design describes enemies as distinct stages the player learns to exploit, so each enemy is a state machine you can read: wander, chase, attack, strafe, guard, flee, scavenge. Before every swing an enemy stands still and shows in red exactly where the hit will land, and a "!" goes up when it spots you. Enemies find their way with A* pathfinding, and they live in camps that call them home at night.
 
-</TwoColumn>
+</Media>
 
 **Content as data.** Items, recipes, tool parts, enemies and loot are authored in 15 tables that an importer turns into assets, so a new enemy is a row in a table rather than a new prefab. Editor tools rebuild the prototype's content in one step, and running them twice changes nothing.
 
 **One kit for everyone.** The player and every enemy share the same actor kit, so a bandit's sword swing is the player's sword swing. Chopping a tree, breaking a wall and hitting a bandit all go through the same damage path.
 
-<TwoColumn image={night} alt="Night falling over a generated house, its rooms furnished, with two enemies waiting outside the door" caption="Night falls over a generated house" side="right">
+<Media image={night} alt="Night falling over a generated house, its rooms furnished, with two enemies waiting outside the door" caption="Night falls over a generated house" side="right">
 
 **Testing as I go.** The codebase has 196 automated tests. Before handing the prototype over, I tested every task against its acceptance criteria and wrote up what passed, what didn't, and the problems I found outside the tasks.
 
-</TwoColumn>
+</Media>
 
 ### Outcome
 
