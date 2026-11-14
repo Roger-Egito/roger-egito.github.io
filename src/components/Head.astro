@@ -8,9 +8,19 @@ interface Props {
   description?: string;
   /** Absolute or site-relative image for link previews. */
   image?: string;
+  /** false leaves the analytics off the page entirely, for pages that aren't the site. */
+  track?: boolean;
+  /** Asks search engines to leave the page out of their results. */
+  noindex?: boolean;
 }
 
-const { title = site.title, description = site.description, image } = Astro.props;
+const {
+  title = site.title,
+  description = site.description,
+  image,
+  track = true,
+  noindex = false,
+} = Astro.props;
 const canonical = new URL(Astro.url.pathname, site.url).href;
 const preview = image ? new URL(image, site.url).href : undefined;
 ---
@@ -25,6 +35,7 @@ const preview = image ? new URL(image, site.url).href : undefined;
 <title>{title}</title>
 <meta name="description" content={description} />
 <meta name="author" content={site.author} />
+{noindex && <meta name="robots" content="noindex, nofollow" />}
 <link rel="canonical" href={canonical} />
 
 <Font cssVariable="--font-heading" preload />
@@ -120,6 +131,23 @@ const preview = image ? new URL(image, site.url).href : undefined;
   })();
 </script>
 
+{/* Keeps headless browsers out of the numbers. The ones that visit run JavaScript, so
+    the tracker counts them like anyone else: one page, no referrer, desktop Chrome,
+    from datacenter cities.
+
+    Umami calls the function named in data-before-send before every send and drops the
+    send when it gets back nothing. This one drops it for a browser under automation
+    (navigator.webdriver, which Puppeteer, Playwright and Selenium all set) or one with
+    no screen at all. Where someone is, or what time zone they're in, is no test: real
+    visitors live in those places too.
+
+    On window before the tracker loads, which is why it's inline and not a bundled
+    module: a module is deferred, and could arrive after the first pageview went out. */}
+<script is:inline>
+  window.umamiBeforeSend = (_type, payload) =>
+    navigator.webdriver || !screen.width || !screen.height ? false : payload;
+</script>
+
 {/* Pageview counter. is:inline keeps Astro's hands off it, so the data- attributes it
     reads itself survive.
 
@@ -130,13 +158,14 @@ const preview = image ? new URL(image, site.url).href : undefined;
     into it (?f=unity,python&q=war). Each of those is counted as a view of its own on
     purpose: it's the record of what people filter and search for. */}
 {
-  site.analytics.umami && (
+  track && site.analytics.umami && (
     <script
       is:inline
       defer
       src="https://cloud.umami.is/script.js"
       data-website-id={site.analytics.umami}
       data-domains={new URL(site.url).hostname}
+      data-before-send="umamiBeforeSend"
     />
   )
 }

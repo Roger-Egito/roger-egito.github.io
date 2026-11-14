@@ -9,6 +9,8 @@ export interface Link {
   /** Shorter wording for the hover label, where space is tight. Defaults to label. */
   tip?: string;
   url: string;
+  /** Sent to Umami as a click event of this name, for links worth counting. */
+  event?: string;
 }
 
 export const site = {
@@ -58,6 +60,7 @@ export const site = {
       // file lives in public/, which Astro copies through untouched, so the URL stays
       // put when the PDF is replaced.
       url: '/Roger_Egito_CV.pdf',
+      event: 'cv-open',
     },
   ] satisfies Link[],
 };

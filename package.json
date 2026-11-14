@@ -8,6 +8,7 @@
     "build": "astro check && astro build",
     "preview": "astro preview",
     "check": "astro check",
+    "test": "node --test \"src/lib/umami-report/*.test.ts\"",
     "preview:make": "node scripts/make-preview.mjs",
     "hero:encode": "node scripts/encode-hero.mjs",
     "og:capture": "node scripts/make-og.mjs"

@@ -8,9 +8,13 @@ interface Props {
   title?: string;
   description?: string;
   image?: string;
+  /** false leaves the analytics off the page entirely, for pages that aren't the site. */
+  track?: boolean;
+  /** Asks search engines to leave the page out of their results. */
+  noindex?: boolean;
 }
 
-const { title, description, image } = Astro.props;
+const { title, description, image, track = true, noindex = false } = Astro.props;
 ---
 
 <!doctype html>
@@ -22,7 +26,7 @@ const { title, description, image } = Astro.props;
       wiped out the dialog before "Close the game?" could be answered, taking the
       running build with it. The animation wasn't worth 16 KB or that behaviour.
     */}
-    <Head title={title} description={description} image={image} />
+    <Head title={title} description={description} image={image} track={track} noindex={noindex} />
   </head>
 
   <body id="page-top">
@@ -33,8 +37,12 @@ const { title, description, image } = Astro.props;
 
     {/* Here rather than in a component so it's on every page, the game pages included:
         it counts the About dialog and the CV, which the tracker can't see itself. */}
-    <script>
-      import '../scripts/analytics';
-    </script>
+    {
+      track && (
+        <script>
+          import '../scripts/analytics';
+        </script>
+      )
+    }
   </body>
 </html>

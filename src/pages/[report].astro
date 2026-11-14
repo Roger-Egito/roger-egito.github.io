@@ -1,0 +1,265 @@
+---
+/**
+ * The analytics report: drop an Umami Cloud export on it and it shows who visited.
+ *
+ * Kept out of the way, not locked (GitHub Pages can't do passwords): noindex, out of the
+ * sitemap and the nav, and no tracker. That's enough because the page holds no data.
+ * The export is read in the browser, in page.ts, and nothing is sent anywhere.
+ *
+ * A dynamic route with one path, so the URL is written in one place:
+ * src/config/private.ts, which the sitemap filter reads too.
+ */
+import Base from '../layouts/Base.astro';
+import { reportSlug } from '../config/private';
+import { reportConfig } from '../lib/umami-report/config';
+
+export function getStaticPaths() {
+  return [{ params: { report: reportSlug } }];
+}
+---
+
+<Base title="Analytics report" track={false} noindex>
+  <main class="report">
+    <h1>Analytics report</h1>
+    <p class="intro">
+      Drop the export from Umami Cloud here: the .gz as it downloads, or website_event.csv
+      with event_data.csv and session_data.csv. It's read in this browser and never leaves
+      it. Times are in {reportConfig.timeZone}.
+    </p>
+
+    <label class="drop" data-report-drop>
+      <input type="file" multiple accept=".gz,.tgz,.tar,.zip,.csv" data-report-files />
+      <span>Choose files, or drop them here</span>
+    </label>
+
+    <p class="status" data-report-status aria-live="polite"></p>
+    <button type="button" class="btn clear" data-report-clear hidden></button>
+
+    <div data-report-output></div>
+  </main>
+</Base>
+
+<script>
+  import '../scripts/umami-report/page';
+</script>
+
+{/* Global, but every rule sits under .report: most of these elements are made by
+    render.ts at runtime and carry no scope attribute, so scoped rules would miss them. */}
+<style is:global>
+  .report {
+    max-width: 1170px;
+    margin: 0 auto;
+    padding: 40px 15px 80px;
+    font-size: 15px;
+  }
+
+  .report h1 {
+    margin-bottom: 12px;
+    font-size: 2em;
+  }
+
+  .report .intro,
+  .report .note,
+  .report .status {
+    color: var(--color-muted);
+    font-size: 14px;
+  }
+
+  .report .drop {
+    display: grid;
+    place-items: center;
+    gap: 8px;
+    margin: 20px 0;
+    padding: 34px 20px;
+    border: 2px dashed var(--color-border);
+    border-radius: 6px;
+    cursor: var(--cursor-pointer);
+  }
+
+  .report .drop[data-over] {
+    border-color: var(--color-txt);
+  }
+
+  .report .clear {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  /* .btn sets a display of its own, which beats the hidden attribute. */
+  .report .clear[hidden] {
+    display: none;
+  }
+
+  .report .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin: 28px 0;
+  }
+
+  .report .card {
+    display: grid;
+    gap: 2px;
+    padding: 16px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: var(--color-raised);
+  }
+
+  .report .card strong {
+    font-size: 30px;
+    line-height: 1.1;
+  }
+
+  .report .card span {
+    color: var(--color-muted);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .report .card small {
+    color: var(--color-muted);
+  }
+
+  /* padding: 0 because these are <section>s, and the site gives every section 50px
+     above and below for its own page layout. */
+  .report .block {
+    margin: 28px 0;
+    padding: 0;
+  }
+
+  .report .block h2 {
+    margin: 0 0 12px;
+    font-size: 1.1em;
+  }
+
+  .report .pair {
+    display: grid;
+    gap: 24px;
+  }
+
+  @media (min-width: 900px) {
+    .report .pair {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .report .table-wrap {
+    overflow-x: auto;
+  }
+
+  .report table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .report th,
+  .report td {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--color-border);
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .report th {
+    color: var(--color-muted);
+    font-weight: 400;
+    white-space: nowrap;
+  }
+
+  .report td:first-child {
+    white-space: nowrap;
+  }
+
+  .report .route {
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
+  }
+
+  .report .reason {
+    color: var(--color-muted);
+  }
+
+  .report .reason.changed {
+    color: var(--color-txt);
+  }
+
+  .report select {
+    padding: 2px 4px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    background: var(--color-raised);
+    color: var(--color-txt);
+    font: inherit;
+  }
+
+  .report .chart {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .report .chart text {
+    fill: var(--color-muted);
+    font-size: 11px;
+    text-anchor: middle;
+  }
+
+  /* One colour per type, from the discipline palette, so the chart, its legend and the
+     type column agree. */
+  .report .fill-real,
+  .report .key-real::before {
+    fill: var(--color-programming);
+    background: var(--color-programming);
+  }
+
+  .report .fill-me,
+  .report .key-me::before {
+    fill: var(--color-muted);
+    background: var(--color-muted);
+  }
+
+  .report .fill-bot,
+  .report .key-bot::before {
+    fill: var(--color-audio);
+    background: var(--color-audio);
+  }
+
+  .report .legend {
+    display: flex;
+    gap: 18px;
+    font-size: 13px;
+  }
+
+  .report .key::before {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 6px;
+    border-radius: 2px;
+    content: '';
+  }
+
+  .report .type select {
+    border-left-width: 4px;
+  }
+
+  .report .type-real select {
+    border-left-color: var(--color-programming);
+  }
+
+  .report .type-me select {
+    border-left-color: var(--color-muted);
+  }
+
+  .report .type-bot select {
+    border-left-color: var(--color-audio);
+  }
+
+  .report .empty {
+    color: var(--color-muted);
+    font-style: italic;
+  }
+</style>

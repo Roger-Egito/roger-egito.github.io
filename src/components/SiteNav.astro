@@ -8,7 +8,7 @@ import { site } from '../config/site';
 const links = [
   { href: '#portfolio', label: 'Portfolio' },
   { href: '#about-dialog', label: 'About', opens: '#about-dialog' },
-  { href: `mailto:${site.email}`, label: 'Contact' },
+  { href: `mailto:${site.email}`, label: 'Contact', event: 'email-click' },
 ];
 ---
 
@@ -17,7 +17,12 @@ const links = [
     {
       links.map((link) => (
         <li>
-          <a href={link.href} data-opens={link.opens}>
+          <a
+            href={link.href}
+            data-opens={link.opens}
+            data-umami-event={link.event}
+            data-umami-event-place={link.event && 'nav'}
+          >
             {link.label}
           </a>
         </li>

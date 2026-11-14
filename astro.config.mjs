@@ -2,12 +2,18 @@
 import { defineConfig, fontProviders } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import mdx from '@astrojs/mdx';
+import { privatePaths } from './src/config/private.ts';
 
 export default defineConfig({
   // `site` is what makes the sitemap and the canonical/og URLs absolute.
   site: 'https://roger-egito.github.io',
 
-  integrations: [sitemap(), mdx()],
+  // The private pages (src/config/private.ts) stay out of the sitemap, so nothing points
+  // search engines at them.
+  integrations: [
+    sitemap({ filter: (page) => !privatePaths.some((path) => new URL(page).pathname === path) }),
+    mdx(),
+  ],
 
   // Fetches a game page when someone hovers its card, so opening it in a new tab (or
   // browsing without JavaScript) is instant. Only fires on intent, so it isn't
