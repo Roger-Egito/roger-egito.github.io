@@ -127,7 +127,14 @@ test('totals for real visitors', () => {
   assert.equal(t.visitors, 3);
   assert.equal(t.bounceRate, 0.25);
   assert.equal(t.viewsPerVisit, 2);
-  assert.equal(t.medianDuration, 70_000);
+  // Only the three visits past one page: 20s, 120s, 120s.
+  assert.equal(t.longerVisits, 3);
+  assert.equal(t.medianDuration, 120_000);
+  assert.equal(t.averageDuration, 260_000 / 3);
+  // Timed views: 40s, 80s, 90s, 20s.
+  assert.equal(t.timedViews, 4);
+  assert.equal(t.medianTimeOnPage, 60_000);
+  assert.equal(t.averageTimeOnPage, 57_500);
   assert.equal(t.measuredTime, 230_000);
   assert.deepEqual(totals(rows).byKind.bot, { views: 3, visits: 3, visitors: 3 });
 });
@@ -175,6 +182,9 @@ test('weeks start on Monday, São Paulo time, with empty buckets filled', () => 
       ['2026-10-05', 1, 1, 5],
     ]
   );
+  // The returning recruiter is one visitor in the week of Oct 5, with two visits.
+  const week = timeline(real, 'week', zone).find((b) => b.key === '2026-10-05')!;
+  assert.deepEqual([week.visits.real, week.visitors.real], [3, 2]);
   const days = timeline(real, 'day', zone);
   assert.equal(days.length, 7); // Oct 2 to Oct 8, the quiet days included
   assert.deepEqual([days[0].key, days[0].views.real, days[1].views.real], ['2026-10-02', 3, 0]);
@@ -190,12 +200,13 @@ test('heatmap places views by weekday and hour in São Paulo', () => {
 test('pages: entries, exits, bounces and time on page', () => {
   const table = pages(real);
   const home = table.find((p) => p.path === '/')!;
+  // Timed views of /: 40s, 90s, 20s. The median is the middle one, the average their mean.
   assert.deepEqual(
-    [home.views, home.visits, home.entries, home.exits, home.bounces, home.time, home.averageTime],
-    [4, 4, 4, 1, 1, 150_000, 50_000]
+    [home.views, home.visits, home.entries, home.exits, home.bounces, home.time, home.averageTime, home.medianTime],
+    [4, 4, 4, 1, 1, 150_000, 50_000, 40_000]
   );
   const hotel = table.find((p) => p.path === '/games/hotel-77/')!;
-  assert.deepEqual([hotel.exits, hotel.timedViews, hotel.averageTime], [1, 0, null]);
+  assert.deepEqual([hotel.exits, hotel.timedViews, hotel.averageTime, hotel.medianTime], [1, 0, null, null]);
 });
 
 test('visitors and visit durations', () => {

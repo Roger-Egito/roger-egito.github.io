@@ -215,8 +215,9 @@ export function applyFilters(rows: VisitRow[], filters: Filters, except?: Dimens
   });
 }
 
+/** The middle value: half above, half below, so one huge outlier barely moves it. */
 const median = (values: number[]) => {
-  if (values.length === 0) return 0;
+  if (values.length === 0) return null;
   const sorted = [...values].sort((a, b) => a - b);
   const middle = Math.floor(sorted.length / 2);
   return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
@@ -225,6 +226,10 @@ const median = (values: number[]) => {
 const viewsIn = (rows: VisitRow[]) => rows.reduce((sum, row) => sum + row.visit.pageviews.length, 0);
 const timeIn = (rows: VisitRow[]) =>
   rows.reduce((sum, row) => sum + row.steps.reduce((s, step) => s + (step.timeOnPage ?? 0), 0), 0);
+const average = (values: number[]) => (values.length ? values.reduce((a, b) => a + b, 0) / values.length : null);
+/** Every time on a page that could be measured: all views but each visit's last. */
+const timedSteps = (rows: VisitRow[]) =>
+  rows.flatMap((row) => row.steps.map((step) => step.timeOnPage).filter((time): time is number => time !== null));
 
 export interface Totals {
   views: number;
@@ -233,7 +238,18 @@ export interface Totals {
   bounces: number;
   bounceRate: number;
   viewsPerVisit: number;
-  medianDuration: number;
+  /**
+   * How long visits that went past one page lasted. One-page visits are left out: they
+   * last 0s by definition, and with most visits bouncing they'd pull the median to 0s.
+   * The bounce rate already counts them.
+   */
+  longerVisits: number;
+  medianDuration: number | null;
+  averageDuration: number | null;
+  /** Time on a page, over every view that could be timed. */
+  timedViews: number;
+  medianTimeOnPage: number | null;
+  averageTimeOnPage: number | null;
   /** Time measured between pageviews, summed. The last page of each visit can't be timed. */
   measuredTime: number;
   byKind: Record<Kind, { views: number; visits: number; visitors: number }>;
@@ -248,6 +264,8 @@ export function totals(rows: VisitRow[]): Totals {
       return [kind, { views: viewsIn(of), visits: of.length, visitors: new Set(of.map((r) => r.session.id)).size }];
     })
   ) as Totals['byKind'];
+  const longer = rows.filter((row) => row.visit.pageviews.length > 1).map((row) => row.duration);
+  const timed = timedSteps(rows);
   return {
     views: viewsIn(rows),
     visits: rows.length,
@@ -255,7 +273,12 @@ export function totals(rows: VisitRow[]): Totals {
     bounces,
     bounceRate: rows.length ? bounces / rows.length : 0,
     viewsPerVisit: rows.length ? viewsIn(rows) / rows.length : 0,
-    medianDuration: median(rows.map((row) => row.duration)),
+    longerVisits: longer.length,
+    medianDuration: median(longer),
+    averageDuration: average(longer),
+    timedViews: timed.length,
+    medianTimeOnPage: median(timed),
+    averageTimeOnPage: average(timed),
     measuredTime: timeIn(rows),
     byKind,
   };
@@ -288,6 +311,8 @@ export interface Bucket {
   to: string;
   views: Record<Kind, number>;
   visits: Record<Kind, number>;
+  /** Distinct visitors with a visit starting in the bucket. */
+  visitors: Record<Kind, number>;
 }
 
 const addDays = (date: string, days: number) => {
@@ -324,14 +349,22 @@ const zero = (): Record<Kind, number> => ({ real: 0, me: 0, bot: 0 });
  */
 export function timeline(rows: VisitRow[], granularity: Granularity, timeZone: string): Bucket[] {
   const buckets = new Map<string, Bucket>();
+  const seen = new Map<string, Set<string>>();
   const at = (date: string, hour: string) => {
     const shape = bucketOf(date, hour, granularity);
     let bucket = buckets.get(shape.key);
-    if (!bucket) buckets.set(shape.key, (bucket = { ...shape, views: zero(), visits: zero() }));
+    if (!bucket) buckets.set(shape.key, (bucket = { ...shape, views: zero(), visits: zero(), visitors: zero() }));
     return bucket;
   };
   for (const row of rows) {
-    at(row.date, row.hour).visits[row.kind]++;
+    const bucket = at(row.date, row.hour);
+    bucket.visits[row.kind]++;
+    const ids = seen.get(bucket.key) ?? new Set<string>();
+    if (!ids.has(row.session.id)) {
+      ids.add(row.session.id);
+      bucket.visitors[row.kind]++;
+    }
+    seen.set(bucket.key, ids);
     for (const view of row.visit.pageviews) {
       const c = clock(view.createdAt, timeZone);
       at(c.date, c.hour).views[row.kind]++;
@@ -455,13 +488,14 @@ export interface PageRow {
   bounces: number;
   /** Measured time on this page, summed, in ms. */
   time: number;
-  /** Average over the views that could be timed (every view but a visit's last). */
+  /** Average and median over the views that could be timed (every view but a visit's last). */
   averageTime: number | null;
+  medianTime: number | null;
   timedViews: number;
 }
 
 export function pages(rows: VisitRow[]): PageRow[] {
-  const table = new Map<string, PageRow & { visitIds: Set<string>; visitorIds: Set<string> }>();
+  const table = new Map<string, PageRow & { visitIds: Set<string>; visitorIds: Set<string>; times: number[] }>();
   for (const row of rows) {
     row.steps.forEach((step, i) => {
       const path = pathOf(step.view);
@@ -469,7 +503,7 @@ export function pages(rows: VisitRow[]): PageRow[] {
       if (!page) {
         table.set(path, (page = {
           path, views: 0, visits: 0, visitors: 0, entries: 0, exits: 0, bounces: 0, time: 0,
-          averageTime: null, timedViews: 0, visitIds: new Set(), visitorIds: new Set(),
+          averageTime: null, medianTime: null, timedViews: 0, visitIds: new Set(), visitorIds: new Set(), times: [],
         }));
       }
       page.views++;
@@ -481,15 +515,17 @@ export function pages(rows: VisitRow[]): PageRow[] {
       if (step.timeOnPage !== null) {
         page.time += step.timeOnPage;
         page.timedViews++;
+        page.times.push(step.timeOnPage);
       }
     });
   }
   return [...table.values()]
-    .map(({ visitIds, visitorIds, ...page }) => ({
+    .map(({ visitIds, visitorIds, times, ...page }) => ({
       ...page,
       visits: visitIds.size,
       visitors: visitorIds.size,
-      averageTime: page.timedViews ? page.time / page.timedViews : null,
+      averageTime: average(times),
+      medianTime: median(times),
     }))
     .sort((a, b) => b.views - a.views || a.path.localeCompare(b.path));
 }

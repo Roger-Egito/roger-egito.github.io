@@ -11,12 +11,15 @@ import type { Kind } from '../../lib/umami-report/sessions.ts';
 import { kinds } from '../../lib/umami-report/explore.ts';
 import { el, hideTip, kindNames, number, svg, tipOn } from './dom.ts';
 
-/** Clean axis steps: 1, 2 or 5 times a power of ten, about four of them. */
+/**
+ * Clean axis steps: 1, 2 or 5 times a power of ten, about four of them, and never less
+ * than 1. Everything charted here is a count, and half a visitor is not a tick.
+ */
 function ticks(max: number) {
   if (max <= 0) return [0, 1];
   const rough = max / 4;
   const power = 10 ** Math.floor(Math.log10(rough));
-  const step = [1, 2, 5, 10].map((m) => m * power).find((s) => s >= rough) ?? power * 10;
+  const step = Math.max(1, [1, 2, 5, 10].map((m) => m * power).find((s) => s >= rough) ?? power * 10);
   const top = Math.ceil(max / step) * step;
   const out: number[] = [];
   for (let v = 0; v <= top + step / 2; v += step) out.push(Math.round(v * 1000) / 1000);
@@ -229,51 +232,80 @@ export function heatmapChart(options: HeatmapOptions) {
   return el('div', {}, chart, scale);
 }
 
-export interface BarRow {
+export interface RankRow {
   value: string;
   label: string;
   /** What the bar's length and the number show. */
   amount: number;
-  /** Shown beside the number: "12 visits · 3 visitors". */
-  note: string;
   byKind: Record<Kind, number>;
   selected: boolean;
+  /** Extra lines for the tooltip: "12 visits · 3 visitors". */
+  note: string;
 }
 
 /**
- * A ranked list with a bar under each label, split by type. Each row is a button that
- * toggles a filter on its value.
+ * A ranked list the way Plausible draws one: the label sits on a faint bar as long as its
+ * share of the top row, split by type, with the number at the far end. The whole row is a
+ * button that filters by its value.
  */
-export function barList(rows: BarRow[], format: (amount: number) => string, onPick: (value: string) => void) {
+export function rankList(options: {
+  rows: RankRow[];
+  head: [string, string];
+  format: (amount: number) => string;
+  onPick: (value: string) => void;
+}) {
+  const { rows, format } = options;
   const max = Math.max(1, ...rows.map((r) => r.amount));
   return el(
-    'ol',
-    { class: 'bar-list' },
-    ...rows.map((row) => {
-      const total = kinds.reduce((sum, kind) => sum + row.byKind[kind], 0) || 1;
-      const button = el(
-        'button',
-        { type: 'button', class: `bar-row${row.selected ? ' selected' : ''}`, 'aria-pressed': String(row.selected), title: row.label },
-        el('span', { class: 'bar-label' }, row.selected ? el('span', { class: 'check', 'aria-hidden': 'true' }, '✓') : null, row.label),
-        el('span', { class: 'bar-amount' }, format(row.amount)),
-        el(
-          'span',
-          { class: 'bar-track', 'aria-hidden': 'true' },
+    'div',
+    { class: 'rank' },
+    el('div', { class: 'rank-head' }, el('span', {}, options.head[0]), el('span', {}, options.head[1])),
+    el(
+      'ol',
+      { class: 'rank-list' },
+      ...rows.map((row) => {
+        const total = kinds.reduce((sum, kind) => sum + row.byKind[kind], 0) || 1;
+        const button = el(
+          'button',
+          { type: 'button', class: `rank-row${row.selected ? ' selected' : ''}`, 'aria-pressed': String(row.selected) },
           el(
             'span',
-            { class: 'bar-fill', style: `width:${(row.amount / max) * 100}%` },
+            { class: 'rank-bar', style: `width:${Math.max(1.5, (row.amount / max) * 100)}%`, 'aria-hidden': 'true' },
             ...kinds
               .filter((kind) => row.byKind[kind] > 0)
-              .map((kind) => el('span', { class: `bar-part kind-${kind}`, style: `flex-grow:${row.byKind[kind] / total}` }))
-          )
-        )
-      );
-      tipOn(button, () => row.label, () => [
-        ...kinds.filter((kind) => row.byKind[kind] > 0).map((kind) => [kind, format(row.byKind[kind]), kindNames[kind]] as [Kind, string, string]),
-        [null, '', row.note],
-      ]);
-      button.addEventListener('click', () => { hideTip(); onPick(row.value); });
-      return el('li', {}, button);
-    })
+              .map((kind) => el('span', { class: `rank-part kind-${kind}`, style: `flex-grow:${row.byKind[kind] / total}` }))
+          ),
+          el('span', { class: 'rank-label' }, row.selected ? el('span', { class: 'check', 'aria-hidden': 'true' }, '✓') : null, row.label),
+          el('span', { class: 'rank-amount' }, format(row.amount))
+        );
+        tipOn(button, () => row.label, () => [
+          ...kinds.filter((kind) => row.byKind[kind] > 0).map((kind) => [kind, format(row.byKind[kind]), kindNames[kind]] as [Kind, string, string]),
+          [null, '', row.note],
+        ]);
+        button.addEventListener('click', () => {
+          hideTip();
+          options.onPick(row.value);
+        });
+        return el('li', {}, button);
+      })
+    )
   );
+}
+
+/**
+ * When someone came, as dots along the export's whole span: one dot per visit, sized by
+ * how many pages it saw. Reads at a glance as "came once" or "keeps coming back".
+ */
+export function visitStrip(visits: { at: number; pages: number }[], from: number, to: number, kind: Kind) {
+  const width = 120;
+  const height = 14;
+  const span = Math.max(1, to - from);
+  const strip = svg('svg', { viewBox: `0 0 ${width} ${height}`, class: 'strip', width, height, 'aria-hidden': 'true' });
+  strip.append(svg('line', { x1: 2, x2: width - 2, y1: height / 2, y2: height / 2, class: 'strip-line' }));
+  for (const visit of visits) {
+    const x = 4 + ((visit.at - from) / span) * (width - 8);
+    const r = Math.min(5, 2.5 + Math.log2(visit.pages) * 0.8);
+    strip.append(svg('circle', { cx: x, cy: height / 2, r, class: `strip-dot kind-${kind}` }));
+  }
+  return strip;
 }
