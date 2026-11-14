@@ -1,7 +1,15 @@
 /**
- * Umami's event rows to sessions, and each session to Me, Bot or Real visitor with the
- * reason why. Pure: rows and rules in, plain objects out, no DOM and no storage, so the
- * rules can be tested and changed without a browser.
+ * Umami's event rows to sessions and visits, and each session to Me, Bot or Real visitor
+ * with the reason why. Pure: rows and rules in, plain objects out, no DOM and no storage,
+ * so the rules can be tested and changed without a browser.
+ *
+ * Two levels, the way Umami counts them:
+ *
+ *   - A session is a visitor: one device on one network, kept for weeks. It's what gets
+ *     classified, since a device is either mine, a bot's, or someone else's.
+ *   - A visit is one sitting. Umami starts a new one after 30 minutes without activity,
+ *     so a session can hold several visits days apart. Durations, paths and time on page
+ *     are measured per visit; per session they'd run across the gaps between sittings.
  */
 import type { CsvRecord } from './csv.ts';
 import type { DeviceRule, ReportConfig } from './config.ts';
@@ -9,6 +17,7 @@ import type { DeviceRule, ReportConfig } from './config.ts';
 /** One row of website_event.csv, typed. */
 export interface UmamiEvent {
   sessionId: string;
+  visitId: string;
   eventId: string;
   createdAt: Date;
   /** 1 is a pageview, 2 a custom event. */
@@ -30,20 +39,35 @@ export interface UmamiEvent {
 
 export type Kind = 'me' | 'bot' | 'real';
 
+/** One sitting: from arrival to 30 minutes of nothing. */
+export interface Visit {
+  id: string;
+  sessionId: string;
+  start: Date;
+  end: Date;
+  events: UmamiEvent[];
+  pageviews: UmamiEvent[];
+  /** The outside site this visit came from, or null for none. */
+  referrer: string | null;
+  source: string;
+}
+
 export interface Session {
   id: string;
   start: Date;
   end: Date;
   events: UmamiEvent[];
   pageviews: UmamiEvent[];
+  visits: Visit[];
   browser: string | null;
   os: string | null;
   device: string | null;
   screen: string | null;
   language: string | null;
   country: string | null;
+  region: string | null;
   city: string | null;
-  /** The first outside site the session came from, or null for none. */
+  /** The first outside site the session ever came from, or null for none. */
   referrer: string | null;
   source: string;
 }
@@ -67,6 +91,8 @@ export function readEvents(records: CsvRecord[]): UmamiEvent[] {
     .filter((row) => row.session_id && row.created_at)
     .map((row) => ({
       sessionId: row.session_id!,
+      // Older exports without visits: the whole session counts as one.
+      visitId: row.visit_id || row.session_id!,
       eventId: row.event_id ?? '',
       createdAt: utc(row.created_at!),
       eventType: Number(row.event_type ?? 1),
@@ -98,39 +124,60 @@ export function sourceOf(referrer: string | null, utmSource: string | null, conf
   return fromLinkedin(name) ? 'LinkedIn' : name;
 }
 
-export function buildSessions(events: UmamiEvent[], config: ReportConfig): Session[] {
+/** Groups events by a key, keeping each group in time order. */
+function groupBy(events: UmamiEvent[], key: (event: UmamiEvent) => string) {
   const groups = new Map<string, UmamiEvent[]>();
   for (const event of events) {
-    const group = groups.get(event.sessionId);
+    const group = groups.get(key(event));
     if (group) group.push(event);
-    else groups.set(event.sessionId, [event]);
+    else groups.set(key(event), [event]);
   }
+  for (const group of groups.values()) group.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  return groups;
+}
 
+export function buildSessions(events: UmamiEvent[], config: ReportConfig): Session[] {
   const ownHost = (domain: string) =>
     config.siteHosts.some((name) => host(domain) === host(name));
 
-  return [...groups.entries()]
-    .map(([id, group]) => {
-      const sorted = group.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  /** The first outside referrer and utm source in a run of events, and what they add up to. */
+  const arrivalOf = (sorted: UmamiEvent[]) => {
+    const referrer =
+      sorted.find((event) => event.referrerDomain && !ownHost(event.referrerDomain))?.referrerDomain ?? null;
+    const utmSource = sorted.find((event) => event.utmSource)?.utmSource ?? null;
+    return { referrer, source: sourceOf(referrer, utmSource, config) };
+  };
+
+  return [...groupBy(events, (event) => event.sessionId).entries()]
+    .map(([id, sorted]) => {
       const first = sorted[0];
-      const arrival = sorted.find((event) => event.referrerDomain && !ownHost(event.referrerDomain));
-      const referrer = arrival?.referrerDomain ?? null;
-      const utmSource = sorted.find((event) => event.utmSource)?.utmSource ?? null;
+      const visits: Visit[] = [...groupBy(sorted, (event) => event.visitId).entries()]
+        .map(([visitId, inVisit]) => ({
+          id: visitId,
+          sessionId: id,
+          start: inVisit[0].createdAt,
+          end: inVisit[inVisit.length - 1].createdAt,
+          events: inVisit,
+          pageviews: inVisit.filter((event) => event.eventType === 1),
+          ...arrivalOf(inVisit),
+        }))
+        .sort((a, b) => a.start.getTime() - b.start.getTime());
       return {
         id,
         start: first.createdAt,
         end: sorted[sorted.length - 1].createdAt,
         events: sorted,
         pageviews: sorted.filter((event) => event.eventType === 1),
+        visits,
         browser: first.browser,
         os: first.os,
         device: first.device,
         screen: first.screen,
         language: first.language,
         country: first.country,
+        region: first.region,
         city: first.city,
-        referrer,
-        source: sourceOf(referrer, utmSource, config),
+        ...arrivalOf(sorted),
       };
     })
     .sort((a, b) => a.start.getTime() - b.start.getTime());

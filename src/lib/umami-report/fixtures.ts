@@ -64,6 +64,9 @@ export const rows: Row[] = [
   view('real-home', device.lisbon, '2026-10-07 20:00:00', '/'),
   // Me again, the desktop in DevTools' phone emulation: a phone's browser, my screen.
   view('me-emulating', { ...device.desktop, browser: 'chrome', os: 'Android OS', device: 'mobile', city: 'Niterói' }, '2026-10-08 18:00:00', '/'),
+  // The recruiter again, two days later, typed in directly: a second visit, same visitor.
+  view('real-linkedin', device.recruiter, '2026-10-08 13:00:00', '/', { visit_id: 'real-linkedin-visit-2', url_query: 'q=war' }),
+  view('real-linkedin', device.recruiter, '2026-10-08 13:00:20', '/games/memories-of-war/', { visit_id: 'real-linkedin-visit-2' }),
   // A crawler with a headless screen, even though it came with a referrer.
   view('bot-bing', { ...device.recruiter, screen: '800x600', country: 'US', city: '' }, '2026-10-08 19:00:00', '/', { referrer_domain: 'bing.com' }),
 ];
