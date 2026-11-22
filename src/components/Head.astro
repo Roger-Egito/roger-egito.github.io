@@ -8,8 +8,6 @@ interface Props {
   description?: string;
   /** Absolute or site-relative image for link previews. */
   image?: string;
-  /** false leaves the analytics off the page entirely, for pages that aren't the site. */
-  track?: boolean;
   /** Asks search engines to leave the page out of their results. */
   noindex?: boolean;
 }
@@ -18,7 +16,6 @@ const {
   title = site.title,
   description = site.description,
   image,
-  track = true,
   noindex = false,
 } = Astro.props;
 const canonical = new URL(Astro.url.pathname, site.url).href;
@@ -63,18 +60,19 @@ const preview = image ? new URL(image, site.url).href : undefined;
     device, give the password, and that browser stops being counted on every page of the
     site. ?track turns counting back on, no password needed.
 
-    Umami already has an off switch of its own: it skips any browser with something in
-    umami.disabled in local storage, checked on every page and every event, dialogs and
-    the CV included. This flips that switch from a link, which is the only way to do it
-    on a phone, where there's no console to type into.
+    The switch is umami.disabled in local storage, a name kept from when Umami counted the
+    visits, so the browsers already switched off stayed off when it went. The tracker
+    (src/scripts/tracker.ts) checks it before every send, dialogs and the CV included.
+    This flips it from a link, which is the only way to do it on a phone, where there's
+    no console to type into.
 
     The password is checked against its SHA-256 rather than written out, so it isn't
     sitting in the page source. That keeps it from casual eyes, nothing more: a single
     word can be guessed against a hash, and the switch is only a convenience anyway.
 
-    It has to run before Umami, which is why it sits above it and isn't deferred. While
-    the password is being asked for, the switch is already on, so the visit carrying
-    the link isn't counted whatever the answer. A wrong answer puts the switch back the
+    It's inline, so it runs before the tracker, which is a deferred module. While the
+    password is being asked for, the switch is already on, so the visit carrying the
+    link isn't counted whatever the answer. A wrong answer puts the switch back the
     way it was and sends you to the homepage. */}
 <script is:inline>
   (() => {
@@ -130,42 +128,3 @@ const preview = image ? new URL(image, site.url).href : undefined;
     });
   })();
 </script>
-
-{/* Keeps headless browsers out of the numbers. The ones that visit run JavaScript, so
-    the tracker counts them like anyone else: one page, no referrer, desktop Chrome,
-    from datacenter cities.
-
-    Umami calls the function named in data-before-send before every send and drops the
-    send when it gets back nothing. This one drops it for a browser under automation
-    (navigator.webdriver, which Puppeteer, Playwright and Selenium all set) or one with
-    no screen at all. Where someone is, or what time zone they're in, is no test: real
-    visitors live in those places too.
-
-    On window before the tracker loads, which is why it's inline and not a bundled
-    module: a module is deferred, and could arrive after the first pageview went out. */}
-<script is:inline>
-  window.umamiBeforeSend = (_type, payload) =>
-    navigator.webdriver || !screen.width || !screen.height ? false : payload;
-</script>
-
-{/* Pageview counter. is:inline keeps Astro's hands off it, so the data- attributes it
-    reads itself survive.
-
-    data-domains: Umami counts localhost by default, so this limits it to the live
-    hostname and working on the site stays out of the numbers.
-
-    Umami also follows the address bar, and the portfolio's filters and search write
-    into it (?f=unity,python&q=war). Each of those is counted as a view of its own on
-    purpose: it's the record of what people filter and search for. */}
-{
-  track && site.analytics.umami && (
-    <script
-      is:inline
-      defer
-      src="https://cloud.umami.is/script.js"
-      data-website-id={site.analytics.umami}
-      data-domains={new URL(site.url).hostname}
-      data-before-send="umamiBeforeSend"
-    />
-  )
-}

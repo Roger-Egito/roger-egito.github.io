@@ -9,7 +9,7 @@ export interface Link {
   /** Shorter wording for the hover label, where space is tight. Defaults to label. */
   tip?: string;
   url: string;
-  /** Sent to Umami as a click event of this name, for links worth counting. */
+  /** Sent to the collector as a click event of this name, for links worth counting. */
   event?: string;
 }
 
@@ -33,13 +33,14 @@ export const site = {
   contactAction: 'https://formspree.io/f/xldnwyla',
 
   /**
-   * Pageview counter. Cookieless and collects nothing personal, so there's no consent
-   * banner to put up.
+   * Visit counter: the site's own collector, a Cloudflare Worker in collector/. No
+   * cookies and nothing personal stored, so there's no consent banner to put up.
    *
-   * umami: the website ID from Umami Cloud, stats at https://cloud.umami.is
+   * collector: the Worker's address, with no slash at the end. Empty sends nothing.
+   * The numbers are read on the /umami page, with the collector's read key.
    */
   analytics: {
-    umami: '913e43fb-62a5-46f8-8ce3-3249ef11d660',
+    collector: 'https://portfolio-data.roger-egito.workers.dev',
   },
 
   footerNote: 'Everything here I made alone or as part of a team. Work under NDA isn\'t shown.',

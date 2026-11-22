@@ -13,6 +13,9 @@ import type { ClassifiedSession, Kind, UmamiEvent, Visit } from './sessions.ts';
 
 export const kinds: Kind[] = ['real', 'me', 'bot'];
 
+/** The collector's event type for a visitor leaving a page (collector/src/core.ts). */
+export const LEAVE = 9;
+
 /** Everything a visit can be filtered or broken down by. */
 export type Dimension =
   | 'visitor'
@@ -82,7 +85,11 @@ export interface VisitRow {
 /** One pageview inside a visit, with how long the next one took to come. */
 export interface Step {
   view: UmamiEvent;
-  /** Null for the last page of a visit: nothing came after it to measure against. */
+  /**
+   * Until the next page, or for the last page of a visit, until the visitor left it (a
+   * leave event, which the site's own collector sends and Umami never did). Null when
+   * there's neither: an Umami-era visit's last page.
+   */
   timeOnPage: number | null;
   /** Custom events fired on this page before the next one. */
   events: UmamiEvent[];
@@ -117,12 +124,18 @@ export function visitRows(sessions: ClassifiedSession[], timeZone: string): Visi
   const rows: VisitRow[] = [];
   for (const session of sessions) {
     for (const visit of session.visits) {
+      // The visitor's last leave, if they left after the visit's last page opened.
+      const lastView = visit.pageviews.at(-1);
+      const leftAt = lastView
+        ? visit.events.filter((e) => e.eventType === LEAVE && e.createdAt >= lastView.createdAt).at(-1)?.createdAt
+        : undefined;
       const steps: Step[] = visit.pageviews.map((view, i) => {
         const next = visit.pageviews[i + 1];
         const until = next?.createdAt.getTime() ?? Infinity;
+        const end = next?.createdAt ?? leftAt;
         return {
           view,
-          timeOnPage: next ? next.createdAt.getTime() - view.createdAt.getTime() : null,
+          timeOnPage: end ? end.getTime() - view.createdAt.getTime() : null,
           events: visit.events.filter(
             (event) =>
               event.eventType === 2 &&

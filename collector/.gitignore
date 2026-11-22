@@ -1,0 +1,5 @@
+node_modules/
+# Local D1 data and build output from `wrangler dev`.
+.wrangler/
+# Local secrets for `wrangler dev`. The real ones live in Cloudflare.
+.dev.vars

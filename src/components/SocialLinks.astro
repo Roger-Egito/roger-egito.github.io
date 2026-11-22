@@ -25,7 +25,7 @@ const links: Link[] = [...site.social, ...site.links];
           class="btn-social"
           aria-label={link.label}
           data-tip={tips ? (link.tip ?? link.label) : undefined}
-          data-umami-event={link.event}
+          data-event={link.event}
         >
           <Icon name={link.icon} />
         </a>

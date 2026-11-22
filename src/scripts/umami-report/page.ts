@@ -15,13 +15,14 @@
  * enough that it's instant, and no section can disagree with another about what's
  * filtered. The search box is the exception, so typing never loses focus.
  *
- * The files are read with the File API and never leave the browser: no fetch, no upload.
- * The last export is kept in this browser's local storage, so a reload doesn't need the
- * files again, and "Forget" removes it.
+ * Data comes from the site's own collector (collector/), read with a key, and from Umami
+ * exports kept as history from before it. Dropped files are read with the File API and
+ * never leave the browser; the only request the page makes is to the collector.
  */
 import { readExport, type DroppedFile } from '../../lib/umami-report/archive.ts';
 import { parseRecords, type CsvRecord } from '../../lib/umami-report/csv.ts';
 import { reportConfig } from '../../lib/umami-report/config.ts';
+import { site } from '../../config/site';
 import {
   buildSessions, classifyAll, kindLabel, readEvents,
   type ClassifiedSession, type Kind, type Session, type UmamiEvent,
@@ -37,10 +38,21 @@ import { clockTime, day, duration, el, hideTip, key, kindNames, moment, number, 
 import { table, type SortState } from './table.ts';
 
 const TZ = reportConfig.timeZone;
-const STORE = { overrides: 'umami-report:overrides', view: 'umami-report:view', data: 'umami-report:export' };
+const STORE = {
+  overrides: 'umami-report:overrides',
+  view: 'umami-report:view',
+  /** The Umami history: exports from before the site had its own collector. */
+  data: 'umami-report:export',
+  /** The collector's read key, and its address when it isn't the one in site.ts. */
+  key: 'umami-report:key',
+  collector: 'umami-report:collector',
+  /** This browser's id for the collector, which emails Roger to approve each new one. */
+  device: 'umami-report:device',
+};
 
 const $ = <T extends HTMLElement>(selector: string) => document.querySelector<T>(selector)!;
 const loadZone = $<HTMLElement>('[data-report-load]');
+const connect = $<HTMLFormElement>('[data-report-connect]');
 const input = $<HTMLInputElement>('[data-report-files]');
 const status = $<HTMLElement>('[data-report-status]');
 const app = $<HTMLElement>('[data-report-app]');
@@ -396,16 +408,28 @@ function dataMenu() {
   const s = classificationSummary(classified);
   const changed = classified.filter((c) => c.kind !== c.ruled.kind).length;
   return menu('data', el('span', {}, '⋯'), () => {
-    const again = el('button', { type: 'button', class: 'button' }, 'Load another export');
+    const reload = el('button', { type: 'button', class: 'button primary', disabled: !readKey() }, 'Refresh live data');
+    reload.addEventListener('click', () => {
+      openMenu = null;
+      void refresh();
+    });
+    const disconnect = el('button', { type: 'button', class: 'button', disabled: !readKey() }, 'Disconnect');
+    disconnect.addEventListener('click', () => {
+      write(STORE.key, null);
+      live = null;
+      openMenu = null;
+      status.textContent = 'Disconnected. The read key is no longer kept in this browser.';
+      rebuild();
+    });
+    const again = el('button', { type: 'button', class: 'button' }, history ? 'Replace Umami history' : 'Load Umami export');
     again.addEventListener('click', () => input.click());
-    const forget = el('button', { type: 'button', class: 'button' }, 'Forget saved export');
+    const forget = el('button', { type: 'button', class: 'button', disabled: !history }, 'Forget Umami history');
     forget.addEventListener('click', () => {
       write(STORE.data, null);
-      loaded = null;
+      history = null;
       openMenu = null;
-      app.hidden = true;
-      loadZone.hidden = false;
-      status.textContent = 'Forgotten. Nothing from the export is kept in this browser now.';
+      status.textContent = 'Forgotten. No Umami export is kept in this browser now.';
+      rebuild();
     });
     const clear = el('button', { type: 'button', class: 'button', disabled: Object.keys(overrides).length === 0 }, `Clear hand changes (${changed})`);
     clear.addEventListener('click', () => {
@@ -416,7 +440,12 @@ function dataMenu() {
     });
     const figure = (value: string, label: string) => el('div', { class: 'figure' }, el('strong', {}, value), el('span', {}, label));
     return [
-      el('p', { class: 'menu-title' }, 'Whole export'),
+      el('p', { class: 'menu-title' }, 'Data'),
+      el('p', { class: 'muted small' }, loaded!.note),
+      el('div', { class: 'menu-actions' }, reload, disconnect),
+      el('div', { class: 'menu-actions' }, again, forget),
+      el('div', { class: 'menu-rule' }),
+      el('p', { class: 'menu-title' }, 'Everything loaded'),
       el(
         'div',
         { class: 'figures' },
@@ -426,8 +455,7 @@ function dataMenu() {
         figure(number(s.realSessions), 'Real sessions'),
         figure(number(s.realPageviews), 'Real pageviews')
       ),
-      el('p', { class: 'muted small' }, loaded!.note),
-      el('div', { class: 'menu-actions' }, again, forget, clear),
+      el('div', { class: 'menu-actions' }, clear),
     ];
   }, 'data-menu');
 }
@@ -1009,6 +1037,17 @@ function drawMain() {
 
 /* --- loading --------------------------------------------------------------------- */
 
+/**
+ * Two sources, read into one dataset:
+ *
+ *   - history: Umami exports dropped on the page, from before the site had its own
+ *     collector. Kept in this browser, so they never need dropping again.
+ *   - live: everything the collector has, read with the key on every load and on
+ *     Refresh. Only the key and the collector's address are kept, not the data.
+ *
+ * Both use Umami's column names, so they go through the same readEvents. An event in
+ * both (an export taken after the switch) is counted once, by its id.
+ */
 interface Saved {
   websiteEvent: string;
   eventData?: string;
@@ -1016,24 +1055,126 @@ interface Saved {
   names: string;
 }
 
-function use(saved: Saved) {
-  const records = parseRecords(saved.websiteEvent);
+interface Live {
+  records: CsvRecord[];
+  eventData: CsvRecord[];
+  fetchedAt: Date;
+}
+
+let history: Saved | null = read<Saved | null>(STORE.data, null);
+let live: Live | null = null;
+
+/** Where the collector is: the address in site.ts, unless this browser was given another. */
+const collectorUrl = () => read<string>(STORE.collector, '') || site.analytics.collector;
+const readKey = () => read<string>(STORE.key, '');
+
+/** JSON values as the CSV parser would have given them: text, or null for nothing. */
+const asRecord = (row: Record<string, unknown>): CsvRecord =>
+  Object.fromEntries(Object.entries(row).map(([k, v]) => [k, v === null || v === undefined ? null : String(v)]));
+
+/** This browser's device id: 64 random hex characters, made on its first read and kept. */
+function deviceId() {
+  const kept = read<string>(STORE.device, '');
+  if (/^[0-9a-f]{64}$/.test(kept)) return kept;
+  const made = [...crypto.getRandomValues(new Uint8Array(32))].map((b) => b.toString(16).padStart(2, '0')).join('');
+  write(STORE.device, made);
+  return made;
+}
+
+/** The collector said no. pending: the key was right, and an approval email went out. */
+class Refused extends Error {
+  constructor(message: string, readonly pending = false) {
+    super(message);
+  }
+}
+
+/** What each of the collector's device answers means here (collector/src/index.ts, approved). */
+const DEVICE_ANSWERS: Record<string, string> = {
+  pending: 'This browser needs your approval. Open the email the collector sent, approve it, then reload this page.',
+  denied: 'This browser was denied access to the collector.',
+  capped: 'The collector already sent today’s approval emails. Try again tomorrow.',
+  'email-failed': 'The collector couldn’t send the approval email. Try again in a while.',
+};
+
+/** Every event the collector has, a page at a time. */
+async function fetchLive(url: string, key: string): Promise<Live> {
+  const records: CsvRecord[] = [];
+  const eventData: CsvRecord[] = [];
+  let since = '';
+  for (let page = 0; page < 200; page++) {
+    const response = await fetch(`${url.replace(/\/$/, '')}/v1/export?since=${encodeURIComponent(since)}`, {
+      headers: { Authorization: `Bearer ${key}`, 'X-Device': deviceId() },
+    });
+    if (response.status === 401) throw new Error('The collector didn’t accept that key.');
+    if (response.status === 429) {
+      // Three wrong keys from this network in an hour (collector/src/index.ts, admit).
+      const minutes = Math.ceil(Number(response.headers.get('Retry-After') ?? 3600) / 60);
+      throw new Error(`Too many wrong keys from this network. Try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`);
+    }
+    if (response.status === 403 || response.status === 502) {
+      const answer = ((await response.json().catch(() => ({}))) as { status?: string }).status ?? '';
+      throw new Refused(DEVICE_ANSWERS[answer] ?? `The collector answered ${response.status}.`, answer === 'pending');
+    }
+    if (!response.ok) throw new Error(`The collector answered ${response.status}.`);
+    const body = (await response.json()) as { website_event: Record<string, unknown>[]; event_data: Record<string, unknown>[]; next: string | null };
+    records.push(...body.website_event.map(asRecord));
+    eventData.push(...body.event_data.map(asRecord));
+    if (!body.next) break;
+    since = body.next;
+  }
+  return { records, eventData, fetchedAt: new Date() };
+}
+
+/** Builds the dataset from whatever sources there are, and draws it. */
+function rebuild() {
+  const historyRecords = history ? parseRecords(history.websiteEvent) : [];
+  const historyData = history?.eventData ? parseRecords(history.eventData) : [];
+  const seen = new Set<string>();
+  const records = [...historyRecords, ...(live?.records ?? [])].filter((row) => {
+    const id = row.event_id ?? '';
+    if (!id) return true;
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+  const eventData = [...historyData, ...(live?.eventData ?? [])];
+  if (records.length === 0) {
+    loaded = null;
+    app.hidden = true;
+    loadZone.hidden = false;
+    connect.hidden = false;
+    return;
+  }
+
   const sessions = buildSessions(readEvents(records), reportConfig);
-  const eventData = saved.eventData ? parseRecords(saved.eventData) : [];
   const first = sessions[0]?.start;
   const last = sessions.reduce((latest, s) => (s.end > latest ? s.end : latest), first ?? new Date(0));
   const note = [
-    `${saved.names}.`,
-    `${number(records.length)} events, ${first ? `${moment(first, TZ)} to ${moment(last, TZ)}` : 'none'}.`,
-    saved.eventData ? `event_data.csv: ${number(eventData.length)} rows.` : 'No event_data.csv.',
-    saved.sessionData ? 'session_data.csv only holds identify() data, which the site doesn’t send, so it isn’t used.' : '',
-  ].filter(Boolean).join(' ');
-  loaded = { sessions, eventData, properties: eventProperties(eventData), hasEventData: Boolean(saved.eventData), note };
+    history ? `Umami history: ${history.names}, ${number(historyRecords.length)} events.` : 'No Umami history loaded.',
+    live ? `Live: ${number(live.records.length)} events, read ${moment(live.fetchedAt, TZ)}.` : 'Not connected to the collector.',
+    `Together ${first ? `${moment(first, TZ)} to ${moment(last, TZ)}` : 'nothing'}.`,
+  ].join(' ');
+  loaded = { sessions, eventData, properties: eventProperties(eventData), hasEventData: eventData.length > 0 || Boolean(live), note };
   classify();
   loadZone.hidden = true;
+  connect.hidden = true;
   app.hidden = false;
-  status.textContent = '';
   update();
+}
+
+/** Reads the collector and redraws. Reports what went wrong in the status line. */
+async function refresh() {
+  const url = collectorUrl();
+  const key = readKey();
+  if (!url || !key) return;
+  status.textContent = 'Reading the collector…';
+  try {
+    live = await fetchLive(url, key);
+    status.textContent = '';
+  } catch (error) {
+    status.textContent = `${(error as Error).message} Showing what this browser already has.`;
+  }
+  rebuild();
 }
 
 async function load(files: File[]) {
@@ -1046,19 +1187,19 @@ async function load(files: File[]) {
       status.textContent = `No website_event.csv in ${files.map((f) => f.name).join(', ')}.`;
       return;
     }
-    const saved: Saved = {
+    history = {
       websiteEvent: found.websiteEvent,
       eventData: found.eventData,
       sessionData: Boolean(found.sessionData),
-      names: `Read ${files.map((f) => f.name).join(', ')}` + (found.ignored.length ? ` (skipped ${found.ignored.join(', ')})` : ''),
+      names: files.map((f) => f.name).join(', ') + (found.ignored.length ? ` (skipped ${found.ignored.join(', ')})` : ''),
     };
-    // A new export starts from a clean view: old dates and people wouldn't match it.
+    // New data starts from a clean view: old dates and people might not match it.
     view = { ...defaultView(), sorts: view.sorts, count: view.count, cardTabs: view.cardTabs, peopleOrder: view.peopleOrder };
     openMenu = null;
     expanded.clear();
     open.clear();
-    use(saved);
-    if (!write(STORE.data, saved)) status.textContent = 'Too big to keep in this browser: it will need loading again after a reload.';
+    status.textContent = write(STORE.data, history) ? '' : 'Too big to keep in this browser: it will need loading again after a reload.';
+    rebuild();
   } catch (error) {
     status.textContent = `Couldn’t read that: ${(error as Error).message}`;
   }
@@ -1078,12 +1219,44 @@ document.body.addEventListener('drop', (event) => {
 });
 loadZone.addEventListener('dragleave', () => delete loadZone.dataset.over);
 
-// The export from last time, if this browser kept it.
-const saved = read<Saved | null>(STORE.data, null);
-if (saved?.websiteEvent) {
+// The first screen's live-data form: the collector's address (from site.ts, editable)
+// and the read key. Both are kept in this browser once they work.
+const connectUrl = connect.querySelector<HTMLInputElement>('[name="collector"]')!;
+const connectKey = connect.querySelector<HTMLInputElement>('[name="key"]')!;
+connectUrl.value = collectorUrl();
+connect.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const url = connectUrl.value.trim().replace(/\/$/, '');
+  const key = connectKey.value.trim();
+  if (!url || !key) return;
+  status.textContent = 'Reading the collector…';
   try {
-    use(saved);
+    live = await fetchLive(url, key);
+  } catch (error) {
+    status.textContent = (error as Error).message;
+    // The key was right and the browser only waits for approval: keep both, so a
+    // reload after approving reads the data without typing the key again.
+    if (error instanceof Refused && error.pending) {
+      write(STORE.key, key);
+      write(STORE.collector, url === site.analytics.collector ? null : url);
+      connectKey.value = '';
+    }
+    return;
+  }
+  write(STORE.key, key);
+  write(STORE.collector, url === site.analytics.collector ? null : url);
+  connectKey.value = '';
+  status.textContent = '';
+  rebuild();
+});
+
+// What this browser already has: the history at once, then the live data on top.
+if (history || readKey()) {
+  try {
+    if (history) rebuild();
   } catch {
+    history = null;
     write(STORE.data, null);
   }
+  if (readKey()) void refresh();
 }

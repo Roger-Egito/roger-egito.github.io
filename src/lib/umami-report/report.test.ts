@@ -55,6 +55,10 @@ test('a datacenter city with more than one page is a real visitor', () => {
   assert.equal(kindOf('real-dulles'), 'real');
 });
 
+test('a city written without its accent still matches the rules', () => {
+  assert.equal(kindOf('me-collector'), 'me');
+});
+
 test('a headless screen is a bot on its own, referrer or not', () => {
   assert.equal(kindOf('bot-bing'), 'bot');
 });
@@ -100,6 +104,13 @@ test('a session splits into its visits, each with its own source and duration', 
   assert.equal(linkedin.source, 'LinkedIn'); // the visitor still arrived from LinkedIn first
 });
 
+test('a leave event gives the last page of a visit its time, and is never a view', () => {
+  const row = rows.find((r) => r.session.id === 'me-collector')!;
+  assert.deepEqual(row.steps.map((s) => s.timeOnPage), [30_000, 90_000]);
+  assert.equal(row.visit.pageviews.length, 2);
+  assert.deepEqual(row.steps.flatMap((s) => s.events), []);
+});
+
 test('time on page runs to the next view; the last page of a visit has none', () => {
   const dulles = rows.find((r) => r.session.id === 'real-dulles')!;
   assert.deepEqual(dulles.steps.map((s) => s.timeOnPage), [40_000, 80_000, null]);
@@ -111,9 +122,9 @@ test('time on page runs to the next view; the last page of a visit has none', ()
 
 test('the five headline numbers, for the whole export', () => {
   assert.deepEqual(classificationSummary(sessions), {
-    pageviews: 17, // the store click is an event, not a pageview
-    myPageviews: 6,
-    myShare: 6 / 17,
+    pageviews: 19, // the store click and the leave are events, not pageviews
+    myPageviews: 8,
+    myShare: 8 / 19,
     botSessions: 3,
     realSessions: 3,
     realPageviews: 8,
@@ -179,7 +190,7 @@ test('weeks start on Monday, São Paulo time, with empty buckets filled', () => 
     [
       ['2026-09-21', 5, 1, 0],
       ['2026-09-28', 0, 1, 3],
-      ['2026-10-05', 1, 1, 5],
+      ['2026-10-05', 3, 1, 5],
     ]
   );
   // The returning recruiter is one visitor in the week of Oct 5, with two visits.

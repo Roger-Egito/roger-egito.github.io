@@ -220,10 +220,10 @@ const plain = (value: string) =>
                           href={url}
                           target="_blank"
                           rel="noopener"
-                          data-umami-event="store-click"
-                          data-umami-event-game={game.id}
-                          data-umami-event-store={store.id}
-                          data-umami-event-place="card"
+                          data-event="store-click"
+                          data-event-game={game.id}
+                          data-event-store={store.id}
+                          data-event-place="card"
                         >
                           <TagIcon tag={store} inline />
                           <span>Go to {store.label}'s store page.</span>

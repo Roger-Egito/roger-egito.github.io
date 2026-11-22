@@ -1,0 +1,25 @@
+# The site's analytics collector. See src/index.ts for what it does and README.md for
+# setting it up.
+#
+# The name is plain on purpose: ad blockers drop requests to names with "analytics",
+# "track" or "collect" in them, and that would leave visitors uncounted.
+name = "portfolio-data"
+main = "src/index.ts"
+compatibility_date = "2026-11-01"
+# Served at https://portfolio-data.roger-egito.workers.dev, the address in src/config/site.ts.
+workers_dev = true
+# No extra per-version addresses: the one above is the only way in.
+preview_urls = false
+
+[vars]
+# Only the site itself may send events or read them back from a browser.
+SITE_ORIGIN = "https://roger-egito.github.io"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "portfolio-events"
+# Filled in from the output of `npx wrangler d1 create portfolio-events`.
+database_id = "d9c1d863-2cde-4dc2-a46a-78a12fa822af"
+
+# READ_KEY and SALT_SECRET are secrets, set with `npx wrangler secret put` and never
+# written here. For local runs they come from .dev.vars, which git ignores.

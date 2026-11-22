@@ -183,8 +183,14 @@ export function buildSessions(events: UmamiEvent[], config: ReportConfig): Sessi
     .sort((a, b) => a.start.getTime() - b.start.getTime());
 }
 
+/**
+ * Lowercase and without accents, so "Niteroi" from one source matches "Niterói" from
+ * another: Umami and Cloudflare don't always write a city the same way.
+ */
+const fold = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
 const same = (value: string | null, list: string[]) =>
-  value !== null && list.some((entry) => entry.toLowerCase() === value.toLowerCase());
+  value !== null && list.some((entry) => fold(entry) === fold(value));
 
 /** Whether a session matches every field a device rule lists. */
 function matchesDevice(session: Session, rule: DeviceRule) {

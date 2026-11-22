@@ -200,8 +200,8 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
           type="button"
           class="game-start"
           data-play
-          data-umami-event="play-build"
-          data-umami-event-game={game.id}
+          data-event="play-build"
+          data-event-game={game.id}
           aria-label={`Play ${plainTitle} right here`}
           aria-describedby={d.gameDescription ? `${game.id}-play-note` : undefined}
         >
@@ -336,10 +336,10 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
             href={link.url}
             target="_blank"
             rel="noopener"
-            data-umami-event="store-click"
-            data-umami-event-game={game.id}
-            data-umami-event-store={link.store.id}
-            data-umami-event-place="article"
+            data-event="store-click"
+            data-event-game={game.id}
+            data-event-store={link.store.id}
+            data-event-place="article"
           >
             Link to {link.store.label} Page
           </a>

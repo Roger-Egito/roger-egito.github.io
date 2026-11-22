@@ -24,10 +24,25 @@ export function getStaticPaths() {
     <label class="drop" data-report-load>
       <input type="file" multiple accept=".gz,.tgz,.tar,.zip,.csv" data-report-files class="visually-hidden" />
       <span class="drop-icon" aria-hidden="true">⇪</span>
-      <strong>Drop your Umami export here</strong>
-      <span class="muted">or click to choose it. The .gz as it downloads, or website_event.csv with event_data.csv.</span>
+      <strong>Drop an Umami export here</strong>
+      <span class="muted">or click to choose it: the history from before the site had its own collector.</span>
       <span class="muted small">Read in this browser only: nothing is uploaded anywhere.</span>
     </label>
+
+    {/* The live data: the site's own collector, read with its key. page.ts keeps the key
+        in this browser once it works, and reads the collector on every visit after. */}
+    <form class="connect" data-report-connect>
+      <strong>Or connect to the collector</strong>
+      <label>
+        <span class="muted small">Collector address</span>
+        <input name="collector" type="url" placeholder="https://portfolio-data….workers.dev" required />
+      </label>
+      <label>
+        <span class="muted small">Read key</span>
+        <input name="key" type="password" autocomplete="off" required />
+      </label>
+      <button type="submit" class="button primary">Connect</button>
+    </form>
     <p class="status" data-report-status aria-live="polite"></p>
 
     <div class="app" data-report-app hidden>
@@ -166,8 +181,42 @@ export function getStaticPaths() {
     background: var(--raised);
   }
 
-  .report .drop[hidden] {
+  .report .drop[hidden],
+  .report .connect[hidden] {
     display: none;
+  }
+
+  .report .connect {
+    display: grid;
+    gap: 10px;
+    max-width: 640px;
+    margin: 16px auto 0;
+    padding: 22px 28px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--card);
+  }
+
+  .report .connect strong {
+    color: var(--ink);
+  }
+
+  .report .connect label {
+    display: grid;
+    gap: 4px;
+  }
+
+  .report .connect input {
+    height: 34px;
+    padding: 0 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    background: var(--page);
+    color: var(--ink);
+  }
+
+  .report .connect button {
+    justify-self: start;
   }
 
   .report .drop strong {

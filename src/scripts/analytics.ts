@@ -1,7 +1,7 @@
 /**
- * The views Umami can't see on its own.
+ * The views the tracker can't see on its own.
  *
- * Umami counts a page view on every load and every change to the address bar, so the
+ * The tracker counts a page view on every load and every change to the address bar, so the
  * homepage, every game page and every game dialog (which puts /games/<slug>/ in the
  * address) are already covered. Two things never touch the address bar:
  *
@@ -11,24 +11,16 @@
  * Both are sent here as page views with a path of their own, /about and the PDF's,
  * so they sit in the same Pages list as everything else instead of under events.
  *
- * Nothing here checks the no-track switch: umami.track does that itself, on every
- * call, so a browser switched off with ?no-track stays off for these too.
+ * Nothing here checks the no-track switch: the tracker does that itself, on every
+ * send, so a browser switched off with ?no-track stays off for these too.
  *
  * What this can't cover: someone opening the CV's address directly, from a link
  * shared elsewhere, never loads a page with this script on it.
  */
-export {};
-
-type Umami = {
-  track: (payload: (props: Record<string, unknown>) => Record<string, unknown>) => void;
-};
+import { pageview } from './tracker';
 
 /** Sends a page view for a path the address bar never shows. */
-const view = (url: string, title: string) => {
-  // Undefined when Umami was blocked or hasn't loaded, which costs one view, not a crash.
-  const umami = (window as unknown as { umami?: Umami }).umami;
-  umami?.track((props) => ({ ...props, url, title }));
-};
+const view = (url: string, title: string) => pageview(url, title);
 
 /* --- the About dialog ------------------------------------------------------------ */
 
