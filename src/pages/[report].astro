@@ -1,11 +1,12 @@
 ---
 /**
- * The analytics report: drop an Umami Cloud export on it and it shows who visited, what
- * each person did, and every way of slicing it.
+ * The analytics report: reads the site's own collector and shows who visited, what each
+ * person did, and every way of slicing it.
  *
  * Kept out of the way, not locked (GitHub Pages can't do passwords): noindex, out of the
  * sitemap and the nav, and no tracker. That's enough because the page holds no data.
- * The export is read in the browser, in page.ts, and nothing is sent anywhere.
+ * The data comes from the collector, and only with the read key from a browser approved
+ * by email (collector/src/index.ts).
  *
  * A dynamic route with one path, so the URL is written in one place:
  * src/config/private.ts, which the sitemap filter reads too.
@@ -21,18 +22,11 @@ export function getStaticPaths() {
 
 <Base title="Analytics" track={false} noindex>
   <div class="report">
-    <label class="drop" data-report-load>
-      <input type="file" multiple accept=".gz,.tgz,.tar,.zip,.csv" data-report-files class="visually-hidden" />
-      <span class="drop-icon" aria-hidden="true">⇪</span>
-      <strong>Drop an Umami export here</strong>
-      <span class="muted">or click to choose it: the history from before the site had its own collector.</span>
-      <span class="muted small">Read in this browser only: nothing is uploaded anywhere.</span>
-    </label>
-
-    {/* The live data: the site's own collector, read with its key. page.ts keeps the key
-        in this browser once it works, and reads the collector on every visit after. */}
-    <form class="connect" data-report-connect>
-      <strong>Or connect to the collector</strong>
+    {/* The site's own collector, read with its key. page.ts keeps the key in this
+        browser once it works, and reads the collector on every visit after. Hidden
+        until page.ts knows it's needed, so a kept key never flashes the form. */}
+    <form class="connect" data-report-connect hidden>
+      <strong>Connect to the collector</strong>
       <label>
         <span class="muted small">Collector address</span>
         <input name="collector" type="url" placeholder="https://portfolio-data….workers.dev" required />
@@ -157,31 +151,8 @@ export function getStaticPaths() {
     cursor: var(--cursor-default);
   }
 
-  /* --- first screen: the drop zone ----------------------------------------------- */
+  /* --- first screen: connecting to the collector -------------------------------- */
 
-  .report .drop {
-    display: grid;
-    place-items: center;
-    gap: 6px;
-    max-width: 640px;
-    margin: 12vh auto 0;
-    padding: 56px 28px;
-    border: 1.5px dashed var(--line-strong);
-    border-radius: 16px;
-    background: var(--card);
-    color: var(--ink-2);
-    text-align: center;
-    cursor: var(--cursor-pointer);
-    transition: border-color 0.2s, background-color 0.2s;
-  }
-
-  .report .drop:hover,
-  .report .drop[data-over] {
-    border-color: var(--kind-real);
-    background: var(--raised);
-  }
-
-  .report .drop[hidden],
   .report .connect[hidden] {
     display: none;
   }
@@ -190,7 +161,7 @@ export function getStaticPaths() {
     display: grid;
     gap: 10px;
     max-width: 640px;
-    margin: 16px auto 0;
+    margin: 12vh auto 0;
     padding: 22px 28px;
     border: 1px solid var(--line);
     border-radius: 16px;
@@ -217,16 +188,6 @@ export function getStaticPaths() {
 
   .report .connect button {
     justify-self: start;
-  }
-
-  .report .drop strong {
-    color: var(--ink);
-    font-size: 18px;
-  }
-
-  .report .drop-icon {
-    color: var(--ink-3);
-    font-size: 30px;
   }
 
   .report .status {

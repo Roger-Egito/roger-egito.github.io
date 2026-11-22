@@ -5,12 +5,11 @@ import assert from 'node:assert/strict';
 import { parseCsv, parseRecords } from './csv.ts';
 import { buildSessions, classifyAll, readEvents, sourceOf } from './sessions.ts';
 import {
-  applyFilters, breakdown, classificationSummary, durations, events, filterUsage, filtersIn,
+  applyFilters, autoGranularity, breakdown, classificationSummary, durations, events, filterUsage, filtersIn,
   eventProperties, heatmap, mondayOf, noFilters, pages, personPages, searchUsage, timeline, totals,
   visitRows, visitors,
   type Filters,
 } from './explore.ts';
-import { readExport } from './archive.ts';
 import { reportConfig } from './config.ts';
 import { eventDataCsv, websiteEventCsv } from './fixtures.ts';
 
@@ -201,6 +200,23 @@ test('weeks start on Monday, São Paulo time, with empty buckets filled', () => 
   assert.deepEqual([days[0].key, days[0].views.real, days[1].views.real], ['2026-10-02', 3, 0]);
 });
 
+test('a period picked runs the chart across all of it, quiet days included', () => {
+  const span = { from: '2026-10-01', to: '2026-10-10' };
+  const days = timeline(only({ kinds: ['real'], ...span }), 'day', zone, span);
+  assert.deepEqual([days.length, days[0].key, days.at(-1)!.key], [10, '2026-10-01', '2026-10-10']);
+  // Today only: the day's 24 hours, whatever hour the visits came at.
+  const today = { from: '2026-10-02', to: '2026-10-02' };
+  const hours = timeline(only({ kinds: ['real'], ...today }), 'hour', zone, today);
+  assert.deepEqual([hours.length, hours[0].key, hours.at(-1)!.key], [24, '2026-10-02 00', '2026-10-02 23']);
+});
+
+test('the bucket size follows the period picked, or the data when none is', () => {
+  assert.equal(autoGranularity(real, { from: '2026-10-02', to: '2026-10-02' }), 'hour');
+  assert.equal(autoGranularity(real, { from: '2026-09-25', to: '2026-10-24' }), 'day');
+  assert.equal(autoGranularity(real, { from: '2026-01-01', to: '2026-10-24' }), 'week');
+  assert.equal(autoGranularity(real), 'day'); // Oct 2 to Oct 8
+});
+
 test('heatmap places views by weekday and hour in São Paulo', () => {
   const grid = heatmap(real, zone);
   assert.equal(grid[4][12], 3); // Friday, 12:00 (15:00 UTC)
@@ -258,48 +274,4 @@ test('one person: pages over all their visits, with time and clicks', () => {
     ]
   );
   assert.deepEqual(eventProperties(parseRecords(eventDataCsv)).get('store-click'), ['game: hotel-77', 'store: steam']);
-});
-
-/* --- archive --------------------------------------------------------------------- */
-
-const encoder = new TextEncoder();
-
-/** A one-file tar, the way tar writes it: a 512-byte header, then the data padded to 512. */
-function tarOf(name: string, content: string) {
-  const data = encoder.encode(content);
-  const header = new Uint8Array(512);
-  const put = (at: number, value: string) => header.set(encoder.encode(value), at);
-  put(0, name);
-  put(100, '0000644\0');
-  put(124, `${data.length.toString(8).padStart(11, '0')}\0`);
-  put(156, '0');
-  put(257, 'ustar\0');
-  const body = new Uint8Array(Math.ceil(data.length / 512) * 512);
-  body.set(data);
-  const out = new Uint8Array(512 + body.length + 1024);
-  out.set(header);
-  out.set(body, 512);
-  return out;
-}
-
-const gzip = async (bytes: Uint8Array) =>
-  new Uint8Array(
-    await new Response(new Blob([bytes as BlobPart]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer()
-  );
-
-test('archive: a .gz holding a tar of the CSVs', async () => {
-  const bytes = await gzip(tarOf('export/website_event.csv', websiteEventCsv));
-  const files = await readExport([{ name: 'umami-export.tar.gz', bytes }]);
-  assert.equal(files.websiteEvent, websiteEventCsv);
-});
-
-test('archive: a .gz holding one CSV, and plain CSVs alongside', async () => {
-  const files = await readExport([
-    { name: 'website_event.csv.gz', bytes: await gzip(encoder.encode(websiteEventCsv)) },
-    { name: 'event_data.csv', bytes: encoder.encode(eventDataCsv) },
-    { name: 'notes.txt', bytes: encoder.encode('hi') },
-  ]);
-  assert.equal(files.websiteEvent, websiteEventCsv);
-  assert.equal(files.eventData, eventDataCsv);
-  assert.deepEqual(files.ignored, ['notes.txt']);
 });

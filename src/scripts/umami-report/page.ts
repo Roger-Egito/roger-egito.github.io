@@ -1,6 +1,6 @@
 /**
- * The analytics page: reads the dropped export, keeps the view's state, and draws every
- * tab from the pure modules in src/lib/umami-report.
+ * The analytics page: reads the collector, keeps the view's state, and draws every tab
+ * from the pure modules in src/lib/umami-report.
  *
  * Laid out after tools built for reading a lot of traffic data:
  *
@@ -15,12 +15,11 @@
  * enough that it's instant, and no section can disagree with another about what's
  * filtered. The search box is the exception, so typing never loses focus.
  *
- * Data comes from the site's own collector (collector/), read with a key, and from Umami
- * exports kept as history from before it. Dropped files are read with the File API and
- * never leave the browser; the only request the page makes is to the collector.
+ * All the data comes from the site's own collector (collector/), read with the key from
+ * a browser approved by email. The visits from before it, recorded by Umami, were
+ * imported into it once. The only request the page makes is to the collector.
  */
-import { readExport, type DroppedFile } from '../../lib/umami-report/archive.ts';
-import { parseRecords, type CsvRecord } from '../../lib/umami-report/csv.ts';
+import type { CsvRecord } from '../../lib/umami-report/csv.ts';
 import { reportConfig } from '../../lib/umami-report/config.ts';
 import { site } from '../../config/site';
 import {
@@ -28,10 +27,10 @@ import {
   type ClassifiedSession, type Kind, type Session, type UmamiEvent,
 } from '../../lib/umami-report/sessions.ts';
 import {
-  applyFilters, autoGranularity, breakdown, classificationSummary, dimensionLabels, durations, eventProperties,
-  events, filterUsage, heatmap, kinds, noFilters, pages, personPages, searchUsage, timeline, totals,
+  addDays, applyFilters, autoGranularity, breakdown, classificationSummary, clock, dimensionLabels, durations,
+  eventProperties, events, filterUsage, heatmap, kinds, noFilters, pages, personPages, searchUsage, timeline, totals,
   visitRows, visitors, weekdays,
-  type Dimension, type Filters, type Granularity, type Metric, type VisitRow, type VisitorRow,
+  type Dimension, type Filters, type Metric, type VisitRow, type VisitorRow,
 } from '../../lib/umami-report/explore.ts';
 import { heatmapChart, legend, rankList, stackedColumns, visitStrip } from './charts.ts';
 import { clockTime, day, duration, el, hideTip, key, kindNames, moment, number, percent, segmented, shortDay, type Child } from './dom.ts';
@@ -41,8 +40,6 @@ const TZ = reportConfig.timeZone;
 const STORE = {
   overrides: 'umami-report:overrides',
   view: 'umami-report:view',
-  /** The Umami history: exports from before the site had its own collector. */
-  data: 'umami-report:export',
   /** The collector's read key, and its address when it isn't the one in site.ts. */
   key: 'umami-report:key',
   collector: 'umami-report:collector',
@@ -51,9 +48,7 @@ const STORE = {
 };
 
 const $ = <T extends HTMLElement>(selector: string) => document.querySelector<T>(selector)!;
-const loadZone = $<HTMLElement>('[data-report-load]');
 const connect = $<HTMLFormElement>('[data-report-connect]');
-const input = $<HTMLInputElement>('[data-report-files]');
 const status = $<HTMLElement>('[data-report-status]');
 const app = $<HTMLElement>('[data-report-app]');
 const controls = $<HTMLElement>('[data-report-controls]');
@@ -93,7 +88,6 @@ interface View {
   tab: Tab;
   /** What the chart and the breakdown cards count. */
   count: Count;
-  granularity: Granularity | 'auto';
   /** The tab picked inside each card: { pages: 'entry' }. */
   cardTabs: Record<string, string>;
   sorts: Record<string, SortState>;
@@ -108,7 +102,6 @@ const defaultView = (): View => ({
   filters: startFilters(),
   tab: 'overview',
   count: 'visitors',
-  granularity: 'auto',
   cardTabs: {},
   sorts: {},
   peopleOrder: 'last',
@@ -284,33 +277,46 @@ document.addEventListener('keydown', (event) => {
   for (const details of document.querySelectorAll<HTMLDetailsElement>('.report details.menu[open]')) details.open = false;
 });
 
-const addDays = (date: string, days: number) => {
-  const d = new Date(`${date}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-};
+interface Period {
+  id: 'all' | 'today' | '7' | '30' | '90';
+  label: string;
+  /** The chart's button for it. */
+  short: string;
+  from: string | null;
+  to: string | null;
+}
+
+/**
+ * The periods the date menu and the chart both offer. Each one is just the date filter,
+ * so picking one filters every number on the page. They count back from today, in the
+ * report's zone, since the collector's data runs up to now.
+ */
+function periods(): Period[] {
+  const today = clock(new Date(), TZ).date;
+  return [
+    { id: 'all', label: 'All dates', short: 'All', from: null, to: null },
+    { id: 'today', label: 'Today', short: 'Today', from: today, to: today },
+    { id: '7', label: 'Last 7 days', short: '7 days', from: addDays(today, -6), to: today },
+    { id: '30', label: 'Last 30 days', short: '30 days', from: addDays(today, -29), to: today },
+    { id: '90', label: 'Last 90 days', short: '90 days', from: addDays(today, -89), to: today },
+  ];
+}
+
+const currentPeriod = () => periods().find((p) => p.from === view.filters.from && p.to === view.filters.to);
 
 function dateMenu() {
   const { filters } = view;
   const dates = allRows.map((r) => r.date);
   const first = dates[0] ?? null;
   const last = dates.at(-1) ?? null;
-  // Presets count back from the export's last day, not from today, so an old export
-  // still has something in its "last 7 days".
-  const presets: [string, string | null, string | null][] = [
-    ['All dates', null, null],
-    ['Last 7 days', last && addDays(last, -6), last],
-    ['Last 30 days', last && addDays(last, -29), last],
-    ['Last 90 days', last && addDays(last, -89), last],
-  ];
-  const current = presets.find(([, from, to]) => from === filters.from && to === filters.to);
+  const current = currentPeriod();
   const label = current
-    ? current[0]
+    ? current.label
     : `${filters.from ? shortDay(filters.from) : 'Start'} – ${filters.to ? shortDay(filters.to) : 'end'}`;
 
   return menu('date', el('span', {}, label, el('span', { class: 'caret', 'aria-hidden': 'true' }, '▾')), () => {
-    const rows = presets.map(([text, from, to]) => {
-      const on = current?.[0] === text;
+    const rows = periods().map(({ id, label: text, from, to }) => {
+      const on = current?.id === id;
       const button = el('button', { type: 'button', class: 'menu-row', 'aria-pressed': String(on) }, el('span', { class: 'menu-check' }, on ? '✓' : ''), text);
       button.addEventListener('click', () => {
         openMenu = null;
@@ -329,7 +335,7 @@ function dateMenu() {
       ...rows,
       el('div', { class: 'menu-rule' }),
       el('div', { class: 'menu-custom' }, el('span', { class: 'muted' }, 'Custom range'), el('div', { class: 'menu-dates' }, fromInput, toInput), apply),
-      el('p', { class: 'muted small' }, `This export runs from ${first ? day(first) : '?'} to ${last ? day(last) : '?'}.`),
+      el('p', { class: 'muted small' }, `The data runs from ${first ? day(first) : '?'} to ${last ? day(last) : '?'}.`),
     ];
   }, 'date-menu');
 }
@@ -421,16 +427,6 @@ function dataMenu() {
       status.textContent = 'Disconnected. The read key is no longer kept in this browser.';
       rebuild();
     });
-    const again = el('button', { type: 'button', class: 'button' }, history ? 'Replace Umami history' : 'Load Umami export');
-    again.addEventListener('click', () => input.click());
-    const forget = el('button', { type: 'button', class: 'button', disabled: !history }, 'Forget Umami history');
-    forget.addEventListener('click', () => {
-      write(STORE.data, null);
-      history = null;
-      openMenu = null;
-      status.textContent = 'Forgotten. No Umami export is kept in this browser now.';
-      rebuild();
-    });
     const clear = el('button', { type: 'button', class: 'button', disabled: Object.keys(overrides).length === 0 }, `Clear hand changes (${changed})`);
     clear.addEventListener('click', () => {
       overrides = {};
@@ -443,7 +439,6 @@ function dataMenu() {
       el('p', { class: 'menu-title' }, 'Data'),
       el('p', { class: 'muted small' }, loaded!.note),
       el('div', { class: 'menu-actions' }, reload, disconnect),
-      el('div', { class: 'menu-actions' }, again, forget),
       el('div', { class: 'menu-rule' }),
       el('p', { class: 'menu-title' }, 'Everything loaded'),
       el(
@@ -579,8 +574,10 @@ function cardTabs<T extends string>(name: string, options: [T, string][]): [T, H
 function overview(rows: VisitRow[]) {
   const t = totals(rows);
   const shown = kinds.filter((k) => view.filters.kinds.includes(k));
-  const granularity = view.granularity === 'auto' ? autoGranularity(rows.length ? rows : allRows) : view.granularity;
-  const buckets = timeline(rows, granularity, TZ);
+  // The chart spans the period picked, and its bucket size follows from it.
+  const span = { from: view.filters.from, to: view.filters.to };
+  const granularity = autoGranularity(rows.length ? rows : allRows, span);
+  const buckets = timeline(rows, granularity, TZ, span);
   const hourFilter = view.filters.values.hour ?? [];
 
   // The strip of numbers: the first three choose what the chart counts.
@@ -601,7 +598,7 @@ function overview(rows: VisitRow[]) {
     stat('Views', number(t.views), split((k) => t.byKind[k].views), 'views'),
     stat('Bounce rate', percent(t.bounceRate), `${number(t.bounces)} one-page visits`),
     stat('Visit length', duration(t.medianDuration), `median · avg ${duration(t.averageDuration)}`, undefined, 'Visits that went past one page. The median is the middle visit, so one very long one barely moves it.'),
-    stat('Time on a page', duration(t.medianTimeOnPage), `median · avg ${duration(t.averageTimeOnPage)}`, undefined, 'Over every view with a next page to measure against.')
+    stat('Time on a page', duration(t.medianTimeOnPage), `median · avg ${duration(t.averageTimeOnPage)}`, undefined, 'Over every view whose time is known: until the next page, or until the visitor left. The last page of a visit imported from Umami has none.')
   );
 
   const label = (k: string) => (granularity === 'hour' ? `${shortDay(k.slice(0, 10))} ${k.slice(11)}h` : granularity === 'month' ? k.slice(0, 7) : shortDay(k));
@@ -633,10 +630,18 @@ function overview(rows: VisitRow[]) {
       'div',
       { class: 'chart-bar' },
       shown.length > 1 ? legend(shown) : el('span', { class: 'muted small' }, `${countLabels[view.count]} per ${granularity}`),
-      segmented('Bucket size', [['auto', 'Auto'], ['hour', 'Hour'], ['day', 'Day'], ['week', 'Week'], ['month', 'Month']], view.granularity, (g) => setView({ granularity: g }))
+      segmented(
+        'Period',
+        (['all', '30', '7', 'today'] as const).map((id) => [id, periods().find((p) => p.id === id)!.short]),
+        currentPeriod()?.id ?? '',
+        (id) => {
+          const period = periods().find((p) => p.id === id)!;
+          setFilters({ from: period.from, to: period.to });
+        }
+      )
     ),
     chart,
-    note(`Click a column to keep only that ${granularity}, and again to let go. Times are ${TZ}.`)
+    note(`A period filters everything on the page, like the date menu. Click a column to keep only that ${granularity}, and again to let go. Times are ${TZ}.`)
   );
 
   return [
@@ -875,7 +880,7 @@ function profile(session: ClassifiedSession) {
       el(
         'ol',
         { class: 'events' },
-        ...row.steps.flatMap((step) => [
+        ...row.steps.flatMap((step, i) => [
           el(
             'li',
             { class: 'event' },
@@ -884,7 +889,13 @@ function profile(session: ClassifiedSession) {
             filterLink('page', step.view.urlPath, pathWithQuery(step.view.urlPath, step.view.urlQuery)),
             el(
               'span',
-              { class: 'stay', title: step.timeOnPage === null ? 'Nothing came after it, so how long they stayed is unknown' : 'Until the next page' },
+              {
+                class: 'stay',
+                title:
+                  step.timeOnPage === null
+                    ? 'A visit imported from Umami, which didn’t record leaving, so how long they stayed is unknown'
+                    : i === row.steps.length - 1 ? 'Until they left the site' : 'Until the next page',
+              },
               step.timeOnPage === null ? null : el('span', { class: 'stay-bar', style: `width:${Math.max(2, (step.timeOnPage / longest) * 100)}%` }),
               el('span', { class: 'stay-text' }, step.timeOnPage === null ? 'left here' : duration(step.timeOnPage))
             )
@@ -922,7 +933,7 @@ function profile(session: ClassifiedSession) {
     ),
     el('h3', {}, 'Activity'),
     el('ol', { class: 'activity' }, ...activity),
-    el('p', { class: 'note' }, 'Time on a page runs until the next page. Nothing comes after the last page of a visit, so how long they stayed there is unknown.'),
+    el('p', { class: 'note' }, 'Time on a page runs until the next page, or until the visitor left the site. Visits imported from Umami didn’t record leaving, so their last page says “left here” with no time.'),
     el('h3', {}, 'Pages, over all visits'),
     table({
       label: 'Pages this person viewed',
@@ -968,7 +979,7 @@ function pagesTab(rows: VisitRow[]) {
           { key: 'time', label: 'Total time', numeric: true, sort: (p) => p.time, cell: (p) => duration(p.time) },
         ],
       }),
-      note('Time on a page runs until the next page in the same visit. The last page of a visit adds no time, since nothing came after it.')
+      note('Time on a page runs until the next page in the same visit, or until the visitor left the site. The last page of a visit imported from Umami adds no time, since Umami didn’t record leaving.')
     ),
   ];
 }
@@ -1038,31 +1049,21 @@ function drawMain() {
 /* --- loading --------------------------------------------------------------------- */
 
 /**
- * Two sources, read into one dataset:
- *
- *   - history: Umami exports dropped on the page, from before the site had its own
- *     collector. Kept in this browser, so they never need dropping again.
- *   - live: everything the collector has, read with the key on every load and on
- *     Refresh. Only the key and the collector's address are kept, not the data.
- *
- * Both use Umami's column names, so they go through the same readEvents. An event in
- * both (an export taken after the switch) is counted once, by its id.
+ * Everything the collector has, read with the key on every load and on Refresh. Only
+ * the key, the collector's address and this browser's device id are kept here, never
+ * the data. The rows use Umami's column names, so readEvents reads them as it read
+ * Umami's exports.
  */
-interface Saved {
-  websiteEvent: string;
-  eventData?: string;
-  sessionData?: boolean;
-  names: string;
-}
-
 interface Live {
   records: CsvRecord[];
   eventData: CsvRecord[];
   fetchedAt: Date;
 }
 
-let history: Saved | null = read<Saved | null>(STORE.data, null);
 let live: Live | null = null;
+
+// Umami exports were kept in this key before the collector held all the data.
+write('umami-report:export', null);
 
 /** Where the collector is: the address in site.ts, unless this browser was given another. */
 const collectorUrl = () => read<string>(STORE.collector, '') || site.analytics.collector;
@@ -1125,38 +1126,23 @@ async function fetchLive(url: string, key: string): Promise<Live> {
   return { records, eventData, fetchedAt: new Date() };
 }
 
-/** Builds the dataset from whatever sources there are, and draws it. */
+/** Draws what the collector gave, or the connect form when there's nothing read yet. */
 function rebuild() {
-  const historyRecords = history ? parseRecords(history.websiteEvent) : [];
-  const historyData = history?.eventData ? parseRecords(history.eventData) : [];
-  const seen = new Set<string>();
-  const records = [...historyRecords, ...(live?.records ?? [])].filter((row) => {
-    const id = row.event_id ?? '';
-    if (!id) return true;
-    if (seen.has(id)) return false;
-    seen.add(id);
-    return true;
-  });
-  const eventData = [...historyData, ...(live?.eventData ?? [])];
-  if (records.length === 0) {
+  if (!live) {
     loaded = null;
     app.hidden = true;
-    loadZone.hidden = false;
     connect.hidden = false;
     return;
   }
-
-  const sessions = buildSessions(readEvents(records), reportConfig);
+  const sessions = buildSessions(readEvents(live.records), reportConfig);
   const first = sessions[0]?.start;
   const last = sessions.reduce((latest, s) => (s.end > latest ? s.end : latest), first ?? new Date(0));
   const note = [
-    history ? `Umami history: ${history.names}, ${number(historyRecords.length)} events.` : 'No Umami history loaded.',
-    live ? `Live: ${number(live.records.length)} events, read ${moment(live.fetchedAt, TZ)}.` : 'Not connected to the collector.',
-    `Together ${first ? `${moment(first, TZ)} to ${moment(last, TZ)}` : 'nothing'}.`,
+    `${number(live.records.length)} events, read ${moment(live.fetchedAt, TZ)}.`,
+    first ? `From ${moment(first, TZ)} to ${moment(last, TZ)}.` : '',
   ].join(' ');
-  loaded = { sessions, eventData, properties: eventProperties(eventData), hasEventData: eventData.length > 0 || Boolean(live), note };
+  loaded = { sessions, eventData: live.eventData, properties: eventProperties(live.eventData), hasEventData: true, note };
   classify();
-  loadZone.hidden = true;
   connect.hidden = true;
   app.hidden = false;
   update();
@@ -1172,54 +1158,14 @@ async function refresh() {
     live = await fetchLive(url, key);
     status.textContent = '';
   } catch (error) {
-    status.textContent = `${(error as Error).message} Showing what this browser already has.`;
+    // A refresh that fails keeps what's on screen. On the first read there's nothing
+    // on screen, and the connect form comes back with the reason above it.
+    status.textContent = live ? `${(error as Error).message} Showing what was read before.` : (error as Error).message;
   }
   rebuild();
 }
 
-async function load(files: File[]) {
-  if (files.length === 0) return;
-  status.textContent = 'Reading…';
-  try {
-    const dropped: DroppedFile[] = await Promise.all(files.map(async (file) => ({ name: file.name, bytes: new Uint8Array(await file.arrayBuffer()) })));
-    const found = await readExport(dropped);
-    if (!found.websiteEvent) {
-      status.textContent = `No website_event.csv in ${files.map((f) => f.name).join(', ')}.`;
-      return;
-    }
-    history = {
-      websiteEvent: found.websiteEvent,
-      eventData: found.eventData,
-      sessionData: Boolean(found.sessionData),
-      names: files.map((f) => f.name).join(', ') + (found.ignored.length ? ` (skipped ${found.ignored.join(', ')})` : ''),
-    };
-    // New data starts from a clean view: old dates and people might not match it.
-    view = { ...defaultView(), sorts: view.sorts, count: view.count, cardTabs: view.cardTabs, peopleOrder: view.peopleOrder };
-    openMenu = null;
-    expanded.clear();
-    open.clear();
-    status.textContent = write(STORE.data, history) ? '' : 'Too big to keep in this browser: it will need loading again after a reload.';
-    rebuild();
-  } catch (error) {
-    status.textContent = `Couldn’t read that: ${(error as Error).message}`;
-  }
-}
-
-input.addEventListener('change', () => load([...(input.files ?? [])]));
-// Files can be dropped anywhere on the page, before and after the first load. One
-// listener on the body covers the drop zone too, which sits inside it.
-document.body.addEventListener('dragover', (event) => {
-  event.preventDefault();
-  loadZone.dataset.over = '';
-});
-document.body.addEventListener('drop', (event) => {
-  event.preventDefault();
-  delete loadZone.dataset.over;
-  load([...(event.dataTransfer?.files ?? [])]);
-});
-loadZone.addEventListener('dragleave', () => delete loadZone.dataset.over);
-
-// The first screen's live-data form: the collector's address (from site.ts, editable)
+// The first screen's form: the collector's address (from site.ts, editable)
 // and the read key. Both are kept in this browser once they work.
 const connectUrl = connect.querySelector<HTMLInputElement>('[name="collector"]')!;
 const connectKey = connect.querySelector<HTMLInputElement>('[name="key"]')!;
@@ -1250,13 +1196,6 @@ connect.addEventListener('submit', async (event) => {
   rebuild();
 });
 
-// What this browser already has: the history at once, then the live data on top.
-if (history || readKey()) {
-  try {
-    if (history) rebuild();
-  } catch {
-    history = null;
-    write(STORE.data, null);
-  }
-  if (readKey()) void refresh();
-}
+// A kept key reads the collector straight away. Without one, the form asks for it.
+if (readKey()) void refresh();
+else rebuild();

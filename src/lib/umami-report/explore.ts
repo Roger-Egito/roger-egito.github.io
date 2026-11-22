@@ -263,7 +263,7 @@ export interface Totals {
   timedViews: number;
   medianTimeOnPage: number | null;
   averageTimeOnPage: number | null;
-  /** Time measured between pageviews, summed. The last page of each visit can't be timed. */
+  /** Time on every page that could be timed, summed. An Umami-era visit's last page can't be. */
   measuredTime: number;
   byKind: Record<Kind, { views: number; visits: number; visitors: number }>;
 }
@@ -328,7 +328,7 @@ export interface Bucket {
   visitors: Record<Kind, number>;
 }
 
-const addDays = (date: string, days: number) => {
+export const addDays = (date: string, days: number) => {
   const day = new Date(`${date}T00:00:00Z`);
   day.setUTCDate(day.getUTCDate() + days);
   return day.toISOString().slice(0, 10);
@@ -358,9 +358,11 @@ const zero = (): Record<Kind, number> => ({ real: 0, me: 0, bot: 0 });
 /**
  * Views and visits per bucket, by type, from the first bucket with anything in it to the
  * last, quiet ones included, so a gap in traffic shows as a gap rather than vanishing.
- * Views are placed by when each page was opened, visits by when they started.
+ * With a span, it runs across the whole span instead: "last 7 days" is 7 days wide even
+ * when only two of them had visits. Views are placed by when each page was opened,
+ * visits by when they started.
  */
-export function timeline(rows: VisitRow[], granularity: Granularity, timeZone: string): Bucket[] {
+export function timeline(rows: VisitRow[], granularity: Granularity, timeZone: string, span: Span = { from: null, to: null }): Bucket[] {
   const buckets = new Map<string, Bucket>();
   const seen = new Map<string, Set<string>>();
   const at = (date: string, hour: string) => {
@@ -384,6 +386,8 @@ export function timeline(rows: VisitRow[], granularity: Granularity, timeZone: s
     }
   }
   if (buckets.size === 0) return [];
+  if (span.from) at(span.from, '00');
+  if (span.to) at(span.to, '23');
 
   // Fill the gaps between the first bucket and the last.
   const keys = [...buckets.keys()].sort();
@@ -406,10 +410,24 @@ export function timeline(rows: VisitRow[], granularity: Granularity, timeZone: s
   return [...buckets.values()].sort((a, b) => a.key.localeCompare(b.key));
 }
 
-/** A sensible bucket size for a span of days: bars stay countable. */
-export function autoGranularity(rows: VisitRow[]): Granularity {
-  if (rows.length === 0) return 'day';
-  const days = (rows.at(-1)!.visit.start.getTime() - rows[0].visit.start.getTime()) / 86_400_000;
+/** The start of a YYYY-MM-DD day, in milliseconds. */
+const dayStart = (date: string) => new Date(`${date}T00:00:00Z`).getTime();
+
+/** The days a chart covers (YYYY-MM-DD, both included). null on a side: as far as the data goes. */
+export interface Span {
+  from: string | null;
+  to: string | null;
+}
+
+/**
+ * A sensible bucket size, so bars stay countable: from the period picked when there is
+ * one, otherwise from how far the data itself goes.
+ */
+export function autoGranularity(rows: VisitRow[], span: Span = { from: null, to: null }): Granularity {
+  const start = span.from ? dayStart(span.from) : rows[0]?.visit.start.getTime();
+  const end = span.to ? dayStart(span.to) + 86_400_000 : rows.at(-1)?.visit.start.getTime();
+  if (start === undefined || end === undefined) return 'day';
+  const days = (end - start) / 86_400_000;
   return days <= 3 ? 'hour' : days <= 75 ? 'day' : days <= 400 ? 'week' : 'month';
 }
 
