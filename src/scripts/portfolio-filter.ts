@@ -102,7 +102,15 @@ if (bar && grid) {
     chip.dataset.category = category;
     // The label reads as the whole control, so the X needs no name of its own.
     chip.setAttribute('aria-label', `Remove filter: ${label}`);
-    chip.innerHTML = `<span>${label}</span><span class="remove" aria-hidden="true">✕</span>`;
+    // Built from elements and text, never as HTML: the id can come straight from the
+    // address bar (?f=...), so whatever a link puts there is shown, never run.
+    const text = document.createElement('span');
+    text.textContent = label;
+    const remove = document.createElement('span');
+    remove.className = 'remove';
+    remove.setAttribute('aria-hidden', 'true');
+    remove.textContent = '✕';
+    chip.append(text, remove);
     return chip;
   };
 
