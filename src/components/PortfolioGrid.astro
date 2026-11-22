@@ -205,7 +205,7 @@ const plain = (value: string) =>
                 </div>
 
                 {/* Outside the card's link because an <a> inside another <a> is invalid
-                    markup and browsers tear it apart — which is why these sit under the
+                    markup and browsers tear it apart, which is why these sit under the
                     text block rather than in among it. Each one leaves the site, so it
                     has to be a real link rather than something the card intercepts. */}
                 {storeList.length > 0 && (
@@ -332,7 +332,7 @@ const plain = (value: string) =>
 
   /* The artwork sits flush in the top of a panel a shade lighter than the page, with
      the border running round the whole thing so picture and text read as one object. */
-  /* --fade is how far the link's darker shade takes to become the card's own colour,
+  /* --fade is how far the link's darker shade takes to become the card's own color,
      measured up from the bottom of the link. Long rather than a hairline: over 14px the
      change read as a seam you could miss, and the point is for the part you click to
      feel like its own panel settling into the card. The blurb is the last thing in the
@@ -484,14 +484,14 @@ const plain = (value: string) =>
     text-transform: uppercase;
   }
 
-  /* Full-strength ink against the muted client beside it — that contrast is what marks
+  /* Full-strength ink against the muted client beside it. That contrast is what marks
      the year as the thing to read first. */
   .year {
     color: var(--color-txt);
     font-weight: 700;
   }
 
-  /* Only reached by a client with no logo of its own — the name standing in for a
+  /* Only reached by a client with no logo of its own: the name standing in for a
      mark that isn't there. */
   /* The gap is set by the hover, not by how the row looks at rest. An icon scaled 3x
      grows by (3-1)/2 = one full width on each side, so anything narrower than the gap
@@ -537,7 +537,7 @@ const plain = (value: string) =>
     margin: 0;
     font-size: 1.4em;
     /* The site's headings are uppercase, but a game's name is a name, so it keeps its
-       own capitalisation. */
+       own capitalization. */
     text-transform: none;
   }
 
@@ -550,10 +550,10 @@ const plain = (value: string) =>
     line-height: 1.5;
   }
 
-  /* The titles I held, in full ink rather than the grey the team size wears up in the
-     eyebrow. They used to be the same size and colour as each other, 6px apart, which
-     made a single grey block out of two different claims. This is the last line inside
-     the card's link, so it carries the fade to the card's own colour. */
+  /* The titles I held, in full ink rather than the gray the team size wears up in the
+     eyebrow. They used to be the same size and color as each other, 6px apart, which
+     made a single gray block out of two different claims. This is the last line inside
+     the card's link, so it carries the fade to the card's own color. */
   /* One button per storefront, stacked and centered, sitting outside the card's own
      link. align-items keeps each button the width of its own label rather than the
      column. */
@@ -571,20 +571,20 @@ const plain = (value: string) =>
     list-style: none;
   }
 
-  /* Everything that makes this look pressable — fill, border, radius, the brightening
-     and the lift — comes from .btn. What's left here is scale: .btn is sized for a page
+  /* Everything that makes this look pressable (fill, border, radius, the brightening
+     and the lift) comes from .btn. What's left here is scale: .btn is sized for a page
      heading's worth of button, which would dwarf 13.5px card text.
    *
    * The sizes below are the resting ones multiplied by --lift, and the button is then
    * held at 1/--lift until pointed at. That looks identical to setting the resting
-   * sizes directly — same pixels in both states — but the text is laid out, and so
-   * rasterised, at the size it reaches when grown.
+   * sizes directly, with the same pixels in both states, but the text is laid out, and so
+   * rasterized, at the size it reaches when grown.
    *
    * That's the whole point. transform: scale() doesn't re-render text; it stretches
    * the bitmap the glyphs were already drawn into, so growing 13.5px type by 1.15
    * meant reading 13.5px glyphs blown up to 15.5px, and thin strokes came apart. This
    * way the hovered state draws at its true size and every other state is a
-   * downscale, which costs nothing — shrinking a bitmap has detail to spare.
+   * downscale, which costs nothing, since shrinking a bitmap has detail to spare.
    *
    * Everything here scales together, so --lift is the only number to change. */
   .store {
@@ -610,7 +610,7 @@ const plain = (value: string) =>
     transform: scale(1);
   }
 
-  /* Still a dip below the hovered size, just expressed against the new baseline —
+  /* Still a dip below the hovered size, just expressed against the new baseline.
      .btn:active supplies the 0.08s that makes it snap. */
   .store:active {
     transform: scale(calc(1.05 / var(--lift)));
@@ -628,7 +628,7 @@ const plain = (value: string) =>
 
      The numbers that make the case: downloads, plays, how long it took. Only three of
      the games carry any, which is the argument for framing them rather than leaving
-     them as another line of text — the frame marks the ones with something to show.
+     them as another line of text. The frame marks the ones with something to show.
 
      A banner, not a panel: darker than the card so it reads as its own object, with
      both ends notched inward the way a ribbon's are. The notch is cut by clip-path,
@@ -723,10 +723,10 @@ const plain = (value: string) =>
     list-style: none;
   }
 
-  /* Colour is what tells the disciplines apart now that no labels divide them, so each
+  /* Color is what tells the disciplines apart now that no labels divide them, so each
      chip takes its own: full strength for the word, a dimmed version of the same hue
      for the outline, and a trace of it inside. The fill stays faint on purpose, since
-     five solid colours across a card would shout louder than the artwork above them.
+     five solid colors across a card would shout louder than the artwork above them.
      The fallback keeps a chip readable if a tag outside the five ever lands here. */
   .chips li {
     display: flex;
@@ -763,7 +763,7 @@ const plain = (value: string) =>
     transition-duration: 0.08s;
   }
 
-  /* Already filtering by this one. Filled in its own colour, so the card shows which
+  /* Already filtering by this one. Filled in its own color, so the card shows which
      of its tags the grid is currently held to. */
   .chips button[data-on] {
     background: color-mix(in srgb, var(--chip-color) 30%, transparent);

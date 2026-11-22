@@ -4,7 +4,7 @@
  *
  * Built to the dataviz rules this site follows: bars at most 24px wide with a 4px
  * rounded end and a square base, a 2px gap of surface between stacked segments,
- * hairline gridlines, labels in text colours (never the series colour), and a tooltip
+ * hairline gridlines, labels in text colors (never the series color), and a tooltip
  * on every mark whose hit area is bigger than the mark itself.
  */
 import type { Kind } from '../../lib/umami-report/sessions.ts';

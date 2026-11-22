@@ -9,9 +9,9 @@
  *
  * Two shapes:
  *
- *   default — a standalone glyph in the card's eyebrow. Dimmed until pointed at, and
+ *   default: a standalone glyph in the card's eyebrow. Dimmed until pointed at, and
  *             it names itself on hover, since nothing else on that row says what it is.
- *   inline  — sitting inside its own chip, where the name is already spelled out
+ *   inline:  sitting inside its own chip, where the name is already spelled out
  *             beside it. No tooltip repeating that name, no dimming, and sized to the
  *             text it sits with.
  */
@@ -93,9 +93,9 @@ if (tag.iconIsFile && !src) {
   .tag-icon img {
     width: auto;
     height: var(--icon-size, 16px);
-    /* Colour is held back until you point at something. At rest the row reads as one
+    /* Color is held back until you point at something. At rest the row reads as one
        set of marks in the card's own ink instead of a strip of competing brand
-       palettes; on hover the logo comes up in its real colours. */
+       palettes; on hover the logo comes up in its real colors. */
     filter: grayscale(1);
     transition: filter var(--transition);
   }
@@ -112,7 +112,7 @@ if (tag.iconIsFile && !src) {
   }
 
   /* Inside a chip the icon is a piece of punctuation next to the word, not a control
-     of its own — so it takes the chip's ink and never moves. */
+     of its own, so it takes the chip's ink and never moves. */
   .is-inline,
   .is-inline:hover {
     opacity: 1;

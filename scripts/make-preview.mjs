@@ -5,10 +5,10 @@
 //   npm run preview:make -- "C:/path/to/clip.mp4" hotel-77 30
 //
 // The optional third argument is the CRF (quality). Lower looks better and weighs
-// more, higher is smaller; every +6 roughly halves the file. 26 is the default and is
-// right for most clips — raise it for long or high-motion footage that comes out big.
+// more, higher is smaller, and every +6 roughly halves the file. 26 is the default and is
+// right for most clips. Raise it for long or high-motion footage that comes out big.
 //
-// GIF is a terrible format for this: no interframe compression and 256 colours, so a
+// GIF is a terrible format for this: no interframe compression and 256 colors, so a
 // 5 second clip runs about 30 MB. The same clip as h264 is under 1 MB and decodes on
 // the GPU. Needs ffmpeg on PATH.
 

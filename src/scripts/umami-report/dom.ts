@@ -42,7 +42,7 @@ export const number = (value: number) => value.toLocaleString('en-US');
 export const percent = (value: number) => `${Math.round(value * 100)}%`;
 
 export function duration(ms: number | null) {
-  if (ms === null) return '—';
+  if (ms === null) return '-';
   const seconds = Math.round(ms / 1000);
   if (seconds < 60) return `${seconds}s`;
   const minutes = Math.floor(seconds / 60);

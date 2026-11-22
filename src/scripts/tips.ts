@@ -8,7 +8,7 @@
  */
 
 // Offset from the pointer, up and to the right, the way an item tooltip sits in a
-// game — beside the cursor rather than centred over it, so it never hides what you're
+// game: beside the cursor rather than centered over it, so it never hides what you're
 // pointing at.
 const OFFSET_X = 18;
 const OFFSET_Y = 3;
@@ -69,7 +69,7 @@ document.addEventListener('pointerout', (event) => {
 });
 
 // Keyboard users get the label over the control itself, since there's no pointer.
-// :focus-visible is what keeps this to the keyboard — clicking a button focuses it too,
+// :focus-visible is what keeps this to the keyboard. Clicking a button focuses it too,
 // and without the check the label would jump from the cursor to the button on every
 // press of Next or Previous.
 document.addEventListener('focusin', (event) => {

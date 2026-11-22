@@ -27,7 +27,7 @@ const preview = image ? new URL(image, site.url).href : undefined;
 
 {/* The whole palette, straight from src/config/theme.ts. is:inline keeps Astro from
     scoping it to this component, which :root would not survive. It goes ahead of the
-    stylesheets so nothing is ever painted before the colours exist. */}
+    stylesheets so nothing is ever painted before the colors exist. */}
 <style is:inline set:html={colorVariables}></style>
 <title>{title}</title>
 <meta name="description" content={description} />

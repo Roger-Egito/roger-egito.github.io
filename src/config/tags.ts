@@ -6,13 +6,13 @@
  *     tags: [game designer, unity, ludomancer]
  *
  * Writing a tag that isn't registered here fails the build, naming the file and the
- * offending tag — see the check in src/content.config.ts. That's deliberate: a typo
- * should stop at your terminal rather than ship as a silently missing filter.
+ * offending tag (see the check in src/content.config.ts), so a typo stops the build
+ * instead of shipping as a filter that matches nothing.
  *
- * Tags are written lowercase because the same words appear un-capitalised in the hero
+ * Tags are written in lowercase because the same words appear in lowercase in the hero
  * credit ("game designer and game developer for Cursed Blight"). Everything on display
- * is Title Cased from here, so you never have to think about it — except for names
- * Title Case gets wrong, which set `label` explicitly.
+ * is title cased from here, except for names title casing gets wrong, which set
+ * `label` themselves.
  */
 
 /** Where a category's icons sit, relative to the date on a portfolio card. */
@@ -246,7 +246,7 @@ export const tags = {
   'network engineering': { category: 'programming' },
   'security engineering': { category: 'programming' },
 
-  // genres — taken from the wording of each game's own description
+  // Genres, taken from the wording of each game's own description
   horror: { category: 'genre' },
   tactics: { category: 'genre' },
   strategy: { category: 'genre' },
@@ -261,7 +261,7 @@ export const tags = {
   survival: { category: 'genre' },
   sandbox: { category: 'genre' },
 
-  // platforms — where it's published, or that it isn't
+  // Platforms: where it's published, or that it isn't
   steam: { category: 'platform', icon: 'steam' },
   itch: { category: 'platform', label: 'itch.io', icon: 'itch-io' },
   'google play': { category: 'platform', icon: 'google-play' },
@@ -280,7 +280,7 @@ export const tags = {
   'xr interaction toolkit': { category: 'technology', label: 'XR Interaction Toolkit' },
   fmod: { category: 'technology', label: 'FMOD' },
 
-  // features — what this site offers for the game, rather than anything about the game
+  // Features: what this site offers for the game, rather than anything about the game
   // itself. Only add this to an entry that actually carries a `game:` embed, since it's
   // promising something the page has to deliver.
   playable: {
@@ -289,9 +289,9 @@ export const tags = {
     icon: 'gamepad',
   },
 
-  // clients — drop a logo in src/assets/tags/ and name it here to get an icon
+  // Clients. Drop a logo in src/assets/tags/ and name it here to get an icon.
   // ludomancer-full.png is the same logo with its "LUDOMANCER STUDIO" banner still
-  // attached; swap the name here if you prefer it. Two lines of type do not survive
+  // attached. Swap the name here if you prefer it. Two lines of type do not survive
   // being 16px tall, which is why the mark is the one wired up.
   ludomancer: { category: 'client', label: 'Ludomancer Studio', icon: 'ludomancer-mark.png' },
   yougo: { category: 'client', label: 'YouGo Games', icon: 'yougogames.png' },
@@ -310,7 +310,7 @@ export type TagId = keyof typeof tags;
  * The storefronts a game can link to, top to bottom as they list on a card.
  *
  * Each one borrows its name and icon from a platform tag above, so a store row and the
- * icon beside the year can't drift apart — rename `steam`'s label there and both follow.
+ * icon beside the year can't drift apart. Rename `steam`'s label there and both follow.
  * The `field` is the front matter key a game puts the link in.
  */
 export const stores = [
@@ -328,7 +328,7 @@ export const isTag = (name: string): name is TagId => name in tags;
 /** Every registered name, for the error message when one doesn't match. */
 export const knownTags = Object.keys(tags).sort();
 
-/** 'game designer' -> 'Game Designer'. Hyphenated words capitalise on both sides. */
+/** 'game designer' -> 'Game Designer'. Hyphenated words capitalize on both sides. */
 export const titleCase = (value: string) =>
   value.replace(/(^|[\s(/-])([a-z])/g, (_, before, letter) => before + letter.toUpperCase());
 
@@ -360,7 +360,7 @@ export const resolve = (name: TagId): ResolvedTag => {
 /**
  * Category order first, then alphabetical by display label inside each. Unknown names
  * are dropped rather than thrown on, because the build has already refused them by the
- * time anything renders — this only runs on data that passed the schema.
+ * time anything renders. This only runs on data that passed the schema.
  */
 export const sortTags = (names: readonly string[]): ResolvedTag[] =>
   names
@@ -398,7 +398,7 @@ const withoutGroupWord = (label: string, group: string) => {
 
 /**
  * What I did on a game, as the card shows it: every discipline's tags on one wrapping
- * line, in discipline order. Each chip carries its discipline's icon and colour, so
+ * line, in discipline order. Each chip carries its discipline's icon and color, so
  * design and programming can drop the word itself. A game's own page still lists the
  * same tags in full, split by category.
  */

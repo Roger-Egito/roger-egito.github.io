@@ -2,14 +2,10 @@
  * The views the tracker can't see on its own.
  *
  * The tracker counts a page view on every load and every change to the address bar, so the
- * homepage, every game page and every game dialog (which puts /games/<slug>/ in the
- * address) are already covered. Two things never touch the address bar:
- *
- *   - The About dialog opens over the homepage without a URL of its own.
- *   - The CV is a PDF, and a PDF can't run a tracker.
- *
- * Both are sent here as page views with a path of their own, /about and the PDF's,
- * so they sit in the same Pages list as everything else instead of under events.
+ * homepage, every page, every game dialog (which puts /games/<slug>/ in the address) and
+ * the About dialog (/about/) are already covered. One thing never touches the address
+ * bar: the CV, a PDF, which can't run a tracker. It's sent here as a page view with the
+ * PDF's path, so it sits in the same Pages list as everything else.
  *
  * Nothing here checks the no-track switch: the tracker does that itself, on every
  * send, so a browser switched off with ?no-track stays off for these too.
@@ -21,19 +17,6 @@ import { pageview } from './tracker';
 
 /** Sends a page view for a path the address bar never shows. */
 const view = (url: string, title: string) => pageview(url, title);
-
-/* --- the About dialog ------------------------------------------------------------ */
-
-// Watched rather than hooked into modal.ts, so it counts however the dialog was opened:
-// the nav, the name in the hero, or anything added later.
-const about = document.querySelector<HTMLDialogElement>('#about-dialog');
-if (about) {
-  let wasOpen = about.open;
-  new MutationObserver(() => {
-    if (about.open && !wasOpen) view('/about', 'About');
-    wasOpen = about.open;
-  }).observe(about, { attributes: true, attributeFilter: ['open'] });
-}
 
 /* --- the CV ---------------------------------------------------------------------- */
 

@@ -76,7 +76,7 @@ function open(dialog: HTMLDialogElement) {
   dialog.showModal();
 
   // Focus the card rather than whatever happens to be focusable first, which is the
-  // YouTube iframe — and focus inside a cross-origin frame sends Esc to that frame,
+  // YouTube iframe. Focus inside a cross-origin frame sends Esc to that frame,
   // so the dialog never gets its cancel event. The autofocus attribute only works the
   // first time an element is focused, so reopening needs this done explicitly.
   dialog.querySelector<HTMLElement>('.sheet')?.focus();
@@ -122,15 +122,21 @@ document.addEventListener(
       return;
     }
 
-    // Plain dialogs that aren't a game — the about one. No URL to keep in step, so
-    // opening is all there is to it.
+    // Other dialogs, named by the opener: the About one. A dialog with a data-url of its
+    // own gets the same URL handling as a game. The opener is a link to that page, so
+    // new-tab clicks fall through to it like a game card's do.
     const opener = target.closest<HTMLElement>('[data-opens]');
     if (opener) {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      if (event.button !== 0) return;
       const dialog = document.querySelector(opener.dataset.opens ?? '');
       if (dialog instanceof HTMLDialogElement) {
         event.preventDefault();
-        dialog.showModal();
-        dialog.querySelector<HTMLElement>('.sheet')?.focus();
+        if (dialog.dataset.url) open(dialog);
+        else {
+          dialog.showModal();
+          dialog.querySelector<HTMLElement>('.sheet')?.focus();
+        }
         return;
       }
     }

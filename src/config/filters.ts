@@ -143,7 +143,7 @@ export const buildMenus = (games: CollectionEntry<'games'>[]): FilterMenu[] => {
 
 /**
  * Label and category for any filter id, so a chip added by clicking a card knows what
- * to call itself and which colour to wear.
+ * to call itself and which color to wear.
  */
 export const describeFilter = (id: string): { label: string; category: CategoryId } => {
   if (id in derivedFilters) {

@@ -32,7 +32,7 @@ const d = game.data;
 // The bullet in the long-form body. A list marker can't be an inline <svg>, so the
 // gamepad goes in as a shape CSS paints through: the same glyph Icon.astro would draw,
 // straight from the icon package, so it can't drift from the ones on the page. Painted
-// as a mask rather than an image, which is what lets it take the text's own colour.
+// as a mask rather than an image, which is what lets it take the text's own color.
 const [padWidth, padHeight, , , padPath] = faGamepad.icon;
 const gamepadMarker = `url("data:image/svg+xml,${encodeURIComponent(
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${padWidth} ${padHeight}"><path d="${padPath}"/></svg>`
@@ -125,7 +125,7 @@ const tabs = [
 const mobileTabs = tabs.filter((tab) => tab.name !== "game").length;
 
 // A build takes the opening tab, so on an entry that has one the trailer starts out
-// hidden — and a YouTube player that boots inside a hidden panel measures itself as
+// hidden, and a YouTube player that boots inside a hidden panel measures itself as
 // nothing and keeps the postage-stamp poster it picked, which is why the trailer came
 // out soft on a game's own page. So where there's a build, the trailer waits for its
 // tab and is created while it can actually be seen, exactly as it is inside a dialog.
@@ -191,7 +191,7 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
         aria-labelledby={`${game.id}-tab-game`}
         style={`--game-w: ${d.game.width}; --game-h: ${d.game.height}`}
       >
-        {/* Nothing is fetched until this is pressed — these builds are tens of MB, and
+        {/* Nothing is fetched until this is pressed. These builds are tens of MB, and
             landing on the Game tab shouldn't mean landing on a download. */}
         {/* The note sits inside the button so it shares the cover, which means its text
             would otherwise become part of the button's name. aria-label keeps the name
@@ -405,7 +405,7 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
     color: var(--color-bg);
     opacity: 1;
     /* Clicking an unselected tab ends with it selected, so the press has nowhere to
-       spring back up to — it releases to rest instead of to the hovered size. Left on
+       spring back up to: it releases to rest instead of to the hovered size. Left on
        the 0.6s the lift uses, that last stretch reads as the tab slowly deflating
        rather than a click resolving, so the size settles quickly here. The fill keeps
        its normal timing: the tab filling in is a separate event from the press letting
@@ -419,7 +419,7 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
 
   /* The tab you're already on has nothing to offer a click, so it stops answering the
      pointer: no lift, no press. The fill it carries is what says it's the current one,
-     and that stays put. Keyboard focus is unaffected — the outline in global.css is a
+     and that stays put. Keyboard focus is unaffected: the outline in global.css is a
      separate thing from the lift, so this tab still shows where focus is.
 
      game-tabs.ts moves aria-selected as you switch, so this follows on its own. */
@@ -549,7 +549,7 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
     text-transform: uppercase;
     white-space: nowrap;
     /* The lift is on .play rather than on .game-start, which is the whole cover-art
-       overlay — scaling that would blow up the artwork behind it instead of the
+       overlay. Scaling that would blow up the artwork behind it instead of the
        button. Driven from the parent's hover because the pointer is over the cover,
        not necessarily over this span. */
     transition: transform 0.6s ease;
@@ -587,7 +587,7 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
     height: 0.8em;
   }
 
-  /* Once it's running the cover has nothing left to do. No :global inside :has() —
+  /* Once it's running the cover has nothing left to do. No :global inside :has(), since
      Astro leaves it in the output as-is and the whole rule gets thrown away. */
   .game-panel:has(iframe[src]) .game-start {
     display: none;
@@ -634,7 +634,7 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
     list-style: none;
   }
 
-  /* A numbered list takes the same inset. So does a centred picture or clip, which
+  /* A numbered list takes the same inset. So does a centered picture or clip, which
      Media.astro sizes to match. */
   .long-form :global(ol) {
     max-width: calc((100% + 552px) / 2);
@@ -685,7 +685,7 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
 
   /* The store's own widget, standing in for a line of link text. itch serves it at a
      fixed size and it doesn't reflow, so its printed width is a ceiling rather than a
-     target — below that it shrinks with the page, above it we stop, because stretching
+     target. Below that it shrinks with the page, above it we stop, because stretching
      the widget only blurs the cover art inside it. */
   .store-embeds {
     display: flex;

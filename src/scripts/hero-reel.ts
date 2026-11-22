@@ -6,7 +6,7 @@
  * that's coming up and is faded in over the top just before the current one runs out,
  * so there's never a black frame or a stall between games. Then they swap roles.
  *
- * The running order is shuffled once, on load, and then repeats unchanged — so the
+ * The running order is shuffled once, on load, and then repeats unchanged, so the
  * sequence is a surprise the first time and predictable afterwards, and the d-pad has
  * something stable to step through. Position counts forwards and backwards without
  * limit and wraps into the order, so Back always has somewhere to go: past the start
@@ -20,7 +20,7 @@
  *     it's needed, not at the start
  *   - keep running once you've scrolled past, or once the tab is in the background
  *   - run at all for someone who asked for less motion, or who's on a metered
- *     connection — they keep the still, the slogan and no download
+ *     connection. They keep the still, the slogan and no download
  *
  * Every clip comes in several qualities, and hero-quality.ts picks one per clip. This
  * file only reports to it: how long each download took, and whenever playback stalls.
@@ -167,7 +167,7 @@ function run(reel: HTMLElement) {
 
   /**
    * Bring the loaded clip up over the one on screen. `step` is which way we're moving
-   * through the order — the auto-advance and the d-pad both come through here, so a
+   * through the order. The auto-advance and the d-pad both come through here, so a
    * skip behaves exactly like a clip ending early.
    *
    * `pressed` marks a command from the d-pad. Those are never dropped: they cut short
@@ -203,7 +203,7 @@ function run(reel: HTMLElement) {
       delete outgoing.dataset.active;
 
       // Roles change over only once the fade has finished, so the old clip keeps
-      // rendering until it's genuinely invisible — unless a press cuts in, in which
+      // rendering until it's genuinely invisible, unless a press cuts in, in which
       // case cutFade runs this early and the crossfade becomes a straight cut.
       settle = () => {
         outgoing.pause();
@@ -268,17 +268,17 @@ function run(reel: HTMLElement) {
 
   // Clicking the footage opens that game, by way of the card that already knows how.
   // Only the bare backdrop counts: the panel behind the text is a barrier, so a click
-  // anywhere on it — selecting the email, say — stays where it landed.
+  // anywhere on it (selecting the email, say) stays where it landed.
   const hero = reel.closest<HTMLElement>('.hero');
 
   // A drag that ends on the backdrop was someone selecting text, and shouldn't also
-  // open a game — so remember where the press started and compare.
+  // open a game, so remember where the press started and compare.
   //
   // This used to ask whether anything on the page was selected, which conflates two
   // different things: "this click finished a selection" and "a selection exists
   // somewhere else entirely". Clicking a <video> doesn't clear a selection made
-  // elsewhere the way clicking ordinary markup does, so one leftover highlight —
-  // in the footer, the about text, anywhere — left the hero dead for good.
+  // elsewhere the way clicking ordinary markup does, so one leftover highlight
+  // anywhere else (the footer, the about text) left the hero dead for good.
   let pressedAt: { x: number; y: number } | null = null;
 
   hero?.addEventListener('pointerdown', (event) => {
@@ -352,7 +352,7 @@ function wireNav() {
     if (key.dataset.pad === 'up') setOpen(!(nav && 'open' in nav.dataset));
   });
 
-  // It stays put when a link in it is followed — the sections are all on one page, so
+  // It stays put when a link in it is followed. The sections are all on one page, so
   // closing it would mean pressing Up again for every jump.
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && nav && 'open' in nav.dataset) setOpen(false);

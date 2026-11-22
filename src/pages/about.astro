@@ -1,0 +1,40 @@
+---
+// Standalone About page, /about/. The same URL the About dialog puts in the address bar,
+// so a shared link, a new tab or a search engine gets real HTML, like a game page.
+import Base from '../layouts/Base.astro';
+import Crumb from '../components/Crumb.astro';
+import StarRule from '../components/StarRule.astro';
+import AboutCopy from '../components/AboutCopy.astro';
+import Footer from '../components/Footer.astro';
+import StructuredData from '../components/StructuredData.astro';
+import { site, pageTitle } from '../config/site';
+---
+
+<Base title={pageTitle('About')} description={site.description}>
+  <main class="container">
+    <Crumb />
+
+    <article class="panel">
+      <h1 class="section-heading">About</h1>
+      <StarRule />
+      <AboutCopy />
+      <a class="btn" href="/#portfolio">Back to Portfolio</a>
+    </article>
+  </main>
+
+  <Footer />
+  <StructuredData />
+</Base>
+
+<style>
+  main {
+    padding: 30px 0 60px;
+  }
+
+  /* .panel (global.css) gives the width, padding and centering. This adds the card's
+     border, the same one the game pages and the dialogs have. */
+  article {
+    border: 2px groove var(--color-txt);
+    border-radius: 25px;
+  }
+</style>

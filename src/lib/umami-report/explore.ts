@@ -519,14 +519,25 @@ export interface PageRow {
   bounces: number;
   /** Measured time on this page, summed, in ms. */
   time: number;
-  /** Average and median over the views that could be timed (every view but a visit's last). */
+  /** Average and median over the views that could be timed. */
   averageTime: number | null;
   medianTime: number | null;
   timedViews: number;
+  /**
+   * Engaged visitors: people who spent at least ENGAGED_MS on the page, all their views of
+   * it added up. Each person counts once, so reloading doesn't inflate it, and a tab left
+   * open counts once too, however long. The fairest single answer to "which game do
+   * people actually read".
+   */
+  engaged: number;
+  engagedByKind: Record<Kind, number>;
 }
 
+/** How long someone has to spend on a page to count as engaged with it. */
+export const ENGAGED_MS = 30_000;
+
 export function pages(rows: VisitRow[]): PageRow[] {
-  const table = new Map<string, PageRow & { visitIds: Set<string>; visitorIds: Set<string>; times: number[] }>();
+  const table = new Map<string, PageRow & { visitIds: Set<string>; visitorIds: Set<string>; times: number[]; spent: Map<string, { kind: Kind; ms: number }> }>();
   for (const row of rows) {
     row.steps.forEach((step, i) => {
       const path = pathOf(step.view);
@@ -534,7 +545,8 @@ export function pages(rows: VisitRow[]): PageRow[] {
       if (!page) {
         table.set(path, (page = {
           path, views: 0, visits: 0, visitors: 0, entries: 0, exits: 0, bounces: 0, time: 0,
-          averageTime: null, medianTime: null, timedViews: 0, visitIds: new Set(), visitorIds: new Set(), times: [],
+          averageTime: null, medianTime: null, timedViews: 0, engaged: 0, engagedByKind: zero(),
+          visitIds: new Set(), visitorIds: new Set(), times: [], spent: new Map(),
         }));
       }
       page.views++;
@@ -547,17 +559,26 @@ export function pages(rows: VisitRow[]): PageRow[] {
         page.time += step.timeOnPage;
         page.timedViews++;
         page.times.push(step.timeOnPage);
+        const person = page.spent.get(row.session.id) ?? { kind: row.kind, ms: 0 };
+        person.ms += step.timeOnPage;
+        page.spent.set(row.session.id, person);
       }
     });
   }
   return [...table.values()]
-    .map(({ visitIds, visitorIds, times, ...page }) => ({
-      ...page,
-      visits: visitIds.size,
-      visitors: visitorIds.size,
-      averageTime: average(times),
-      medianTime: median(times),
-    }))
+    .map(({ visitIds, visitorIds, times, spent, ...page }) => {
+      const engagedByKind = zero();
+      for (const person of spent.values()) if (person.ms >= ENGAGED_MS) engagedByKind[person.kind]++;
+      return {
+        ...page,
+        visits: visitIds.size,
+        visitors: visitorIds.size,
+        averageTime: average(times),
+        medianTime: median(times),
+        engaged: engagedByKind.real + engagedByKind.me + engagedByKind.bot,
+        engagedByKind,
+      };
+    })
     .sort((a, b) => b.views - a.views || a.path.localeCompare(b.path));
 }
 

@@ -17,13 +17,13 @@ import { isTag, knownTags, tags as tagRegistry } from './config/tags';
  * Undoes the escaping HTML does to an attribute value.
  *
  * This matters for any embed URL carrying more than one parameter. A snippet written
- * with colours reads
+ * with colors reads
  *
  *     src="https://itch.io/embed/123?bg_color=2A315A&amp;fg_color=CCE2E1"
  *
  * because inside an attribute the separators have to be escaped. Pull that out as-is
  * and Astro escapes it again on the way to the page, so the browser hands itch a
- * parameter named `amp;fg_color` and the colour is quietly ignored — the first one
+ * parameter named `amp;fg_color` and the color is quietly ignored. The first one
  * works, the rest don't.
  *
  * One left-to-right pass, so `&amp;lt;` correctly comes back as the text `&lt;`
@@ -66,7 +66,7 @@ const embed = z.string().transform((value, ctx) => {
   if (!src) {
     ctx.addIssue({
       code: 'custom',
-      message: 'no src="..." found — paste the whole <iframe> snippet, or just the URL',
+      message: 'no src="..." found. Paste the whole <iframe> snippet, or just the URL',
     });
     return z.NEVER;
   }
@@ -82,7 +82,7 @@ const embed = z.string().transform((value, ctx) => {
  * The store page a widget belongs to, worked out from the widget's own URL.
  *
  * Only needed for stores whose snippet carries no fallback link. itch puts an <a> inside
- * its iframe for browsers that won't render one, and that anchor is the store page — so
+ * its iframe for browsers that won't render one, and that anchor is the store page, so
  * itch never reaches here. Steam's snippet is the bare iframe and nothing else:
  *
  *     <iframe src="https://store.steampowered.com/widget/2960360/" ...></iframe>
@@ -114,7 +114,7 @@ function storePageFrom(src: string) {
  *   urlItchIo: <iframe ... src="https://itch.io/embed/2827746" ...>...</iframe>
  *
  * Paste the widget snippet from itch's "Embed options" and the game's own page shows
- * the real widget — cover, price, platforms, a Download button — instead of a line of
+ * the real widget (cover, price, platforms, a Download button) instead of a line of
  * link text. The plain URL still works and still gets a plain link.
  *
  * The store URL is read back out of the `<a href>` itch leaves inside the snippet as a
@@ -130,7 +130,7 @@ const storeLink = z.string().transform((value, ctx) => {
   if (!src) {
     ctx.addIssue({
       code: 'custom',
-      message: 'no src="..." found — paste the whole <iframe> snippet, or just the URL',
+      message: 'no src="..." found. Paste the whole <iframe> snippet, or just the URL',
     });
     return z.NEVER;
   }
@@ -144,7 +144,7 @@ const storeLink = z.string().transform((value, ctx) => {
       code: 'custom',
       message:
         `couldn't work out which store page "${src}" belongs to, and the <iframe> has ` +
-        'no fallback <a href="..."> inside it to read one from — so a click on the card ' +
+        'no fallback <a href="..."> inside it to read one from, so a click on the card ' +
         'would have nowhere to go. Use the plain store URL instead, or add this store to ' +
         'storePageFrom() in src/content.config.ts.',
     });
@@ -196,13 +196,13 @@ const games = defineCollection({
        */
       game: embed.optional(),
       /**
-       * Sits under the build and only shows while the Game tab is open — controls,
+       * Sits under the build and only shows while the Game tab is open: controls,
        * "give it a moment to load", that sort of thing. Can contain <br>.
        */
       gameDescription: z.string().optional(),
       /**
-       * Roles, genres, technologies and clients, lowercase, in any order — the site
-       * sorts and capitalises them. Every one has to be registered in
+       * Roles, genres, technologies and clients, lowercase, in any order. The site
+       * sorts and capitalizes them. Every one has to be registered in
        * src/config/tags.ts or the build stops, which is what keeps a typo from
        * shipping as a tag that silently matches no filter.
        */
@@ -222,7 +222,7 @@ const games = defineCollection({
           });
         }),
       /**
-       * A year (2024) or a full date (2024-03-01) — only the year is ever shown. Fill
+       * A year (2024) or a full date (2024-03-01). Only the year is ever shown. Fill
        * either, both or neither: the card shows "2024 – 2025", a single year, or
        * nothing at all.
        */
@@ -242,17 +242,17 @@ const games = defineCollection({
        */
       blurb: z.string().optional(),
       /**
-       * Hard numbers worth putting in front of an employer — downloads, a rating, a
-       * review count, a jam placing. Nothing shows these right now: the card's banner
-       * is switched off by showMetrics in PortfolioGrid.astro while they look for a
-       * better home. Keep writing them, they're waiting on a place to go.
+       * Figures for the game: downloads, a rating, a review count, a jam placing.
+       * Not shown at the moment: the card's row of figures is switched off by
+       * showMetrics in PortfolioGrid.astro. The values are still checked here, so
+       * turning it back on needs no other change.
        */
       metrics: z
         .array(z.object({ label: z.string(), value: z.string() }))
         .optional(),
       /**
-       * What you did on it, as the part before "for <title>" — so 'Sole Developer'
-       * reads "Sole Developer for DESTRUA" in the hero. Every game sets this; leave it
+       * What you did on it, as the part before "for <title>", so 'Sole Developer'
+       * reads "Sole Developer for DESTRUA" in the hero. Every game sets this. Leave it
        * off a new one and the roles in `category` stand in until you write it.
        */
       roles: z.string().optional(),
@@ -260,7 +260,7 @@ const games = defineCollection({
       description: z.string().optional(),
       /**
        * Storefronts. A plain URL, or the whole <iframe> snippet from that store's embed
-       * options — see `storeLink` above. Each one adds a row to the portfolio card and
+       * options (see `storeLink` above). Each one adds a row to the portfolio card and
        * a link on the game's own page.
        */
       urlSteam: storeLink.optional(),

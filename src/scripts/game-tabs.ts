@@ -2,7 +2,7 @@
  * The Game / Video / Cover switch inside a portfolio entry.
  *
  * An entry gets a tab per thing there is to look at, and the served HTML already shows
- * one of them — this only moves between them. Which is showing lives in data-shown on
+ * one of them. This only moves between them. Which is showing lives in data-shown on
  * the group, so the CSS decides what's visible and this file only says what the state
  * is.
  *
@@ -68,7 +68,7 @@ export function select(group: HTMLElement, name: Tab) {
 
 /**
  * The tab an entry opens on: the build on a desktop, otherwise whatever the page was
- * served showing. Games are what the portfolio is for, so they lead — but a phone has
+ * served showing. Games are what the portfolio is for, so they lead, but a phone has
  * neither the input devices nor the connection for one, and never sees the tab at all.
  */
 export function showDefault(scope: ParentNode) {
@@ -94,7 +94,7 @@ desktop.addEventListener('change', () => {
 });
 
 /**
- * Freezes a running build without losing it — the same trick switching tabs uses, but
+ * Freezes a running build without losing it, the same trick switching tabs uses, but
  * hiding only the frame so the panel keeps its size and nothing jumps around. Used
  * while "Close the game?" is up, so the game isn't playing on behind the question.
  */

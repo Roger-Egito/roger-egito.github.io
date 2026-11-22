@@ -22,9 +22,9 @@ const { title, description, image, track = true, noindex = false } = Astro.props
   <head>
     {/*
       No <ClientRouter />. View transitions took over the Back button, and cancelling
-      one only downgrades it to a full page reload rather than stopping it — which
+      one only downgrades it to a full page reload rather than stopping it, which
       wiped out the dialog before "Close the game?" could be answered, taking the
-      running build with it. The animation wasn't worth 16 KB or that behaviour.
+      running build with it. The animation wasn't worth 16 KB or that behavior.
     */}
     <Head title={title} description={description} image={image} noindex={noindex} />
   </head>

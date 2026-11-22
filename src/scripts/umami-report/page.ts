@@ -27,7 +27,7 @@ import {
   type ClassifiedSession, type Kind, type Session, type UmamiEvent,
 } from '../../lib/umami-report/sessions.ts';
 import {
-  addDays, applyFilters, autoGranularity, breakdown, classificationSummary, clock, dimensionLabels, durations,
+  ENGAGED_MS, addDays, applyFilters, autoGranularity, breakdown, classificationSummary, clock, dimensionLabels, durations,
   eventProperties, events, filterUsage, heatmap, kinds, noFilters, pages, personPages, searchUsage, timeline, totals,
   visitRows, visitors, weekdays,
   type Dimension, type Filters, type Metric, type VisitRow, type VisitorRow,
@@ -37,6 +37,7 @@ import { clockTime, day, duration, el, hideTip, key, kindNames, moment, number, 
 import { table, type SortState } from './table.ts';
 
 const TZ = reportConfig.timeZone;
+const ENGAGED_S = ENGAGED_MS / 1000;
 const STORE = {
   overrides: 'umami-report:overrides',
   view: 'umami-report:view',
@@ -651,6 +652,7 @@ function overview(rows: VisitRow[]) {
       { class: 'cards' },
       rankCard('sources', [['source', 'Sources'], ['referrer', 'Referrers']]),
       rankCard('pages', [['page', 'Top pages'], ['entry', 'Entry pages'], ['exit', 'Exit pages']]),
+      engagedGamesCard(rows),
       rankCard('locations', [['country', 'Countries'], ['region', 'Regions'], ['city', 'Cities']]),
       rankCard('devices', [['device', 'Devices'], ['browser', 'Browsers'], ['os', 'OS'], ['screen', 'Screens'], ['language', 'Languages']]),
       heatmapCard(),
@@ -659,6 +661,42 @@ function overview(rows: VisitRow[]) {
       usageCard(rows)
     ),
   ];
+}
+
+/**
+ * The games people actually read: engaged visitors per game page (explore.ts, pages).
+ * Views reward one person reloading and averages reward a forgotten tab, so neither
+ * answers which game is most popular. Ties go to the one with more time spent on it.
+ */
+function engagedGamesCard(rows: VisitRow[]) {
+  const games = pages(rows)
+    .filter((p) => p.path.startsWith('/games/') && p.engaged > 0)
+    .sort((a, b) => b.engaged - a.engaged || b.time - a.time);
+  const all = expanded.has('engaged-games');
+  const shown = all ? games : games.slice(0, 9);
+  const more = games.length > shown.length ? el('button', { type: 'button', class: 'more' }, `Show all ${games.length}`) : null;
+  more?.addEventListener('click', expander('engaged-games'));
+  return card(
+    'Most engaged games',
+    null,
+    games.length === 0
+      ? el('p', { class: 'empty' }, `Nobody spent ${ENGAGED_S} seconds on a game with these filters.`)
+      : rankList({
+          head: ['Game', 'Engaged'],
+          rows: shown.map((p) => ({
+            value: p.path,
+            label: labelOf('page', p.path),
+            amount: p.engaged,
+            byKind: p.engagedByKind,
+            selected: view.filters.values.page?.includes(p.path) ?? false,
+            note: `${number(p.engaged)} engaged of ${number(p.visitors)} ${p.visitors === 1 ? 'visitor' : 'visitors'} · ${number(p.views)} views · ${duration(p.time)} in total`,
+          })),
+          format: number,
+          onPick: (value) => toggle('page', value),
+        }),
+    more,
+    note(`Engaged: people who spent at least ${ENGAGED_S} seconds on the game’s page, all their views added up. Each person counts once.`)
+  );
 }
 
 /** A breakdown card with small tabs, counting whatever the strip of numbers has picked. */
@@ -971,6 +1009,7 @@ function pagesTab(rows: VisitRow[]) {
           { key: 'path', label: 'Page', sort: (p) => p.path, cell: (p) => filterLink('page', p.path) },
           { key: 'views', label: 'Views', numeric: true, sort: (p) => p.views, cell: (p) => number(p.views) },
           { key: 'visitors', label: 'Visitors', numeric: true, sort: (p) => p.visitors, cell: (p) => number(p.visitors) },
+          { key: 'engaged', label: 'Engaged', numeric: true, sort: (p) => p.engaged, cell: (p) => number(p.engaged), hint: `People who spent at least ${ENGAGED_S} seconds here, all their views added up` },
           { key: 'entries', label: 'Entries', numeric: true, sort: (p) => p.entries, cell: (p) => number(p.entries), hint: 'Visits that started here' },
           { key: 'exits', label: 'Exits', numeric: true, sort: (p) => p.exits, cell: (p) => number(p.exits), hint: 'Visits that ended here' },
           { key: 'bounces', label: 'Bounces', numeric: true, sort: (p) => p.bounces, cell: (p) => number(p.bounces), hint: 'Visits that saw only this page' },

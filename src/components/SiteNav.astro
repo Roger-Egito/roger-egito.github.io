@@ -3,11 +3,11 @@
 // stays out of the way of a page that has never needed navigation to work.
 import { site } from '../config/site';
 
-// About is a dialog rather than a section now, and there's no contact section left to
-// jump to, so that one goes straight to the mail client.
+// About opens its dialog on the homepage and goes to the /about/ page anywhere else.
+// Contact goes straight to the mail client.
 const links = [
   { href: '#portfolio', label: 'Portfolio' },
-  { href: '#about-dialog', label: 'About', opens: '#about-dialog' },
+  { href: '/about/', label: 'About', opens: '#about-dialog' },
   { href: `mailto:${site.email}`, label: 'Contact', event: 'email-click' },
 ];
 ---

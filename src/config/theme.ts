@@ -1,19 +1,19 @@
 /**
- * Every colour on the site, in one place.
+ * Every color on the site, in one place.
  *
  * ── Editing this file ──────────────────────────────────────────────────────────
  *
- * Change a value between the quotes and save. That's the whole job — nothing else
- * needs touching, and the colour updates everywhere it's used.
+ * Change a value between the quotes and save. Nothing else needs touching, and the
+ * color updates everywhere it's used.
  *
  *     bg: '#151515',
- *            ↑ this part is the colour
+ *            ↑ this part is the color
  *
- * Any CSS colour works: '#151515', 'white', 'rgb(0 0 0 / 0.5)'. Keep the quotes and
+ * Any CSS color works: '#151515', 'white', 'rgb(0 0 0 / 0.5)'. Keep the quotes and
  * keep the comma at the end of the line.
  *
- * Don't rename the words on the left (`bg`, `txt`, …) — those are how the rest of
- * the site asks for each colour, so renaming one stops it being found.
+ * Don't rename the words on the left (`bg`, `txt`, …). Those are how the rest of
+ * the site asks for each color, so renaming one stops it being found.
  *
  * The `rgb(0 0 0 / 0.5)` ones are see-through blacks; the last number is how solid
  * it is, from 0 (invisible) to 1 (fully opaque).
@@ -22,7 +22,7 @@
 export const colors = {
   /* ── the page ──────────────────────────────────────────────────────────────── */
 
-  /** Behind everything. Also the colour of the browser's own bar on a phone. */
+  /** Behind everything. Also the color of the browser's own bar on a phone. */
   bg: '#151515',
   /** Body text, headings, and most icons. */
   txt: '#dddddd',
@@ -60,13 +60,13 @@ export const colors = {
   /* ── responsibility tags ─────────────────────────────────────────── */
 
   /**
-   * One per discipline, on the tag line at the bottom of a card. The colour is what
+   * One per discipline, on the tag line at the bottom of a card. The color is what
    * separates the disciplines now that the labels are gone.
    *
    * These come from IBM Carbon's dark theme, a set built for near-black backgrounds.
    * Measured against the chip's own tinted fill, each one reads at 6.1:1 to 6.5:1,
    * well past the 4.5:1 the accessibility guidelines ask for at this text size, and
-   * short of the 10:1 and up a fully bright colour would hit, which glares against
+   * short of the 10:1 and up a fully bright color would hit, which glares against
    * this much black.
    */
 
@@ -84,9 +84,9 @@ export const colors = {
   /* ── storefronts ─────────────────────────────────────────────── */
 
   /**
-   * Each store's button, in that store's own colour, so the button is recognizable
+   * Each store's button, in that store's own color, so the button is recognizable
    * before the label is read. These are the brands' own values, or the lighter end of
-   * their palette where the brand colour is too dark to carry black text on a dark
+   * their palette where the brand color is too dark to carry black text on a dark
    * card. The label sits on top in near-black, which reads at 5.9:1 on the itch red
    * and around 9:1 on the other two.
    */
@@ -127,9 +127,9 @@ export type ColorName = keyof typeof colors;
 const kebab = (name: string) => name.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 
 /**
- * The colours above as CSS custom properties. Head.astro drops this into every page,
- * which is what makes `var(--color-bg)` work in the stylesheets — so the object above
- * really is the only place a colour is written down.
+ * The colors above as CSS custom properties. Head.astro drops this into every page,
+ * which is what makes `var(--color-bg)` work in the stylesheets, so the object above
+ * is the only place a color is written down.
  */
 export const colorVariables = `:root {\n${Object.entries(colors)
   .map(([name, value]) => `  --color-${kebab(name)}: ${value};`)

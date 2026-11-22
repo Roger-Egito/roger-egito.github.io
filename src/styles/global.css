@@ -18,7 +18,7 @@ html {
 }
 
 /*
- * `cursor` inherits, so the rule above covers most of the page — but links and form
+ * `cursor` inherits, so the rule above covers most of the page, but links and form
  * controls have to be named explicitly. The browser's own stylesheet sets a cursor
  * directly on them (pointer on <a>, default on <button>), and a direct rule beats an
  * inherited one no matter who wrote it, so without this they'd fall back to the
@@ -38,7 +38,7 @@ input[type='reset'] {
   cursor: var(--cursor-default);
 }
 
-/* Typing needs the I-beam — it's what shows you where the caret will land. */
+/* Typing needs the I-beam, which shows where the caret will land. */
 input:not([type='button']):not([type='submit']):not([type='reset']):not([type='checkbox']):not([type='radio']),
 textarea {
   cursor: text;
@@ -148,7 +148,7 @@ section {
 /* A rule with the gamepad sitting on top of it, masking the middle. Same trick the
    old stylesheet used with an ::after pseudo-element. */
 /* 5px tall rather than the 0 it used to be, because the line is drawn by the two
-   pseudo-elements below instead of by a border-top on this element — and an absolutely
+   pseudo-elements below instead of by a border-top on this element, and an absolutely
    positioned line contributes no height. Same 5px on the page either way. */
 .star-rule {
   position: relative;
@@ -156,7 +156,7 @@ section {
   /* Explicit width, not just a max: the line is drawn by absolutely positioned
      pseudo-elements, so this box has no content of its own. In normal flow `auto`
      filled the container and the max-width capped it, but as a grid item `auto` plus
-     auto margins means shrink-to-fit — which is zero, and the rule vanishes. */
+     auto margins means shrink-to-fit, which is zero, and the rule vanishes. */
   width: 100%;
   max-width: 250px;
   margin: 25px auto 30px;
@@ -220,8 +220,8 @@ section {
   text-decoration: none;
   cursor: var(--cursor-default);
   /* The lift is the slow one the hero's name and the social buttons use; the fill
-     brightens on the standard timing. Two speeds on purpose — the size settles after
-     the colour, which is what stops the movement reading as a twitch. */
+     brightens on the standard timing. Two speeds on purpose: the size settles after
+     the color, which is what stops the movement reading as a twitch. */
   transition: filter var(--transition), transform 0.6s ease;
 }
 
@@ -231,7 +231,7 @@ section {
   transform: scale(1.15);
 }
 
-/* Pressing dips below the hovered size and springs back on release — the shorter
+/* Pressing dips below the hovered size and springs back on release. The shorter
    duration only applies on the way down, so it snaps under the finger and eases back
    up rather than mushing both ways. Same as .btn-social and the hero's name. */
 .btn:active {
@@ -260,7 +260,7 @@ section {
   height: 20px;
 }
 
-/* Filled with the page's own dark rather than the light ink colour, so a hovered
+/* Filled with the page's own dark rather than the light ink color, so a hovered
    control reads as a hole punched in the surface instead of a white chip sitting on
    top of it. The border and icon stay light against it. The lift is the same one the
    portfolio cards and the hero's d-pad use, so everything pressable answers the
@@ -275,7 +275,7 @@ section {
   color: var(--color-accent);
 }
 
-/* Pressing dips below the hovered size and springs back on release — the shorter
+/* Pressing dips below the hovered size and springs back on release. The shorter
    duration only applies on the way down, so it snaps under the finger and eases back
    up rather than mushing both ways. */
 .btn-social:active {
@@ -414,7 +414,7 @@ dialog.overlay:not([open]) .sheet {
   opacity: 1;
 }
 
-/* The popover UA styles would otherwise re-centre it and draw their own border. */
+/* The popover UA styles would otherwise re-center it and draw their own border. */
 .tip:popover-open {
   inset: auto;
   overflow: visible;

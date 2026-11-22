@@ -1,6 +1,6 @@
 ---
 // A picture or a clip in a game's long-form body in .mdx, either beside a block of text
-// or on its own, centred.
+// or on its own, centered.
 //
 //   <Media image={setupScreen} alt="The settings screen" caption="Initial game settings">
 //
@@ -31,7 +31,7 @@ type Props = {
   alt: string;
   /** Short line under the media. Optional. */
   caption?: string;
-  /** Left or right of the text at desktop widths, or centred on its own. */
+  /** Left or right of the text at desktop widths, or centered on its own. */
   side?: "left" | "right" | "center";
 } & ({ image: ImageMetadata; video?: never } | { video: string; image?: never });
 

@@ -185,7 +185,7 @@ const { menus, total } = Astro.props;
     gap: 6px;
   }
 
-  /* Centred only while they're on their own row, which is the phone layout. */
+  /* Centered only while they're on their own row, which is the phone layout. */
   @media (max-width: 767px) {
     .menus {
       justify-content: center;
@@ -411,7 +411,7 @@ const { menus, total } = Astro.props;
   /* --- the chips for what's filtering right now ---------------------------------
      Written by portfolio-filter.ts, so these are :global: a scoped rule only reaches
      elements that were in the page at build time. Shaped like the chips on a card, in
-     the same colour where the tag has one, with an X to say a click takes it off. */
+     the same color where the tag has one, with an X to say a click takes it off. */
   .active :global(.active-filter) {
     --chip-color: var(--color-txt);
 
@@ -442,7 +442,7 @@ const { menus, total } = Astro.props;
     opacity: 0.8;
   }
 
-  /* The five disciplines wear their own colour, the way they do on a card. Everything
+  /* The five disciplines wear their own color, the way they do on a card. Everything
      else keeps the page's ink, so the bar doesn't turn into a rainbow. */
   .active :global(.active-filter[data-category='design']) {
     --chip-color: var(--color-design);

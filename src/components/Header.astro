@@ -89,13 +89,13 @@ const clips = Object.keys(heroClips).map((slug) => {
         </button>
       </div>
 
-      {/* The name is the way into the about copy, which is a dialog now rather than a
-          section further down the page. A button inside the h1 keeps the heading a
-          heading while giving the click something real to land on. */}
+      {/* The name is the way into the About dialog. A link to /about/ inside the h1
+          keeps the heading a heading, opens the dialog on a plain click (modal.ts),
+          and opens the page itself in a new tab. */}
       <h1 class="name">
-        <button type="button" class="name-button" data-opens="#about-dialog">
+        <a href="/about/" class="name-button" data-opens="#about-dialog">
           {site.title}
-        </button>
+        </a>
       </h1>
       <p class="skills">{site.skills}</p>
 
@@ -114,7 +114,7 @@ const clips = Object.keys(heroClips).map((slug) => {
       <br />
 
       {/* Replaced with the credit for whichever game is playing, as soon as the reel
-          knows which that is. The slogan is what's left if the reel never runs — no
+          knows which that is. The slogan is what's left if the reel never runs, since no
           clips means no game to credit. */}
       <p class="profession" data-hero-credit>{site.slogan}</p>
 
@@ -186,8 +186,8 @@ const clips = Object.keys(heroClips).map((slug) => {
   /* Holds the text legible over whatever happens to be on screen, and lands on solid
      background by the bottom so the hero doesn't end on a visible edge. */
   /* The whole hero is a shortcut into whichever game is playing, so the scrim and the
-     text block have to let clicks through to it. Everything with a job of its own —
-     the links, the d-pad — takes its clicks back. */
+     text block have to let clicks through to it. Everything with a job of its own
+     (the links, the d-pad) takes its clicks back. */
   .hero {
     cursor: var(--cursor-pointer);
   }
@@ -217,15 +217,10 @@ background: linear-gradient(
   }
 
   .name-button {
-    padding: 0;
-    border: 0;
-    background: none;
+    /* inline-block so the hover scale applies: transforms skip plain inline boxes. */
+    display: inline-block;
     color: inherit;
-    font: inherit;
-    letter-spacing: inherit;
-    /* Not covered by `font: inherit` — the UA sheet sets text-transform: none on form
-       controls, so without this the name loses the uppercase it gets from h1. */
-    text-transform: inherit;
+    text-decoration: none;
   }
 
   /* Same lift the portfolio cards use, so everything you can press on the page
@@ -237,7 +232,7 @@ background: linear-gradient(
   }
 
   /* Both pads sit well back until you go for one, so the footage behind reads as the
-     subject and the controls as trim. This resting fade is the hero's alone — the
+     subject and the controls as trim. This resting fade is the hero's alone. The
      footer's copies of these icons sit on a flat bar with nothing to recede from.
 
      The fill is always on rather than arriving with the hover, so each control reads as
@@ -259,8 +254,8 @@ background: linear-gradient(
   }
 
   /* The lift is on .btn-social in global.css, so the footer and the game pages get it
-     too. .key isn't a .btn-social, so it keeps its own copy. The fill isn't here any
-     more — it's on at rest now, and the hover only lifts the opacity. */
+     too. .key isn't a .btn-social, so it keeps its own copy. The fill isn't here
+     anymore: it's on at rest now, and the hover only lifts the opacity. */
   .key:hover,
   .key:focus-visible {
     transform: scale(1.25);
@@ -272,8 +267,8 @@ background: linear-gradient(
     color: var(--color-accent);
   }
 
-  /* Pressing dips the control below its hovered size and it springs back on release —
-     the shorter duration only applies on the way down, so it snaps under the finger
+  /* Pressing dips the control below its hovered size and it springs back on release.
+     The shorter duration only applies on the way down, so it snaps under the finger
      and eases back up rather than mushing both ways. */
   .key:active,
   .name-button:active {
@@ -366,22 +361,22 @@ background: linear-gradient(
      and the links back under the slogan.
 
      The name must not move, so the two pads are taken out of flow and hung in the
-     outer columns. A grid track of 1fr on each side keeps the middle column — and so
-     the name — dead centre, and because the pads are absolutely positioned they can
+     outer columns. A grid track of 1fr on each side keeps the middle column, and so
+     the name, dead center, and because the pads are absolutely positioned they can
      be taller than the name without pushing anything down. */
   @media (min-width: 64rem) {
     .intro-text {
       position: relative;
       display: grid;
-      /* Not justify-items: center — that shrink-wraps every item, and the star-rule
+      /* Not justify-items: center. That shrink-wraps every item, and the star-rule
          draws its line with absolutely positioned pseudo-elements, so shrink-wrapping
          collapses it to nothing. Letting items stretch to the column keeps it at its
-         own max-width, centred by its auto margins as before. */
+         own max-width, centered by its auto margins as before. */
       grid-template-columns: 1fr auto 1fr;
     }
 
     /* :global on the child, or Astro scopes it to `*[data-astro-cid-header]` and the
-       star-rule — which comes from StarRule.astro and carries its own id — silently
+       star-rule (which comes from StarRule.astro and carries its own id) silently
        auto-places itself into the third column instead. */
     .intro-text > :global(*) {
       grid-column: 2;
@@ -398,7 +393,7 @@ background: linear-gradient(
     }
 
     /* Name, role, location and contact ride up together as one block, so the foot of
-       ROGER EGITO lands level with the middle of the up key — and with the itch.io
+       ROGER EGITO lands level with the middle of the up key, and with the itch.io
        button, which sits at the same height on the other side.
        translate rather than a margin: it moves them without touching the flow, so the
        star-rule, the credit and the two pads stay exactly where they are, and the
@@ -416,14 +411,14 @@ background: linear-gradient(
        under the pointer, a click on it isn't a click on the backdrop, so selecting
        and copying the contact line doesn't fire the game underneath.
 
-       Not literally gamepad-shaped — faGamepad is about 5:4 and this box is nearer
+       Not literally gamepad-shaped: faGamepad is about 5:4 and this box is nearer
        5:2, so masking to it would either squash the icon or crop the text. The wide
        radius gets at the same idea without distorting anything. */
     .intro-text::before {
       content: '';
       position: absolute;
       z-index: -1;
-      /* Pinned to the four rows it's meant to cover — name, role, location, contact —
+      /* Pinned to the four rows it's meant to cover (name, role, location, contact)
          rather than to hand-measured insets, so it follows them if their sizes ever
          change. Absolutely positioned, so it takes the grid area as its box without
          taking a slot in the layout. Both end lines are spelled out: for an
@@ -457,10 +452,10 @@ background: linear-gradient(
     }
 
     /* Spans the whole grid rather than sitting in the middle column. The credit
-       changes with every clip and some are longer than the name; in the auto-sized
-       middle column that would widen the column, and the pads — which hang off the
-       columns either side of it — would shuffle sideways on every change. Across all
-       three columns its length costs nothing, and it's centred text either way. */
+       changes with every clip and some are longer than the name. In the auto-sized
+       middle column that would widen the column, and the pads, which hang off the
+       columns either side of it, would shuffle sideways on every change. Across all
+       three columns its length costs nothing, and it's centered text either way. */
     .intro-text > p[data-hero-credit] {
       grid-column: 1 / -1;
       /* Half a line lower than the rest of the lifted block, so it reads as a caption
@@ -469,11 +464,11 @@ background: linear-gradient(
     }
 
     /* Holds the block the height it was with the links still in it. Without this the
-       links leaving the flow makes the block shorter, and since the hero centres its
-       contents, the name would drift down the screen — the one thing it mustn't do. */
+       links leaving the flow makes the block shorter, and since the hero centers its
+       contents, the name would drift down the screen, the one thing it mustn't do. */
     .intro-text {
       /* The photo used to hold this space above the name. Keeping most of it is what
-         stops the pads riding up the screen now that it's gone — they stay exactly
+         stops the pads riding up the screen now that it's gone. They stay exactly
          where they were, and the name lifts only slightly. */
       padding-top: 116px;
       padding-bottom: 32px;
@@ -482,7 +477,7 @@ background: linear-gradient(
     /* Both end lines are spelled out. For an absolutely positioned grid child an
        `auto` end line means the container's padding edge rather than a one-track span,
        so `grid-row: 1` alone would hand each pad a box as tall as the whole intro
-       block and centre it against that — level with the star-rule, not the name. */
+       block and center it against that, level with the star-rule instead of the name. */
     .dpad,
     .intro-text > :global(.header-social) {
       position: absolute;
@@ -509,7 +504,7 @@ background: linear-gradient(
       padding-top: 0;
     }
 
-    /* Four keys around a centre, the way a controller lays them out: one up, one
+    /* Four keys around a center, the way a controller lays them out: one up, one
        either side, one down. Source order is that same reading order. */
     .key:nth-child(1),
     :global(.header-social li:nth-child(1)) {
@@ -540,7 +535,7 @@ background: linear-gradient(
       border: 2px solid var(--color-txt);
       border-radius: 8px;
       /* No `background: none` here. The resting fill is set further up alongside the
-         social buttons', and the shorthand would reset it back to transparent — the
+         social buttons', and the shorthand would reset it back to transparent. The
          browser's own button background is already gone by then anyway. */
       color: var(--color-txt);
     }
@@ -593,7 +588,7 @@ background: linear-gradient(
   }
 
   /* Someone who asked for less motion gets no clips (hero-reel.ts bails) and no
-     bobbing arrow either — but keeps the link, which is the part that does something. */
+     bobbing arrow either, but keeps the link, which is the part that does something. */
   @media (prefers-reduced-motion: reduce) {
     .scroll-cue {
       animation: none;

@@ -4,7 +4,7 @@
  * Assigning `iframe.src` navigates the frame, and a frame navigation pushes an entry
  * onto the browser's session history. Opening a dialog, closing it and opening it
  * again therefore buried our own history entry, and Back stopped returning to the
- * homepage — it walked back through the trailer's navigations instead.
+ * homepage. It walked back through the trailer's navigations instead.
  *
  * Replacing the element sidesteps that: a freshly created iframe's first load
  * *replaces* rather than pushes. Destroying the old frame also guarantees whatever was

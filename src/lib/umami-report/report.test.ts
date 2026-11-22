@@ -236,6 +236,19 @@ test('pages: entries, exits, bounces and time on page', () => {
   assert.deepEqual([hotel.exits, hotel.timedViews, hotel.averageTime, hotel.medianTime], [1, 0, null, null]);
 });
 
+test('engaged visitors: 30 seconds on a page, all of a person’s views added up', () => {
+  const table = pages(real);
+  const engaged = (path: string) => table.find((p) => p.path === path)?.engaged;
+  // / : Dulles stayed 40s. The recruiter stayed 90s, then 20s on a second visit, and
+  // counts once. The bounce has no time at all.
+  assert.equal(engaged('/'), 2);
+  assert.equal(engaged('/games/cursed-blight/'), 1); // 80s
+  assert.equal(engaged('/games/hotel-77/'), 0); // the last page of an Umami-era visit: no time
+  // A leave event gives the last page its time: my 90s on Destrua, counted as mine.
+  const destrua = pages(rows).find((p) => p.path === '/games/destrua/')!;
+  assert.deepEqual(destrua.engagedByKind, { real: 0, me: 1, bot: 0 });
+});
+
 test('visitors and visit durations', () => {
   const linkedin = visitors(real).find((v) => v.session.id === 'real-linkedin')!;
   assert.deepEqual([linkedin.visits, linkedin.views], [2, 4]);

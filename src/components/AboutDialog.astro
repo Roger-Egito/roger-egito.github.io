@@ -1,73 +1,20 @@
 ---
-// The about copy, as a dialog opened from the name in the hero rather than a section
-// you scroll past. Same overlay and card as the game dialogs — those styles are in
-// global.css so both can share them.
+// The about text as a dialog over the homepage, opened from the name in the hero and
+// from the nav. Like the game dialogs, it puts its own page's URL, /about/, in the
+// address bar (src/scripts/modal.ts), so the visit is counted and the link can be
+// shared. The overlay and card styles are in global.css, shared with the game dialogs.
 import StarRule from './StarRule.astro';
+import AboutCopy from './AboutCopy.astro';
+import { pageTitle } from '../config/site';
 ---
 
-<dialog class="overlay" id="about-dialog" aria-label="About Roger Egito">
+<dialog class="overlay" id="about-dialog" aria-label="About Roger Egito" data-url="/about/" data-title={pageTitle('About')}>
   <div class="sheet" tabindex="-1">
     <div class="panel">
       <h2 class="section-heading">About</h2>
       <StarRule />
-
-      <div class="columns">
-        <p>
-          I'm Roger Egito, a game designer and Unity developer from Brazil. I design games
-          and the systems inside them, write the words players read, and build it all
-          myself in Unity.
-          <br /><br />
-          I designed and programmed Cursed Blight, from a one-page brief to release in
-          about a month. I was the largest contributor to COVID 35, built the meta layer of
-          All Stars Merge on Google Play, and designed rooms and anomalies for Hotel 77 on
-          Steam.
-        </p>
-        <p>
-          At Universidade Federal Fluminense, where I study Information Systems, I lead the
-          development of Vivenciando o Passado, a VR experience about the Atlantic slave
-          trade that we showed to the public at SBPC 2026.
-          <br /><br />
-          Working with the historians behind it taught me to keep a design true to its
-          source and still make it play well, and that the best feedback comes from
-          watching people play.
-        </p>
-        <p>
-          Away from work I run tabletop RPGs, I'm designing my own 2d10 system, and I'm
-          playing through video game history in order, starting from 1947. I also spent
-          five years teaching English, and I'm C1 certified.
-          <br /><br />
-          If you're hiring a game designer, a Unity developer or a narrative writer, I'd
-          love to talk. Write to me at <a
-            href="mailto:rogeregito@outlook.com"
-            data-event="email-click"
-            data-event-place="about">rogeregito@outlook.com</a
-          >.
-        </p>
-      </div>
-
+      <AboutCopy />
       <button type="button" class="btn" data-close>Close</button>
     </div>
   </div>
 </dialog>
-
-<style>
-  /* Three columns on a wide screen, stacked below that — the same shape the About
-     section used, kept so the copy reads the way it always did. */
-  .columns {
-    display: grid;
-    gap: var(--space-gap);
-    margin-bottom: var(--space-gap);
-    text-align: left;
-  }
-
-  .columns p {
-    margin: 0;
-  }
-
-  @media (min-width: 768px) {
-    .columns {
-      grid-template-columns: repeat(3, 1fr);
-      align-items: start;
-    }
-  }
-</style>
