@@ -36,6 +36,18 @@ export function svg(tag: string, attributes: Attributes = {}, text?: string) {
   return node;
 }
 
+/**
+ * A Font Awesome icon as inline SVG, from its definition in the package, the way
+ * src/components/Icon.astro draws them at build time. Decorative: the button it sits
+ * in carries the label.
+ */
+export function icon(definition: { icon: [number, number, unknown, unknown, string | string[]] }) {
+  const [width, height, , , path] = definition.icon;
+  const node = svg('svg', { viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true', focusable: 'false', class: 'icon' });
+  for (const d of Array.isArray(path) ? path : [path]) node.append(svg('path', { d, fill: 'currentColor' }));
+  return node;
+}
+
 /* --- formats --------------------------------------------------------------------- */
 
 export const number = (value: number) => value.toLocaleString('en-US');

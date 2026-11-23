@@ -33,7 +33,8 @@ import {
   type Dimension, type Filters, type Metric, type VisitRow, type VisitorRow,
 } from '../../lib/umami-report/explore.ts';
 import { heatmapChart, legend, rankList, stackedColumns, visitStrip } from './charts.ts';
-import { clockTime, day, duration, el, hideTip, key, kindNames, moment, number, percent, segmented, shortDay, type Child } from './dom.ts';
+import { faArrowUpRightFromSquare, faCheck, faCopy, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { clockTime, day, duration, el, hideTip, icon, key, kindNames, moment, number, percent, segmented, shortDay, type Child } from './dom.ts';
 import { table, type SortState } from './table.ts';
 
 const TZ = reportConfig.timeZone;
@@ -202,7 +203,15 @@ const showPerson = (id: string) => setView({ tab: 'people', person: id });
 
 const placeOf = (s: ClassifiedSession) => [s.city, s.region, s.country].filter(Boolean).join(', ') || 'Unknown place';
 const deviceOf = (s: ClassifiedSession) => [s.device, s.browser, s.os].filter(Boolean).join(' · ');
-const pathWithQuery = (path: string, query: string | null) => path + (query ? `?${query}` : '');
+/**
+ * A stored page as the address it was: "/?f=unity#portfolio". The collector keeps the
+ * #hash on the path, the way Umami did, so the query goes back in before it.
+ */
+function pathWithQuery(path: string, query: string | null) {
+  const hashAt = path.indexOf('#');
+  const [bare, hash] = hashAt === -1 ? [path, ''] : [path.slice(0, hashAt), path.slice(hashAt)];
+  return bare + (query ? `?${query}` : '') + hash;
+}
 
 /** "#12 · Rio de Janeiro · chrome on Windows 10": a name for a person, not an id. */
 const personLabel = (s: ClassifiedSession) =>
@@ -231,6 +240,46 @@ function filterLink(dimension: Dimension, value: string, text = labelOf(dimensio
   const button = el('button', { type: 'button', class: 'link', title: `Filter by ${dimensionLabels[dimension].toLowerCase()}` }, text);
   button.addEventListener('click', () => toggle(dimension, value));
   return button;
+}
+
+/**
+ * A page someone viewed, in a person's activity or a visit's steps: its address
+ * filters the report to that page and opens the Overview, and two buttons beside it
+ * open the page on the site in a new tab or copy its full address.
+ */
+function viewedPage(path: string, query: string | null) {
+  const address = pathWithQuery(path, query);
+  const full = new URL(address, site.url).href;
+
+  const filter = el('button', { type: 'button', class: 'link', title: 'Filter the report to this page and see it in the Overview' }, address);
+  filter.addEventListener('click', () => {
+    const current = view.filters.values.page ?? [];
+    // Added, never toggled off: the click means "show me this page".
+    const page = current.includes(path) ? current : [...current, path];
+    setView({ tab: 'overview', filters: { ...view.filters, values: { ...view.filters.values, page } } });
+  });
+
+  const open = el('a', { class: 'icon-button', href: full, target: '_blank', rel: 'noopener', title: 'Open this page on the site', 'aria-label': `Open ${address} on the site` }, icon(faArrowUpRightFromSquare));
+
+  const copy = el('button', { type: 'button', class: 'icon-button', title: 'Copy the address', 'aria-label': `Copy the address of ${address}` }, icon(faCopy));
+  let reset: number | undefined;
+  copy.addEventListener('click', async () => {
+    let copied = true;
+    try {
+      await navigator.clipboard.writeText(full);
+    } catch {
+      copied = false; // no permission, or not a secure page
+    }
+    copy.replaceChildren(icon(copied ? faCheck : faXmark));
+    copy.title = copied ? 'Copied' : 'The browser didn’t allow copying';
+    window.clearTimeout(reset);
+    reset = window.setTimeout(() => {
+      copy.replaceChildren(icon(faCopy));
+      copy.title = 'Copy the address';
+    }, 1500);
+  });
+
+  return el('span', { class: 'event-page' }, filter, open, copy);
 }
 
 const kindTag = (kind: Kind) => el('span', { class: 'kind-tag' }, key(kind), kindNames[kind]);
@@ -924,7 +973,7 @@ function profile(session: ClassifiedSession) {
             { class: 'event' },
             el('time', {}, clockTime(step.view.createdAt, TZ)),
             el('span', { class: 'event-dot', 'aria-hidden': 'true' }),
-            filterLink('page', step.view.urlPath, pathWithQuery(step.view.urlPath, step.view.urlQuery)),
+            viewedPage(step.view.urlPath, step.view.urlQuery),
             el(
               'span',
               {
@@ -1032,7 +1081,7 @@ function stepsOf(row: VisitRow) {
         'li',
         {},
         el('time', {}, clockTime(step.view.createdAt, TZ)),
-        filterLink('page', step.view.urlPath, pathWithQuery(step.view.urlPath, step.view.urlQuery)),
+        viewedPage(step.view.urlPath, step.view.urlQuery),
         el('span', { class: 'muted' }, step.timeOnPage === null ? 'left here' : duration(step.timeOnPage)),
         ...step.events.map((event) => el('span', { class: 'click-pill' }, describeEvent(event)))
       )
