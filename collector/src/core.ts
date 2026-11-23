@@ -39,6 +39,15 @@ export const LIMIT = {
   properties: 10,
 } as const;
 
+/**
+ * What the tracker may say about its own browser: me (switched with ?no-track),
+ * webdriver (under automation) or no-screen (a headless browser).
+ */
+export const CLIENT_FLAGS = ['me', 'webdriver', 'no-screen'] as const;
+export type ClientFlag = (typeof CLIENT_FLAGS)[number];
+/** A stored flag: the tracker's, or bot-ua, which only the collector decides. */
+export type Flag = ClientFlag | 'bot-ua';
+
 export interface Payload {
   type: 'pageview' | 'event' | 'leave';
   url: string;
@@ -49,6 +58,7 @@ export interface Payload {
   /** Only for type "event": the click's name, and its properties. */
   name: string | null;
   data: Record<string, string | number>;
+  flag: ClientFlag | null;
 }
 
 const text = (value: unknown, max: number) =>
@@ -83,7 +93,10 @@ export function validate(body: unknown): Payload | null {
 
   const screen = typeof raw.screen === 'string' && /^\d{1,5}x\d{1,5}$/.test(raw.screen) ? raw.screen : null;
   const language = typeof raw.language === 'string' && /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(raw.language) ? raw.language.slice(0, 35) : null;
-  return { type, url, referrer: text(raw.referrer, LIMIT.referrer), title: text(raw.title, LIMIT.title), screen, language, name, data };
+  // An unknown flag is no flag, not a reason to drop the event: a bad value can only
+  // make a visit look ordinary, which is what it would have looked like anyway.
+  const flag = CLIENT_FLAGS.find((known) => known === raw.flag) ?? null;
+  return { type, url, referrer: text(raw.referrer, LIMIT.referrer), title: text(raw.title, LIMIT.title), screen, language, name, data, flag };
 }
 
 const bareHost = (host: string) => host.toLowerCase().replace(/^www\./, '');
@@ -156,6 +169,13 @@ export function clientOf(userAgent: string, screen: string | null): Client {
 /** Crawlers and other automated agents, by their user agent. */
 export const isBot = (userAgent: string) => !userAgent || isbot(userAgent);
 
+/**
+ * The flag an event is stored with. The user agent comes first: it's seen here, so a
+ * page can't talk its way out of it, while the tracker's flag is only its own word.
+ */
+export const flagOf = (clientFlag: ClientFlag | null, userAgent: string): Flag | null =>
+  isBot(userAgent) ? 'bot-ua' : clientFlag;
+
 /** "BR-RJ" from "BR" and "RJ", the way Umami writes a region. */
 export function regionOf(country: string | null, region: string | null) {
   if (!country || !region) return null;
@@ -174,9 +194,14 @@ const sha256 = async (parts: string[]) => hex(await crypto.subtle.digest('SHA-25
  * secret, the month, their IP and their browser. The same device on the same network
  * is the same visitor all month, and a new one the next. The secret means nobody who
  * knows an IP can work out its visitor id, and the IP itself is never stored.
+ *
+ * The flag is part of who they are. Roger's flagged browser and a guest's identical
+ * Chrome on the same Wi-Fi would otherwise be one visitor, half flagged. With it, a
+ * visitor's events always share one flag, so the dashboard can classify a whole
+ * visitor by it. An unflagged id is the same as before flags existed.
  */
-export async function visitorOf(secret: string, moment: Date, ip: string, userAgent: string) {
-  const h = await sha256([secret, monthOf(moment), ip, userAgent]);
+export async function visitorOf(secret: string, moment: Date, ip: string, userAgent: string, flag: Flag | null = null) {
+  const h = await sha256([secret, monthOf(moment), ip, userAgent, ...(flag ? [flag] : [])]);
   // Shaped like a UUID, the way Umami's session ids are, so ids look alike in the dashboard.
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`;
 }

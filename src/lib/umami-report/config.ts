@@ -25,7 +25,18 @@ export interface ReportConfig {
   timeZone: string;
   /** Referrers from these hosts are the site itself, not a source. */
   siteHosts: string[];
-  /** My devices. Checked first, so a match here is never called a bot. */
+  /**
+   * When the site's own collector took over from Umami. From then on, my browsers say
+   * so themselves (the ?no-track switch flags every event they send), so a session
+   * that starts after it is mine only by its flag.
+   */
+  collectorSince: string;
+  /**
+   * My devices, for the visits Umami recorded, which carry no flag. Only sessions that
+   * started before collectorSince are checked: after it, a look-alike device is
+   * someone else's, the way a guest on my Wi-Fi with the same Chrome would be. Checked
+   * before the bot rules, so a match here is never called a bot.
+   */
   me: DeviceRule[];
   bots: {
     /**
@@ -56,6 +67,9 @@ export interface ReportConfig {
 export const reportConfig: ReportConfig = {
   timeZone: 'America/Sao_Paulo',
   siteHosts: ['roger-egito.github.io'],
+  // The day the collector went live (commit e8e49af). Umami's last visit is Nov 18,
+  // the collector's first is Nov 22, so the boundary falls between them.
+  collectorSince: '2026-11-22T00:00:00-03:00',
 
   me: [
     {

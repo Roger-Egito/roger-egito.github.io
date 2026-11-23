@@ -56,12 +56,14 @@ const preview = image ? new URL(image, site.url).href : undefined;
 {preview && <meta property="og:image" content={preview} />}
 <meta name="twitter:card" content={preview ? 'summary_large_image' : 'summary'} />
 
-{/* Keeps my own visits out of the numbers. Open any page once with ?no-track on a
-    device, give the password, and that browser stops being counted on every page of the
-    site. ?track turns counting back on, no password needed.
+{/* Marks my own visits, so the dashboard can tell them apart. Open any page once with
+    ?no-track on a device, give the password, and that browser's visits are flagged as
+    mine on every page of the site. ?track takes the flag off, no password needed. The
+    names are from when the switch stopped counting altogether, kept so the links I
+    already use still work.
 
     The switch is umami.disabled in local storage, a name kept from when Umami counted the
-    visits, so the browsers already switched off stayed off when it went. The tracker
+    visits, so the browsers already switched stayed switched when it went. The tracker
     (src/scripts/tracker.ts) checks it before every send, dialogs and the CV included.
     This flips it from a link, which is the only way to do it on a phone, where there's
     no console to type into.
@@ -72,7 +74,7 @@ const preview = image ? new URL(image, site.url).href : undefined;
 
     It's inline, so it runs before the tracker, which is a deferred module. While the
     password is being asked for, the switch is already on, so the visit carrying the
-    link isn't counted whatever the answer. A wrong answer puts the switch back the
+    link is flagged as mine whatever the answer. A wrong answer puts the switch back the
     way it was and sends you to the homepage. */}
 <script is:inline>
   (() => {
@@ -102,7 +104,7 @@ const preview = image ? new URL(image, site.url).href : undefined;
     if (on) {
       store?.removeItem('umami.disabled');
       tidy();
-      if (store) alert('This browser is counted in the analytics again.');
+      if (store) alert('This browser is counted as a visitor again.');
       return;
     }
 
@@ -119,7 +121,7 @@ const preview = image ? new URL(image, site.url).href : undefined;
       if (store && hash === '7e70e8f070cfb15dae6dae12034f3fd276283b14eb1f0d4f964123146aa3974b') {
         store.setItem('umami.disabled', '1');
         tidy();
-        alert('This browser is no longer counted in the analytics.');
+        alert('This browser’s visits are now marked as yours.');
         return;
       }
       if (before === null) store?.removeItem('umami.disabled');

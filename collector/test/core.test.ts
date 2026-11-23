@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  DEVICE, EVENT, LIMIT, READ_LIMIT, askedAtOf, deviceIdOf, deviceKeyOf, isToken, labelOf, linkLive, tokenKeyOf, VISIT_GAP_MS, clientOf, isBot, networkOf, placeOf, propertiesOf, referrerDomainOf, regionOf,
+  DEVICE, EVENT, LIMIT, READ_LIMIT, askedAtOf, deviceIdOf, deviceKeyOf, flagOf, isToken, labelOf, linkLive, tokenKeyOf, VISIT_GAP_MS, clientOf, isBot, networkOf, placeOf, propertiesOf, referrerDomainOf, regionOf,
   requesterOf, retryAfterOf, sameSecret, timestampOf, validate, visitFor, visitorOf,
 } from '../src/core.ts';
 
@@ -84,6 +84,38 @@ test('a visitor is the same all month and new the next, and depends on the secre
   assert.notEqual(early, other);
   assert.match(early, /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
   assert.equal(early.includes('1.2.3.4'), false);
+});
+
+test('the tracker may flag its own browser, and anything else it sends as a flag is no flag', () => {
+  const event = (flag: unknown) => validate({ type: 'pageview', url: 'https://roger-egito.github.io/', flag })?.flag;
+  assert.equal(event('me'), 'me');
+  assert.equal(event('webdriver'), 'webdriver');
+  assert.equal(event('no-screen'), 'no-screen');
+  assert.equal(event('bot-ua'), null); // only the collector decides that one
+  assert.equal(event('admin'), null);
+  assert.equal(event(undefined), null);
+});
+
+test('a bot user agent outranks what the tracker says, and nothing is dropped for it', () => {
+  const GOOGLEBOT = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)';
+  assert.equal(flagOf(null, GOOGLEBOT), 'bot-ua');
+  assert.equal(flagOf('me', GOOGLEBOT), 'bot-ua');
+  assert.equal(flagOf(null, ''), 'bot-ua');
+  assert.equal(flagOf('me', CHROME_WINDOWS), 'me');
+  assert.equal(flagOf(null, CHROME_WINDOWS), null);
+});
+
+test('a flag makes a separate visitor, and no flag keeps the id it had before flags', async () => {
+  const at = new Date('2026-11-23T12:00:00Z');
+  const plain = await visitorOf('s', at, '1.2.3.4', CHROME_WINDOWS);
+  assert.equal(await visitorOf('s', at, '1.2.3.4', CHROME_WINDOWS, null), plain);
+  // The id this month's unflagged visitors were stored under: the hash without a flag part.
+  const { createHash } = await import('node:crypto');
+  const before = createHash('sha256').update(['s', '2026-11', '1.2.3.4', CHROME_WINDOWS].join('\n')).digest('hex');
+  assert.equal(plain.replaceAll('-', ''), before.slice(0, 32));
+  const mine = await visitorOf('s', at, '1.2.3.4', CHROME_WINDOWS, 'me');
+  assert.notEqual(mine, plain);
+  assert.notEqual(await visitorOf('s', at, '1.2.3.4', CHROME_WINDOWS, 'webdriver'), mine);
 });
 
 test('a visit goes on while events keep coming, and ends after 30 quiet minutes', () => {

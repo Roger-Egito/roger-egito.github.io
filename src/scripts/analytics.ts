@@ -8,7 +8,7 @@
  * PDF's path, so it sits in the same Pages list as everything else.
  *
  * Nothing here checks the no-track switch: the tracker does that itself, on every
- * send, so a browser switched off with ?no-track stays off for these too.
+ * send, so a browser switched with ?no-track is flagged as mine for these too.
  *
  * What this can't cover: someone opening the CV's address directly, from a link
  * shared elsewhere, never loads a page with this script on it.

@@ -28,7 +28,12 @@ CREATE TABLE IF NOT EXISTS events (
   language        TEXT,
   country         TEXT,
   region          TEXT,
-  city            TEXT
+  city            TEXT,
+  -- Why the visitor isn't an ordinary one, or null when they are: me (a browser of
+  -- Roger's, switched with ?no-track), webdriver or no-screen (what the tracker saw),
+  -- bot-ua (a crawler's user agent, seen here). Kept rather than dropped, so the
+  -- dashboard filters them out and a wrong call can still be undone.
+  flag            TEXT
 );
 
 -- The visitor's last event, looked up on every new one to decide the visit.

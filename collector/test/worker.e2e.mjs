@@ -35,8 +35,12 @@ statuses.push((await post({ type: 'event', name: 'store-click', url: `${SITE}/ga
 statuses.push((await post({ type: 'leave', url: `${SITE}/games/hotel-77/`, title: marker, screen: '1920x1080', language: 'pt-BR' })).status);
 results.statuses = statuses;
 
-// Things that must not be stored.
+// Kept, flagged: a crawler, and the same browser switched with ?no-track.
 await post({ type: 'pageview', url: `${SITE}/bot`, title: marker }, { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1)' });
+await post({ type: 'pageview', url: `${SITE}/mine`, title: marker, flag: 'me', screen: '1920x1080', language: 'pt-BR' });
+await post({ type: 'pageview', url: `${SITE}/claims-bot`, title: marker, flag: 'bot-ua', screen: '1920x1080', language: 'pt-BR' });
+
+// Things that must not be stored.
 await post({ type: 'pageview', url: `${SITE}/other-origin`, title: marker }, { Origin: 'https://evil.example' });
 await post({ type: 'pageview', url: 'https://evil.example/', title: marker });
 await post('x'.repeat(5000));
@@ -48,11 +52,18 @@ const response = await read();
 results.rightKey = response.status;
 results.cors = response.headers.get('access-control-allow-origin');
 const body = await response.json();
-const mine = body.website_event.filter((e) => e.page_title === marker);
+const all = body.website_event.filter((e) => e.page_title === marker);
+const at = (path) => all.find((e) => e.url_path === path);
+const mine = all.filter((e) => !['/bot', '/mine', '/claims-bot'].includes(e.url_path));
 results.stored = mine.map((e) => [e.event_type, e.event_name, e.url_path, e.url_query, e.referrer_domain, e.utm_source, e.browser, e.os, e.device, e.screen, e.language].join(' | '));
 results.oneVisitor = new Set(mine.map((e) => e.session_id)).size === 1;
 results.oneVisit = new Set(mine.map((e) => e.visit_id)).size === 1;
 results.properties = body.event_data.filter((d) => mine.some((e) => e.event_id === d.website_event_id)).map((d) => `${d.data_key}=${d.string_value}`);
 results.noIpAnywhere = !JSON.stringify(mine).includes('127.0.0.1');
-results.blockedOnesStored = body.website_event.filter((e) => e.page_title === marker && ['/bot', '/other-origin'].includes(e.url_path)).length;
+results.flags = mine.map((e) => e.flag);
+results.botKeptAs = at('/bot')?.flag;
+results.meKeptAs = at('/mine')?.flag;
+results.meIsAnotherVisitor = at('/mine')?.session_id !== mine[0].session_id;
+results.clientCantClaimBotUa = at('/claims-bot')?.flag ?? null;
+results.blockedOnesStored = all.filter((e) => e.url_path === '/other-origin').length;
 console.log(JSON.stringify(results, null, 1));

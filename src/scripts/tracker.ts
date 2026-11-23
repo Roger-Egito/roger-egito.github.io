@@ -17,29 +17,37 @@
  * leaves the site is still counted, without holding the navigation back the way
  * Umami's script did.
  *
- * Sends nothing when:
- *   - the page isn't on the live site (working on it locally stays out of the numbers)
- *   - this browser is switched off with ?no-track (the umami.disabled flag, kept by
- *     name so the browsers already switched off stay off)
- *   - the browser is under automation (navigator.webdriver) or reports no screen,
- *     which is how the headless bots that run JavaScript give themselves away
+ * Sends everything, flagged when it isn't an ordinary visitor, so the dashboard filters
+ * it rather than never seeing it:
+ *   - me: this browser was switched with ?no-track (the umami.disabled key, kept by
+ *     name so the browsers switched before the collector stay switched). Also while
+ *     the switch's password is still being asked for, so the visit carrying the link
+ *     is marked whatever the answer.
+ *   - webdriver: the browser is under automation
+ *   - no-screen: it reports no screen, which is how headless bots give themselves away
+ *
+ * Sends nothing at all when the page isn't on the live site, so working on it locally
+ * stays out of the data.
  */
 import { site } from '../config/site';
 
 const endpoint = site.analytics.collector ? `${site.analytics.collector}/e` : '';
 const liveHost = new URL(site.url).hostname;
 
-function switchedOff() {
+function switched() {
   try {
-    if (localStorage.getItem('umami.disabled')) return true;
+    return Boolean(localStorage.getItem('umami.disabled'));
   } catch {
-    // Storage blocked: there's no switch to read, so it can't be off.
+    // Storage blocked: there's no switch to read, so it can't be on.
+    return false;
   }
-  return false;
 }
 
-const silent = () =>
-  !endpoint || location.hostname !== liveHost || switchedOff() || navigator.webdriver || !screen.width || !screen.height;
+/** What this browser is, when it isn't an ordinary visitor's. Read on every send. */
+const flag = () =>
+  switched() ? 'me' : navigator.webdriver ? 'webdriver' : !screen.width || !screen.height ? 'no-screen' : undefined;
+
+const silent = () => !endpoint || location.hostname !== liveHost;
 
 type Body = {
   type: 'pageview' | 'event' | 'leave';
@@ -60,6 +68,7 @@ function send(body: Body) {
     referrer,
     screen: `${screen.width}x${screen.height}`,
     language: navigator.language,
+    flag: flag(),
     ...body,
   };
   navigator.sendBeacon(endpoint, new Blob([JSON.stringify(full)], { type: 'text/plain' }));

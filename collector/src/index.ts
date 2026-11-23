@@ -3,6 +3,9 @@
  *
  *   POST /e           the tracker on the site sends one event (a pageview, a click, or the
  *                     visitor leaving a page). Answers 204 whether it kept it or not.
+ *                     Bots and Roger's own browsers are kept with a flag, not dropped.
+ *                     What's dropped is what isn't the tracker at all: another origin,
+ *                     a malformed body, a page that isn't on the site.
  *   GET  /v1/export   the dashboard reads events back, with the read key. Rows use
  *                     Umami's column names, so the dashboard reads them like an export.
  *   GET  /v1/health   is it up.
@@ -13,7 +16,7 @@
  * keep, and no IP address is ever stored: the visitor id is a one-way hash (core.ts).
  */
 import {
-  DEVICE, EVENT, LIMIT, READ_LIMIT, askedAtOf, clientOf, deviceIdOf, deviceKeyOf, isBot, isToken, labelOf, linkLive, placeOf,
+  DEVICE, EVENT, LIMIT, READ_LIMIT, askedAtOf, clientOf, deviceIdOf, deviceKeyOf, flagOf, isToken, labelOf, linkLive, placeOf,
   propertiesOf, referrerDomainOf, regionOf, requesterOf, retryAfterOf, sameSecret, timestampOf, tokenKeyOf, validate,
   visitFor, visitorOf,
 } from './core.ts';
@@ -54,8 +57,6 @@ async function collect(request: Request, env: Env) {
   // Browsers always send Origin on a cross-site POST. Something without it, or from
   // another site, isn't the tracker.
   if (request.headers.get('Origin') !== env.SITE_ORIGIN) return done(env);
-  const userAgent = request.headers.get('User-Agent') ?? '';
-  if (isBot(userAgent)) return done(env);
 
   const raw = await request.text();
   if (raw.length > LIMIT.body) return done(env);
@@ -72,7 +73,10 @@ async function collect(request: Request, env: Env) {
 
   const now = new Date();
   const ip = request.headers.get('CF-Connecting-IP') ?? '';
-  const visitor = await visitorOf(env.SALT_SECRET, now, ip, userAgent);
+  const userAgent = request.headers.get('User-Agent') ?? '';
+  // Bots and Roger's own browsers are kept, flagged, for the dashboard to filter.
+  const flag = flagOf(payload.flag, userAgent);
+  const visitor = await visitorOf(env.SALT_SECRET, now, ip, userAgent, flag);
   const last = await env.DB.prepare('SELECT visit_id, created_at FROM events WHERE session_id = ? ORDER BY created_at DESC LIMIT 1')
     .bind(visitor)
     .first<{ visit_id: string; created_at: string }>();
@@ -87,13 +91,13 @@ async function collect(request: Request, env: Env) {
   const insert = env.DB.prepare(
     `INSERT INTO events (id, session_id, visit_id, created_at, event_type, event_name, hostname, url_path, url_query,
        referrer_domain, page_title, utm_source, utm_medium, utm_campaign, browser, os, device, screen, language,
-       country, region, city)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       country, region, city, flag)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(
     id, visitor, visit, timestampOf(now), type, payload.name, place.hostname, place.urlPath, place.urlQuery,
     referrerDomainOf(payload.referrer, siteHost), payload.title, place.utmSource, place.utmMedium, place.utmCampaign,
     client.browser, client.os, client.device, payload.screen, payload.language,
-    country, regionOf(country, cf.regionCode ?? null), cf.city ?? null
+    country, regionOf(country, cf.regionCode ?? null), cf.city ?? null, flag
   );
   const properties = propertiesOf(id, payload.data).map((row) =>
     env.DB.prepare('INSERT INTO event_data (event_id, data_key, string_value, number_value) VALUES (?, ?, ?, ?)').bind(
@@ -297,7 +301,7 @@ async function exportEvents(request: Request, env: Env) {
   const { results: events } = await env.DB.prepare(
     `SELECT id AS event_id, session_id, visit_id, created_at, event_type, event_name, hostname, url_path, url_query,
        referrer_domain, page_title, utm_source, utm_medium, utm_campaign, browser, os, device, screen, language,
-       country, region, city
+       country, region, city, flag
      FROM events WHERE created_at > ? ORDER BY created_at LIMIT ?`
   )
     .bind(since, PAGE)

@@ -35,9 +35,22 @@ export interface UmamiEvent {
   country: string | null;
   region: string | null;
   city: string | null;
+  /**
+   * Why the collector flagged it (collector/schema.sql), or null for an ordinary
+   * visitor and for everything Umami recorded.
+   */
+  flag: string | null;
 }
 
 export type Kind = 'me' | 'bot' | 'real';
+
+/** What each of the collector's flags means here, and how the report says it. */
+const flags: Record<string, Verdict> = {
+  me: { kind: 'me', reason: 'Flagged by the ?no-track switch in this browser' },
+  webdriver: { kind: 'bot', reason: 'Flagged by the tracker: a browser under automation' },
+  'no-screen': { kind: 'bot', reason: 'Flagged by the tracker: no screen, a headless browser' },
+  'bot-ua': { kind: 'bot', reason: 'Flagged by the collector: a crawler’s user agent' },
+};
 
 /** One sitting: from arrival to 30 minutes of nothing. */
 export interface Visit {
@@ -67,6 +80,11 @@ export interface Session {
   country: string | null;
   region: string | null;
   city: string | null;
+  /**
+   * The collector's flag. One per session: the flag is part of the visitor id
+   * (collector/src/core.ts visitorOf), so a session's events never disagree.
+   */
+  flag: string | null;
   /** The first outside site the session ever came from, or null for none. */
   referrer: string | null;
   source: string;
@@ -109,6 +127,8 @@ export function readEvents(records: CsvRecord[]): UmamiEvent[] {
       country: row.country,
       region: row.region,
       city: row.city,
+      // Umami's exports and the imported rows have none.
+      flag: row.flag || null,
     }));
 }
 
@@ -177,6 +197,7 @@ export function buildSessions(events: UmamiEvent[], config: ReportConfig): Sessi
         country: first.country,
         region: first.region,
         city: first.city,
+        flag: first.flag,
         ...arrivalOf(sorted),
       };
     })
@@ -210,9 +231,18 @@ const describe = (session: Session) =>
     .map((value) => value ?? '?')
     .join(' · ');
 
-/** The rules' verdict on one session: me first, then bot, then real visitor. */
+/**
+ * The rules' verdict on one session. The collector's flag first, since it's what the
+ * browser or the collector knew rather than a guess. Then my devices, for Umami's
+ * visits only. Then the bot rules, which still catch a bot with an ordinary browser
+ * and screen, in either era. Then real visitor.
+ */
 export function classify(session: Session, config: ReportConfig): Verdict {
-  const mine = config.me.find((rule) => matchesDevice(session, rule));
+  const flagged = session.flag ? flags[session.flag] : undefined;
+  if (flagged) return flagged;
+
+  const umamiEra = session.start < new Date(config.collectorSince);
+  const mine = umamiEra ? config.me.find((rule) => matchesDevice(session, rule)) : undefined;
   if (mine) return { kind: 'me', reason: `${mine.name}: ${describe(session)}` };
 
   const views = `${session.pageviews.length} pageview${session.pageviews.length === 1 ? '' : 's'}`;

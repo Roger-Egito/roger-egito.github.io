@@ -10,6 +10,8 @@ export const columns = [
   'referrer_domain', 'page_title', 'gclid', 'fbclid', 'msclkid', 'ttclid', 'li_fat_id', 'twclid',
   'lcp', 'inp', 'cls', 'fcp', 'ttfb', 'event_type', 'event_name', 'tag', 'distinct_id',
   'created_at', 'job_id',
+  // The collector's own column, which Umami never had. Empty in the Umami-era rows.
+  'flag',
 ] as const;
 
 type Column = (typeof columns)[number];
@@ -80,11 +82,32 @@ export const rows: Row[] = [
 const field = (value: string | undefined) =>
   value === undefined ? '\\N' : /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
 
-/** The rows as website_event.csv text. A missing value is written \N. */
-export const websiteEventCsv = [
-  columns.join(','),
-  ...rows.map((row) => columns.map((column) => field(row[column])).join(',')),
-].join('\n');
+/** Rows as website_event.csv text. A missing value is written \N. */
+const csvOf = (list: Row[]) =>
+  [columns.join(','), ...list.map((row) => columns.map((column) => field(row[column])).join(','))].join('\n');
+
+export const websiteEventCsv = csvOf(rows);
+
+/**
+ * Sessions from after the collector took over (config.ts collectorSince), kept apart
+ * so the numbers above stay what they are.
+ */
+export const collectorRows: Row[] = [
+  // My desktop's exact look, with no flag: a guest on the same kind of laptop in
+  // Niterói. Before the collector this would have been me.
+  view('real-lookalike', { ...device.desktop, browser: 'chrome', device: 'laptop' }, '2026-11-22 21:11:54', '/'),
+  // My phone, switched with ?no-track, out somewhere the device rules never listed.
+  view('me-flagged', { ...device.phone, city: 'Belo Horizonte' }, '2026-11-23 10:00:00', '/', { flag: 'me' }),
+  view('bot-webdriver', device.recruiter, '2026-11-23 11:00:00', '/', { flag: 'webdriver' }),
+  view('bot-blank', { ...device.blank, city: 'São Paulo' }, '2026-11-23 11:30:00', '/', { flag: 'no-screen' }),
+  view('bot-ua', device.recruiter, '2026-11-23 12:00:00', '/', { flag: 'bot-ua' }),
+  // No flag, but one page from a datacenter: the bot rules still apply in this era.
+  view('bot-datacenter', device.singapore, '2026-11-23 13:00:00', '/'),
+  // An unknown flag means nothing: the rules decide, as they would with none.
+  view('real-odd-flag', device.lisbon, '2026-11-23 14:00:00', '/', { flag: 'something-new' }),
+];
+
+export const collectorEventCsv = csvOf(collectorRows);
 
 export const eventDataCsv = [
   'website_id,website_event_id,data_key,string_value,number_value,date_value,data_type,created_at',

@@ -8,6 +8,12 @@ Umami's choices wherever there was one to follow (see the top of `src/core.ts`).
 Nothing personal is stored: no IP address, no cookie, nothing on the visitor's device.
 A visitor is a one-way hash of IP, browser, the month and a secret.
 
+Bots and my own browsers are kept, not dropped, with a `flag` saying why: `me` (switched
+with `?no-track`), `webdriver` or `no-screen` (what the tracker saw), `bot-ua` (a
+crawler's user agent, seen here). The dashboard hides them by default. What's still
+dropped is what isn't the tracker at all: another origin, a malformed body, a page that
+isn't on the site.
+
 Reading the data takes two things: the `READ_KEY`, and a browser approved by email. The
 first read from a new browser sends an email (through Resend) with Approve and Deny
 links, and the browser waits until one is pressed. Three wrong keys from one network in
@@ -34,6 +40,16 @@ Then put the Worker's address (no slash at the end) in `src/config/site.ts`, und
 and the `READ_KEY`.
 
 A random string for each secret: `node -e "console.log(crypto.randomUUID() + crypto.randomUUID())"`.
+
+## Changing an existing database
+
+`schema.sql` makes a new database whole. A change to a database that already exists goes
+in `migrations/`, one file per change, run once with `--remote` (and `--local` for the dev
+database), before deploying the Worker that needs it:
+
+```sh
+npx wrangler d1 execute portfolio-events --remote --file migrations/2026-11-23-flag.sql
+```
 
 ## Working on it
 

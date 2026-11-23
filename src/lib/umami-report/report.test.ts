@@ -11,7 +11,7 @@ import {
   type Filters,
 } from './explore.ts';
 import { reportConfig } from './config.ts';
-import { eventDataCsv, websiteEventCsv } from './fixtures.ts';
+import { collectorEventCsv, eventDataCsv, websiteEventCsv } from './fixtures.ts';
 
 const zone = reportConfig.timeZone;
 const sessionsFrom = (csv: string, overrides = {}) =>
@@ -74,6 +74,34 @@ test('every verdict says why', () => {
   assert.match(byId['bot-iowa'], /datacenter city Council Bluffs/);
   assert.match(byId['bot-bing'], /^Headless screen 800x600, 1 pageview$/);
   assert.match(byId['real-home'], /^No rule matched/);
+});
+
+test('after the collector took over, a look-alike of my device is someone else', () => {
+  const after = Object.fromEntries(sessionsFrom(collectorEventCsv).map((s) => [s.id, s]));
+  assert.equal(after['real-lookalike'].kind, 'real');
+  assert.match(after['real-lookalike'].reason, /^No rule matched/);
+});
+
+test('the collector’s flag decides, whatever the device looks like', () => {
+  const after = Object.fromEntries(sessionsFrom(collectorEventCsv).map((s) => [s.id, s]));
+  assert.deepEqual(
+    ['me-flagged', 'bot-webdriver', 'bot-blank', 'bot-ua'].map((id) => [id, after[id].kind]),
+    [['me-flagged', 'me'], ['bot-webdriver', 'bot'], ['bot-blank', 'bot'], ['bot-ua', 'bot']]
+  );
+  assert.match(after['me-flagged'].reason, /no-track/);
+  assert.match(after['bot-ua'].reason, /user agent/);
+});
+
+test('the bot rules still apply to unflagged visits, and an unknown flag counts as none', () => {
+  const after = Object.fromEntries(sessionsFrom(collectorEventCsv).map((s) => [s.id, s]));
+  assert.equal(after['bot-datacenter'].kind, 'bot');
+  assert.equal(after['real-odd-flag'].kind, 'real');
+});
+
+test('a flagged session can still be moved by hand', () => {
+  const moved = sessionsFrom(collectorEventCsv, { 'bot-ua': 'real' }).find((s) => s.id === 'bot-ua')!;
+  assert.equal(moved.kind, 'real');
+  assert.match(moved.reason, /^Set by hand\. The rules said Bot: Flagged by the collector/);
 });
 
 test('a hand override wins and keeps what the rules said', () => {
