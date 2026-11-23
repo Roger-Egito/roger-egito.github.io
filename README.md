@@ -217,3 +217,12 @@ Whether I'm designing gameplay mechanics, creating immersive interfaces, writing
 When I'm not programming or designing games, I enjoy playing video games, watching anime, GM'ing RPGs and spending time with family and friends.
 
 If you're looking for a developer who genuinely cares about the product and is ready to bring strong technical skills, creative problem-solving, and a user-centered mindset to your team, let's talk.
+
+## License
+
+The code is under the MIT License (see `LICENSE`). You're welcome to build on it, as
+long as the copyright notice stays in your copy.
+
+The content is not: the text, case studies, game pages, images, videos, CV and my name
+and likeness. It's © Roger Egito, all rights reserved, and can't be reused without my
+permission.
