@@ -24,6 +24,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      indexnow-key: ${{ steps.indexnow.outputs.key }}
+      urls: ${{ steps.indexnow.outputs.urls }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,6 +35,12 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      # Read from this build rather than from the live site, which can still be serving
+      # the previous sitemap from cache for a few minutes after the deploy.
+      - id: indexnow
+        run: |
+          echo "key=$(cat public/indexnow-key.txt)" >> "$GITHUB_OUTPUT"
+          echo "urls=$(grep -oP '(?<=<loc>)[^<]+' dist/sitemap-0.xml | jq -Rsc 'split("\n") | map(select(. != ""))')" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
@@ -45,3 +54,30 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # Tells Bing, and the other engines that share IndexNow, that the site's pages changed,
+  # instead of waiting for them to recrawl. Sends every page each time: there are only a
+  # handful, and working out which ones changed isn't worth it at this size.
+  #
+  # The key is public by design. The engines fetch public/indexnow-key.txt from the site
+  # to check that whoever pinged them controls it. Runs after the deploy, so if it fails
+  # the site is already live and only the ping is lost.
+  indexnow:
+    needs: [build, deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          KEY: ${{ needs.build.outputs.indexnow-key }}
+          URLS: ${{ needs.build.outputs.urls }}
+        run: |
+          body=$(jq -nc \
+            --arg key "$KEY" \
+            --argjson urls "$URLS" \
+            '{host: "roger-egito.github.io", key: $key,
+              keyLocation: "https://roger-egito.github.io/indexnow-key.txt", urlList: $urls}')
+          status=$(curl -sS -o response.txt -w '%{http_code}' -X POST \
+            -H 'Content-Type: application/json; charset=utf-8' \
+            --data "$body" https://api.indexnow.org/indexnow)
+          echo "IndexNow answered $status for $(jq length <<< "$URLS") URLs"
+          cat response.txt
+          [ "$status" = 200 ] || [ "$status" = 202 ]

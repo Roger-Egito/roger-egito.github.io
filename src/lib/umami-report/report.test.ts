@@ -139,7 +139,7 @@ test('a VPN shows as a device clock the IP disagrees with, and a hosting network
 });
 
 test('the Texas visit from ChatGPT is sourced to chatgpt.com, not Direct', () => {
-  assert.equal(afterCollector()['real-texas'].source, 'chatgpt.com');
+  assert.deepEqual(afterCollector()['real-texas'].sources, ['chatgpt.com']);
 });
 
 test('a hand override wins and keeps what the rules said', () => {
@@ -173,7 +173,40 @@ test('a session splits into its visits, each with its own source and duration', 
   assert.deepEqual(linkedin.visits.map((v) => v.source), ['LinkedIn', 'Direct']);
   const second = rows.find((r) => r.visit.id === 'real-linkedin-visit-2')!;
   assert.equal(second.duration, 20_000);
-  assert.equal(linkedin.source, 'LinkedIn'); // the visitor still arrived from LinkedIn first
+  // The direct return visit names no place, so it adds nothing to the list.
+  assert.deepEqual(linkedin.sources, ['LinkedIn']);
+});
+
+/** One event of one collector visit, on Nov 24 at 12:<minute> UTC. */
+const arrival = (minute: number, referrerDomain: string | null, utmSource: string | null, urlPath = '/') =>
+  ({
+    sessionId: 'roger', visitId: 'v1', eventId: `e${minute}`, createdAt: new Date(Date.UTC(2026, 10, 24, 12, minute)),
+    eventType: 1, eventName: null, urlPath, urlQuery: null, referrerDomain, utmSource, browser: 'Chrome', os: 'Windows 10',
+    device: 'desktop', screen: '1920x1080', language: 'en', country: 'BR', region: 'RJ', city: null, flag: 'me',
+    timeZone: null, ipTimeZone: null, network: null,
+  }) satisfies Parameters<typeof buildSessions>[0][number];
+
+test('arriving from somewhere else mid-visit starts a new visit with its own source', () => {
+  const [roger] = buildSessions(
+    [arrival(0, 'linkedin.com', 'linkedin'), arrival(2, null, null, '/games/hotel-77/'), arrival(10, 'github.com', 'github')],
+    reportConfig,
+  );
+  assert.deepEqual(roger.visits.map((v) => [v.id, v.source, v.pageviews.length]), [['v1', 'LinkedIn', 2], ['v1~2', 'github.com', 1]]);
+  assert.deepEqual(roger.sources, ['LinkedIn', 'github.com']);
+});
+
+test('a direct start followed by an outside arrival is two visits', () => {
+  const [roger] = buildSessions([arrival(0, null, null), arrival(5, 'github.com', 'github')], reportConfig);
+  assert.deepEqual(roger.visits.map((v) => v.source), ['Direct', 'github.com']);
+  assert.deepEqual(roger.sources, ['github.com']);
+});
+
+test('the same tag coming back without a referrer, as when a dialog closes, continues the visit', () => {
+  const [roger] = buildSessions(
+    [arrival(0, 'github.com', 'github'), arrival(1, null, null, '/games/hotel-77/'), arrival(2, null, 'github'), arrival(3, 'github.com', 'github')],
+    reportConfig,
+  );
+  assert.deepEqual(roger.visits.map((v) => [v.source, v.pageviews.length]), [['github.com', 4]]);
 });
 
 test('a leave event gives the last page of a visit its time, and is never a view', () => {

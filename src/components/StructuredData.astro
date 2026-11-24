@@ -2,10 +2,10 @@
 // schema.org JSON-LD. Search engines read this to understand that Roger is a person
 // with a job and that these are works he made, rather than guessing from the text.
 // It renders nothing on screen. https://schema.org/Person
-import { site } from '../config/site';
+import { site, organizationOf } from '../config/site';
 
 interface Props {
-  /** Extra schema objects to merge in, e.g. the CreativeWork for a game page. */
+  /** Extra schema objects to merge in, e.g. the VideoGame for a game page. */
   extra?: Record<string, unknown>;
 }
 
@@ -20,6 +20,7 @@ const person = {
   givenName: 'Roger',
   familyName: 'Egito',
   url: site.url,
+  // The 512px export of my avatar. src/assets/profile.webp is the same drawing at 128px.
   image: `${site.url}/android-chrome-512x512.png`,
   // Only what the banner already shows. addressCountry takes the two-letter code.
   address: {
@@ -27,8 +28,14 @@ const person = {
     addressRegion: site.location.region,
     addressCountry: site.location.countryCode,
   },
-  jobTitle: 'Game Designer and Unity Developer',
-  description: site.description,
+  jobTitle: site.skills,
+  description: site.bio,
+  knowsAbout: site.specialties,
+  knowsLanguage: site.languages,
+  // Both are named on the site itself, in the About text and the case studies. Search
+  // engines expect structured data to describe what the pages say, not to add to it.
+  worksFor: organizationOf('ludomancer'),
+  affiliation: organizationOf('uff'),
   sameAs: site.social.map((s) => s.url),
 };
 

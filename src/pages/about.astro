@@ -8,9 +8,17 @@ import AboutCopy from '../components/AboutCopy.astro';
 import Footer from '../components/Footer.astro';
 import StructuredData from '../components/StructuredData.astro';
 import { site, pageTitle } from '../config/site';
+
+// Tells search engines this page is about the person in StructuredData, not just a page
+// that mentions him.
+const profile = {
+  '@type': 'ProfilePage',
+  url: `${site.url}/about/`,
+  mainEntity: { '@id': `${site.url}/#person` },
+};
 ---
 
-<Base title={pageTitle('About')} description={site.description}>
+<Base title={pageTitle('About')} description={site.bio}>
   <main class="container">
     <Crumb />
 
@@ -23,7 +31,7 @@ import { site, pageTitle } from '../config/site';
   </main>
 
   <Footer />
-  <StructuredData />
+  <StructuredData extra={profile} />
 </Base>
 
 <style>

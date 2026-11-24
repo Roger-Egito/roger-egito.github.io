@@ -14,6 +14,7 @@ import {
   yearRange,
 } from "../config/tags";
 import { buildMenus, filterIdsFor, searchPartsFor } from "../config/filters";
+import { plainText } from "../config/site";
 
 // What the bar over the grid can offer, worked out from the games that exist.
 const menus = buildMenus(await getCollection("games"));
@@ -43,10 +44,7 @@ const previewFor = (slug: string) =>
 const blurbFor = (data: (typeof games)[number]["data"]) => {
   if (data.blurb) return data.blurb;
   const first = (data.description ?? "").split(/<br\s*\/?>\s*<br\s*\/?>/i)[0];
-  return first
-    .replace(/<[^>]*>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return plainText(first);
 };
 
 /**
@@ -69,12 +67,6 @@ const storesFor = (data: (typeof games)[number]["data"]) =>
  * banner comes back exactly as it was.
  */
 const showMetrics = false;
-
-const plain = (value: string) =>
-  value
-    .replace(/<[^>]*>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
 ---
 
 <script>
@@ -129,7 +121,7 @@ const plain = (value: string) =>
                   <div class="shot">
                     <Image
                       src={d.img}
-                      alt={d.alt ?? `${plain(d.title)} key art`}
+                      alt={d.alt ?? `${plainText(d.title)} key art`}
                       widths={[400, 800]}
                       sizes="(min-width: 60rem) 32vw, (min-width: 40rem) 49vw, 100vw"
                       loading="lazy"

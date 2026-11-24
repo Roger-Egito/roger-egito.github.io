@@ -9,8 +9,8 @@ import Crumb from '../../components/Crumb.astro';
 import GameDetails from '../../components/GameDetails.astro';
 import Footer from '../../components/Footer.astro';
 import StructuredData from '../../components/StructuredData.astro';
-import { site, pageTitle, plainText } from '../../config/site';
-import { sortTags, tagsIn, yearRange } from '../../config/tags';
+import { site, gameTitle, gameSummary, organizationOf, plainText } from '../../config/site';
+import { creditsFor, stores, tagsIn, yearRange } from '../../config/tags';
 
 export async function getStaticPaths() {
   const games = await getCollection('games');
@@ -22,37 +22,60 @@ interface Props {
 }
 
 const { game } = Astro.props;
+const d = game.data;
 
-const title = plainText(game.data.title);
-const description = plainText(game.data.description ?? site.description).slice(0, 200);
+const description = gameSummary(d);
 
 // Give link previews the game's own art rather than nothing.
-const preview = await getImage({ src: game.data.img, width: 1200, format: 'jpg' });
+const preview = await getImage({ src: d.img, width: 1200, format: 'jpg' });
 
 // Search engines get the same facts the page shows, straight from the tags.
-const dates = yearRange(game.data.startDate, game.data.endDate);
-const [publisher] = tagsIn(game.data.tags, 'client');
-const keywords = sortTags(game.data.tags).map((tag) => tag.label);
+const person = { '@id': `${site.url}/#person` };
+const dates = yearRange(d.startDate, d.endDate);
+const genres = tagsIn(d.tags, 'genre').map((tag) => tag.label);
+const storePages = stores.flatMap(({ field }) => d[field]?.url ?? []);
+
+// Who made the game. My own projects are mine. A studio's or a university's game is
+// theirs, and I'm credited on it below. That's usually the client I worked for, unless
+// `madeBy` says the game belongs to someone else, in which case the client is credited
+// next to me instead. A client who asked not to be named appears nowhere, since naming
+// them is the one thing not to do.
+const [client] = tagsIn(d.tags, 'client');
+const clientOrganization =
+  client && client.id !== 'personal' && client.id !== 'personal client'
+    ? organizationOf(client.id)
+    : undefined;
+const author = d.madeBy
+  ? { '@type': 'Organization', name: d.madeBy }
+  : client?.id === 'personal'
+    ? person
+    : clientOrganization;
+
+// What I did on it, as the credits line on the page reads. schema.org's Role is how a
+// contributor gets a job title attached without claiming the whole game.
+const myRole = { '@type': 'Role', roleName: creditsFor(d.tags, d.sole), contributor: person };
+const contributor = d.madeBy && clientOrganization ? [myRole, clientOrganization] : myRole;
 
 const work = {
-  '@type': 'CreativeWork',
-  name: title,
+  '@type': 'VideoGame',
+  name: plainText(d.title),
   description,
   url: new URL(`/games/${game.id}/`, site.url).href,
   image: new URL(preview.src, site.url).href,
-  author: { '@id': `${site.url}/#person` },
+  ...(author && { author }),
+  contributor,
   ...(dates && { dateCreated: dates }),
-  ...(publisher && { publisher: { '@type': 'Organization', name: publisher.label } }),
-  ...(keywords.length > 0 && { keywords: keywords.join(', ') }),
+  ...(genres.length > 0 && { genre: genres }),
+  ...(storePages.length > 0 && { sameAs: storePages }),
 };
 ---
 
-<Base title={pageTitle(title)} description={description} image={preview.src}>
+<Base title={gameTitle(d)} description={description} image={preview.src}>
   <main class="container">
     <Crumb />
 
     <article>
-      <GameDetails game={game}>
+      <GameDetails game={game} heading="h1">
         <a slot="action" class="btn" href="/#portfolio">Back to Portfolio</a>
       </GameDetails>
     </article>

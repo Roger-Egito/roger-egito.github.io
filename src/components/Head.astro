@@ -45,7 +45,7 @@ const preview = image ? new URL(image, site.url).href : undefined;
 <link rel="manifest" href="/site.webmanifest" />
 <meta name="theme-color" content={colors.bg} />
 
-<link rel="alternate" type="application/rss+xml" title="RSS" href="/feed.xml" />
+<link rel="alternate" type="application/atom+xml" title={site.title} href="/feed.xml" />
 
 <!-- Link previews for when a page gets shared -->
 <meta property="og:type" content="website" />

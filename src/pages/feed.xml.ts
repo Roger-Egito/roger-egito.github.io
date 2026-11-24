@@ -3,7 +3,7 @@
 // has a page, the entries link somewhere useful.
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
-import { site } from '../config/site';
+import { site, gameSummary, plainText } from '../config/site';
 
 const escape = (s: string) =>
   s
@@ -11,8 +11,6 @@ const escape = (s: string) =>
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
-
-const plain = (s: string) => s.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
 export const GET: APIRoute = async () => {
   const games = (await getCollection('games')).sort((a, b) => b.data.order - a.data.order);
@@ -22,11 +20,11 @@ export const GET: APIRoute = async () => {
     .map((game) => {
       const url = `${site.url}/games/${game.id}/`;
       return `  <entry>
-    <title type="html">${escape(plain(game.data.title))}</title>
+    <title type="html">${escape(plainText(game.data.title))}</title>
     <link href="${url}" rel="alternate" type="text/html" />
     <id>${url}</id>
     <updated>${updated}</updated>
-    <summary type="html">${escape(plain(game.data.description ?? ''))}</summary>
+    <summary type="html">${escape(gameSummary(game.data))}</summary>
   </entry>`;
     })
     .join('\n');

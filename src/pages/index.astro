@@ -12,7 +12,7 @@ import SiteNav from '../components/SiteNav.astro';
 import StructuredData from '../components/StructuredData.astro';
 // The hero itself, captured by scripts/make-og.mjs. Rerun it when the hero changes.
 import ogPreview from '../assets/og-preview.jpg';
-import { pageTitle } from '../config/site';
+import { site, pageTitle } from '../config/site';
 
 // Preview card for when the homepage link gets shared. 1200x630 is the size
 // LinkedIn, Facebook and X all crop to. It used to be banner.webp, the sky behind the
@@ -21,7 +21,7 @@ import { pageTitle } from '../config/site';
 const preview = await getImage({ src: ogPreview, width: 1200, height: 630, format: 'jpg' });
 ---
 
-<Base title={pageTitle('Portfolio')} image={preview.src}>
+<Base title={pageTitle(site.skills)} image={preview.src}>
   <SiteNav />
   <Header />
   <PortfolioGrid />

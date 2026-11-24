@@ -95,7 +95,12 @@ export interface Session {
   network: string | null;
   /** The first outside site the session ever came from, or null for none. */
   referrer: string | null;
-  source: string;
+  /**
+   * Every way this visitor arrived, in the order each first showed up: "LinkedIn,
+   * github.com" for someone who came both ways. Direct only when there's nothing else,
+   * since it means no place was recorded, not a place of its own.
+   */
+  sources: string[];
 }
 
 export interface Verdict {
@@ -182,28 +187,65 @@ export function buildSessions(events: UmamiEvent[], config: ReportConfig): Sessi
   const ownHost = (domain: string) =>
     config.siteHosts.some((name) => host(domain) === host(name));
 
-  /** The first outside referrer and utm source in a run of events, and what they add up to. */
-  const arrivalOf = (sorted: UmamiEvent[]) => {
-    const referrer =
-      sorted.find((event) => event.referrerDomain && !ownHost(event.referrerDomain))?.referrerDomain ?? null;
-    const utmSource = sorted.find((event) => event.utmSource)?.utmSource ?? null;
-    return { referrer, source: sourceOf(referrer, utmSource, config) };
+  const outside = (event: UmamiEvent) =>
+    event.referrerDomain && !ownHost(event.referrerDomain) ? event.referrerDomain : null;
+
+  /**
+   * Where one event says it came from, or null when it says nothing: a page reached from
+   * within the site has no outside referrer and no tag. The referrer and the tag are read
+   * off the same event, so one arrival's referrer is never paired with another's tag.
+   */
+  const arrivalOf = (event: UmamiEvent) => {
+    const referrer = outside(event);
+    const utm = event.utmSource?.trim() || null;
+    if (!referrer && !utm) return null;
+    return { referrer, utm, source: sourceOf(referrer, utm, config) };
+  };
+
+  /**
+   * The collector's visit, cut wherever someone arrives again from somewhere else. The
+   * collector only ends a visit after 30 quiet minutes, so coming in from GitHub ten
+   * minutes after a LinkedIn visit used to vanish into the LinkedIn one.
+   *
+   * Not every event that carries a tag is a new arrival, though. Closing a dialog puts
+   * the page's own address back, tag included, with no outside referrer, so a tag-only
+   * event repeating the tag this stretch arrived with just continues it.
+   */
+  const stretchesOf = (inVisit: UmamiEvent[]) => {
+    const stretches: { events: UmamiEvent[]; source: string | null; utm: string | null }[] = [];
+    for (const event of inVisit) {
+      const arrival = arrivalOf(event);
+      const current = stretches.at(-1);
+      const repeatsTag = arrival && current && !arrival.referrer && arrival.utm === current.utm;
+      if (current && (!arrival || arrival.source === current.source || repeatsTag)) {
+        current.events.push(event);
+      } else {
+        stretches.push({ events: [event], source: arrival?.source ?? null, utm: arrival?.utm ?? null });
+      }
+    }
+    return stretches;
   };
 
   return [...groupBy(events, (event) => event.sessionId).entries()]
     .map(([id, sorted]) => {
       const first = sorted[0];
       const visits: Visit[] = [...groupBy(sorted, (event) => event.visitId).entries()]
-        .map(([visitId, inVisit]) => ({
-          id: visitId,
-          sessionId: id,
-          start: inVisit[0].createdAt,
-          end: inVisit[inVisit.length - 1].createdAt,
-          events: inVisit,
-          pageviews: inVisit.filter((event) => event.eventType === 1),
-          ...arrivalOf(inVisit),
-        }))
+        .flatMap(([visitId, inVisit]) =>
+          // The first stretch keeps the collector's id, so a visit that wasn't cut is
+          // exactly what it was before.
+          stretchesOf(inVisit).map(({ events: part, source }, index) => ({
+            id: index === 0 ? visitId : `${visitId}~${index + 1}`,
+            sessionId: id,
+            start: part[0].createdAt,
+            end: part[part.length - 1].createdAt,
+            events: part,
+            pageviews: part.filter((event) => event.eventType === 1),
+            referrer: part.map(outside).find(Boolean) ?? null,
+            source: source ?? 'Direct',
+          })),
+        )
         .sort((a, b) => a.start.getTime() - b.start.getTime());
+      const places = [...new Set(visits.map((visit) => visit.source))].filter((source) => source !== 'Direct');
       return {
         id,
         start: first.createdAt,
@@ -223,7 +265,8 @@ export function buildSessions(events: UmamiEvent[], config: ReportConfig): Sessi
         timeZone: first.timeZone,
         ipTimeZone: first.ipTimeZone,
         network: first.network,
-        ...arrivalOf(sorted),
+        referrer: sorted.map(outside).find(Boolean) ?? null,
+        sources: places.length > 0 ? places : ['Direct'],
       };
     })
     .sort((a, b) => a.start.getTime() - b.start.getTime());

@@ -1,7 +1,7 @@
 ---
 import Icon from './Icon.astro';
 import SocialLinks from './SocialLinks.astro';
-import { tagsIn } from '../config/tags';
+import { rolesOf } from '../config/tags';
 import StarRule from './StarRule.astro';
 import { getCollection } from 'astro:content';
 import { site, plainText } from '../config/site';
@@ -25,7 +25,6 @@ const encoded = import.meta.glob<string>('../assets/hero/*.mp4', {
 // Each clip carries what the hero has to say and do while it's up: the line of credit
 // under the name, and which game a click on the footage should open.
 const games = await getCollection('games');
-const listing = new Intl.ListFormat('en', { style: 'long', type: 'conjunction' });
 
 const clips = Object.keys(heroClips).map((slug) => {
   const sources = heroTiers.map(({ height, kbps }) => {
@@ -43,12 +42,8 @@ const clips = Object.keys(heroClips).map((slug) => {
   });
 
   const game = games.find((entry) => entry.id === slug);
-  // Always "<roles> for <game>". Every game states its own roles as a sentence; a new
-  // one that hasn't yet falls back to listing its role tags, which are stored
-  // lowercase precisely so they read correctly here.
-  const roles =
-    game?.data.roles ??
-    listing.format(tagsIn(game?.data.tags ?? [], 'role').map((tag) => tag.id));
+  // Always "<roles> for <game>".
+  const roles = rolesOf(game?.data ?? { tags: [] });
   return { slug, sources, credit: `${roles} for ${plainText(game?.data.title ?? slug)}` };
 });
 ---

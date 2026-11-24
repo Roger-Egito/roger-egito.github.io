@@ -4,7 +4,7 @@
 // Bootstrap's modal plugin was doing.
 import { getCollection } from 'astro:content';
 import GameDetails from './GameDetails.astro';
-import { pageTitle, plainText } from '../config/site';
+import { gameTitle, plainText } from '../config/site';
 
 const games = (await getCollection('games')).sort((a, b) => b.data.order - a.data.order);
 ---
@@ -34,7 +34,7 @@ const games = (await getCollection('games')).sort((a, b) => b.data.order - a.dat
       class="overlay"
       id={`game-${game.id}`}
       data-url={`/games/${game.id}/`}
-      data-title={pageTitle(plainText(game.data.title))}
+      data-title={gameTitle(game.data)}
       aria-label={plainText(game.data.title)}
     >
       {/*

@@ -242,6 +242,14 @@ const games = defineCollection({
        */
       blurb: z.string().optional(),
       /**
+       * The line under the game's link in search results and link previews, so lead with
+       * what I did on it, then what the game is. Plain text. Capped at 170 characters,
+       * about where Google stops showing a description, so an overlong one stops the
+       * build here instead of being cut off mid-word on the results page. Left off, the
+       * game's page builds one from `roles`, the title and the blurb.
+       */
+      summary: z.string().max(170).optional(),
+      /**
        * Figures for the game: downloads, a rating, a review count, a jam placing.
        * Not shown at the moment: the card's row of figures is switched off by
        * showMetrics in PortfolioGrid.astro. The values are still checked here, so
@@ -266,6 +274,13 @@ const games = defineCollection({
       urlSteam: storeLink.optional(),
       urlItchIo: storeLink.optional(),
       urlGooglePlay: storeLink.optional(),
+      /**
+       * The studio that made and owns the game, when that isn't the client in `tags`.
+       * Only search engines read it, as the game's author. All Stars Merge is Hermit
+       * Crab's game: they built it and hired Ludomancer, my client, for LiveOps and a
+       * remake. Left off, the client is taken to be the game's maker.
+       */
+      madeBy: z.string().optional(),
       /** Shown instead of a store link for private or NDA'd projects. */
       private: z.string().optional(),
     })

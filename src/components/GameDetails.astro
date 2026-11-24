@@ -15,6 +15,7 @@ import {
   yearRange,
   type CategoryId,
 } from "../config/tags";
+import { plainText } from "../config/site";
 
 interface Props {
   game: CollectionEntry<"games">;
@@ -24,9 +25,14 @@ interface Props {
    * which also stops playback.
    */
   deferVideo?: boolean;
+  /**
+   * The title's heading level. A game's own page has nothing above it, so its title is
+   * the page's h1. In a dialog the homepage hero already holds the h1, so it stays h2.
+   */
+  heading?: "h1" | "h2";
 }
 
-const { game, deferVideo = false } = Astro.props;
+const { game, deferVideo = false, heading: Heading = "h2" } = Astro.props;
 const d = game.data;
 
 // The bullet in the long-form body. A list marker can't be an inline <svg>, so the
@@ -94,10 +100,7 @@ const rows = categoryOrder
   .map(factFor)
   .filter(Boolean) as Fact[];
 
-const plainTitle = d.title
-  .replace(/<[^>]*>/g, " ")
-  .replace(/\s+/g, " ")
-  .trim();
+const plainTitle = plainText(d.title);
 
 // enablejsapi lets game-tabs.ts postMessage the player to pause it when you switch
 // to the Game tab. Without it a cross-origin YouTube frame ignores everything.
@@ -149,7 +152,7 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
 </script>
 
 {/* title and description can contain <br>, so render them as HTML */}
-<h2 class="section-heading" set:html={d.title} />
+<Heading class="section-heading" set:html={d.title} />
 <StarRule />
 
 {

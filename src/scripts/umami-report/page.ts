@@ -932,7 +932,7 @@ function people(rows: VisitRow[]) {
         'span',
         { class: 'person-main' },
         el('span', { class: 'person-name' }, s.city || s.country || 'Unknown place', el('span', { class: 'muted' }, ` · ${s.browser ?? '?'} on ${s.os ?? '?'}`)),
-        el('span', { class: 'person-meta' }, key(s.kind), `${s.source} · ${number(v.visits)} ${v.visits === 1 ? 'visit' : 'visits'} · ${number(v.views)} ${v.views === 1 ? 'page' : 'pages'} · ${duration(v.time)}`),
+        el('span', { class: 'person-meta' }, key(s.kind), `${s.sources.join(', ')} ·${number(v.visits)} ${v.visits === 1 ? 'visit' : 'visits'} · ${number(v.views)} ${v.views === 1 ? 'page' : 'pages'} · ${duration(v.time)}`),
         visitStrip(own.map((r) => ({ at: r.visit.start.getTime(), pages: r.visit.pageviews.length })), span.from, span.to, s.kind)
       ),
       el('span', { class: 'person-when' }, shortDay(own.at(-1)!.date))
