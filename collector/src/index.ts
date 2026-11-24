@@ -12,13 +12,14 @@
  *   GET/POST /v1/device   where the approval email's links lead: approve or deny a new
  *                     browser. Every browser that reads must be approved once.
  *
- * Location comes from Cloudflare itself (request.cf), so there's no IP database to
- * keep, and no IP address is ever stored: the visitor id is a one-way hash (core.ts).
+ * Location, the IP's time zone and who runs its network all come from Cloudflare
+ * itself (request.cf), so there's no IP database to keep, and no IP address is ever
+ * stored: the visitor id is a one-way hash (core.ts).
  */
 import {
   DEVICE, EVENT, LIMIT, READ_LIMIT, askedAtOf, clientOf, deviceIdOf, deviceKeyOf, flagOf, isToken, labelOf, linkLive, placeOf,
-  propertiesOf, referrerDomainOf, regionOf, requesterOf, retryAfterOf, sameSecret, timestampOf, tokenKeyOf, validate,
-  visitFor, visitorOf,
+  networkNameOf, propertiesOf, referrerDomainOf, regionOf, requesterOf, retryAfterOf, sameSecret, timestampOf, tokenKeyOf, validate,
+  visitFor, visitorOf, zoneOf,
 } from './core.ts';
 
 export interface Env {
@@ -83,7 +84,7 @@ async function collect(request: Request, env: Env) {
   const visit = visitFor(last, now, () => crypto.randomUUID());
 
   const client = clientOf(userAgent, payload.screen);
-  const cf = (request.cf ?? {}) as { country?: string; regionCode?: string; city?: string };
+  const cf = (request.cf ?? {}) as { country?: string; regionCode?: string; city?: string; timezone?: string; asOrganization?: string };
   const country = cf.country && cf.country !== 'XX' ? cf.country : null;
   const id = crypto.randomUUID();
   const type = payload.type === 'pageview' ? EVENT.pageview : payload.type === 'event' ? EVENT.click : EVENT.leave;
@@ -91,13 +92,14 @@ async function collect(request: Request, env: Env) {
   const insert = env.DB.prepare(
     `INSERT INTO events (id, session_id, visit_id, created_at, event_type, event_name, hostname, url_path, url_query,
        referrer_domain, page_title, utm_source, utm_medium, utm_campaign, browser, os, device, screen, language,
-       country, region, city, flag)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       country, region, city, flag, time_zone, ip_time_zone, network)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(
     id, visitor, visit, timestampOf(now), type, payload.name, place.hostname, place.urlPath, place.urlQuery,
     referrerDomainOf(payload.referrer, siteHost), payload.title, place.utmSource, place.utmMedium, place.utmCampaign,
     client.browser, client.os, client.device, payload.screen, payload.language,
-    country, regionOf(country, cf.regionCode ?? null), cf.city ?? null, flag
+    country, regionOf(country, cf.regionCode ?? null), cf.city ?? null, flag,
+    payload.timeZone, zoneOf(cf.timezone), networkNameOf(cf.asOrganization)
   );
   const properties = propertiesOf(id, payload.data).map((row) =>
     env.DB.prepare('INSERT INTO event_data (event_id, data_key, string_value, number_value) VALUES (?, ?, ?, ?)').bind(
@@ -301,7 +303,7 @@ async function exportEvents(request: Request, env: Env) {
   const { results: events } = await env.DB.prepare(
     `SELECT id AS event_id, session_id, visit_id, created_at, event_type, event_name, hostname, url_path, url_query,
        referrer_domain, page_title, utm_source, utm_medium, utm_campaign, browser, os, device, screen, language,
-       country, region, city, flag
+       country, region, city, flag, time_zone, ip_time_zone, network
      FROM events WHERE created_at > ? ORDER BY created_at LIMIT ?`
   )
     .bind(since, PAGE)

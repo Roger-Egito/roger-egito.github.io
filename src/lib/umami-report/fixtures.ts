@@ -10,8 +10,8 @@ export const columns = [
   'referrer_domain', 'page_title', 'gclid', 'fbclid', 'msclkid', 'ttclid', 'li_fat_id', 'twclid',
   'lcp', 'inp', 'cls', 'fcp', 'ttfb', 'event_type', 'event_name', 'tag', 'distinct_id',
   'created_at', 'job_id',
-  // The collector's own column, which Umami never had. Empty in the Umami-era rows.
-  'flag',
+  // The collector's own columns, which Umami never had. Empty in the Umami-era rows.
+  'flag', 'time_zone', 'ip_time_zone', 'network',
 ] as const;
 
 type Column = (typeof columns)[number];
@@ -105,6 +105,18 @@ export const collectorRows: Row[] = [
   view('bot-datacenter', device.singapore, '2026-11-23 13:00:00', '/'),
   // An unknown flag means nothing: the rules decide, as they would with none.
   view('real-odd-flag', device.lisbon, '2026-11-23 14:00:00', '/', { flag: 'something-new' }),
+  // From Texas, on a home connection: their clock is three hours behind mine.
+  view('real-texas', { ...device.recruiter, country: 'US', region: 'US-TX', city: 'Melissa' }, '2026-11-24 05:44:04', '/games/red-death-party/', {
+    time_zone: 'America/Chicago', ip_time_zone: 'America/Chicago', network: 'AT&T Enterprises, LLC', utm_source: 'chatgpt.com',
+  }),
+  // A Brazilian device clock on an Amsterdam IP from a VPN host.
+  view('real-vpn', { ...device.phone, country: 'NL', region: 'NL-NH', city: 'Amsterdam' }, '2026-11-24 15:00:00', '/', {
+    time_zone: 'America/Sao_Paulo', ip_time_zone: 'Europe/Amsterdam', network: 'M247 Europe SRL',
+  }),
+  // In Brazil, a zone with another name but the same clock as mine: nothing to show.
+  view('real-bahia', device.recruiter, '2026-11-24 16:00:00', '/', {
+    time_zone: 'America/Bahia', ip_time_zone: 'America/Sao_Paulo', network: 'Claro S.A.',
+  }),
 ];
 
 export const collectorEventCsv = csvOf(collectorRows);

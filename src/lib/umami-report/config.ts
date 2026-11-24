@@ -62,6 +62,12 @@ export interface ReportConfig {
    * com.linkedin.android is the Android app, which sends its package name instead.
    */
   linkedinHosts: string[];
+  /**
+   * Parts of the network names Cloudflare gives hosting companies, matched anywhere in
+   * the name, ignoring case. People browse from home and mobile providers, so a visit
+   * from one of these is a VPN, a relay or a server (zones.ts vpnHints).
+   */
+  hostingNetworks: string[];
 }
 
 export const reportConfig: ReportConfig = {
@@ -117,4 +123,14 @@ export const reportConfig: ReportConfig = {
   },
 
   linkedinHosts: ['linkedin.com', 'lnkd.in', 'com.linkedin.android'],
+
+  // Clouds, server hosts, and the networks commercial VPNs rent from (M247 and
+  // Datacamp carry a lot of them). Akamai and Cloudflare also run Apple's iCloud
+  // Private Relay and Cloudflare's WARP, which are relays rather than servers, but hide
+  // where someone is all the same. A judgment list: add to it as new names show up.
+  hostingNetworks: [
+    'Amazon', 'Google Cloud', 'Google LLC', 'Microsoft', 'Oracle', 'Alibaba', 'Tencent',
+    'DigitalOcean', 'Linode', 'Akamai', 'Vultr', 'Choopa', 'Hetzner', 'OVH', 'Contabo',
+    'Leaseweb', 'Hostinger', 'M247', 'Datacamp', 'Cloudflare',
+  ],
 };

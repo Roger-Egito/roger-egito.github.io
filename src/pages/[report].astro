@@ -1311,6 +1311,29 @@ export function getStaticPaths() {
     color: var(--ink);
   }
 
+  /* The visitor's own time, after mine. On its own line in a table cell, so the column
+     doesn't double in width. */
+  .report .their-time {
+    margin-left: 4px;
+    color: var(--ink-3);
+    white-space: nowrap;
+  }
+
+  .report td .their-time {
+    display: block;
+    margin-left: 1.15em;
+    font-size: 12.5px;
+  }
+
+  .report .vpn-hint {
+    margin-top: 6px;
+    color: var(--ink-2);
+  }
+
+  .report .vpn-hint strong {
+    color: var(--ink);
+  }
+
   .report .events {
     position: relative;
     display: grid;

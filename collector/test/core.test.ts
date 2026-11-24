@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   DEVICE, EVENT, LIMIT, READ_LIMIT, askedAtOf, deviceIdOf, deviceKeyOf, flagOf, isToken, labelOf, linkLive, tokenKeyOf, VISIT_GAP_MS, clientOf, isBot, networkOf, placeOf, propertiesOf, referrerDomainOf, regionOf,
-  requesterOf, retryAfterOf, sameSecret, timestampOf, validate, visitFor, visitorOf,
+  requesterOf, retryAfterOf, sameSecret, timestampOf, validate, visitFor, visitorOf, networkNameOf, zoneOf,
 } from '../src/core.ts';
 
 const SITE = 'roger-egito.github.io';
@@ -94,6 +94,21 @@ test('the tracker may flag its own browser, and anything else it sends as a flag
   assert.equal(event('bot-ua'), null); // only the collector decides that one
   assert.equal(event('admin'), null);
   assert.equal(event(undefined), null);
+});
+
+test('a time zone is kept only when Intl knows it, and a network name is cut to size', () => {
+  const zone = (timeZone: unknown) => validate({ type: 'pageview', url: 'https://roger-egito.github.io/', timeZone })?.timeZone;
+  assert.equal(zone('America/Chicago'), 'America/Chicago');
+  assert.equal(zone('America/Sao_Paulo'), 'America/Sao_Paulo');
+  assert.equal(zone('UTC'), 'UTC');
+  assert.equal(zone('Mars/Olympus_Mons'), null);
+  assert.equal(zone('<script>'), null);
+  assert.equal(zone(42), null);
+  assert.equal(zone('A'.repeat(200)), null);
+  assert.equal(zoneOf(undefined), null);
+  assert.equal(networkNameOf('Claro S.A.'), 'Claro S.A.');
+  assert.equal(networkNameOf('x'.repeat(500))?.length, LIMIT.network);
+  assert.equal(networkNameOf(undefined), null);
 });
 
 test('a bot user agent outranks what the tracker says, and nothing is dropped for it', () => {

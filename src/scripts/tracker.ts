@@ -68,6 +68,9 @@ function send(body: Body) {
     referrer,
     screen: `${screen.width}x${screen.height}`,
     language: navigator.language,
+    // The device's own clock setting, so the dashboard can show the visitor's time,
+    // and tell from the IP's zone when the two places disagree.
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     flag: flag(),
     ...body,
   };

@@ -40,6 +40,10 @@ export interface UmamiEvent {
    * visitor and for everything Umami recorded.
    */
   flag: string | null;
+  /** The device's time zone, the IP's, and who runs the IP's network (zones.ts). */
+  timeZone: string | null;
+  ipTimeZone: string | null;
+  network: string | null;
 }
 
 export type Kind = 'me' | 'bot' | 'real';
@@ -85,6 +89,10 @@ export interface Session {
    * (collector/src/core.ts visitorOf), so a session's events never disagree.
    */
   flag: string | null;
+  /** Fixed for a session, which is one device on one IP. */
+  timeZone: string | null;
+  ipTimeZone: string | null;
+  network: string | null;
   /** The first outside site the session ever came from, or null for none. */
   referrer: string | null;
   source: string;
@@ -129,19 +137,33 @@ export function readEvents(records: CsvRecord[]): UmamiEvent[] {
       city: row.city,
       // Umami's exports and the imported rows have none.
       flag: row.flag || null,
+      // Collected since Nov 24, 2026: older rows have none.
+      timeZone: row.time_zone || null,
+      ipTimeZone: row.ip_time_zone || null,
+      network: row.network || null,
     }));
 }
 
 const host = (domain: string) => domain.toLowerCase().replace(/^www\./, '');
 
-/** LinkedIn, another site by its host, or Direct. */
+/**
+ * LinkedIn, another site by its host, the link's utm_source, or Direct.
+ *
+ * The referrer wins over utm_source when there's both: it's where the click actually
+ * happened, while the tag is only what the link was labeled with when it was made.
+ * Without a referrer the tag is all there is, and it's often there on purpose: ChatGPT
+ * sends no referrer but tags the links in its answers utm_source=chatgpt.com.
+ */
 export function sourceOf(referrer: string | null, utmSource: string | null, config: ReportConfig) {
   const fromLinkedin = (value: string) =>
     config.linkedinHosts.some((name) => value === name || value.endsWith(`.${name}`));
   if (utmSource?.toLowerCase().includes('linkedin')) return 'LinkedIn';
-  if (!referrer) return 'Direct';
-  const name = host(referrer);
-  return fromLinkedin(name) ? 'LinkedIn' : name;
+  if (referrer) {
+    const name = host(referrer);
+    return fromLinkedin(name) ? 'LinkedIn' : name;
+  }
+  const tag = utmSource?.trim();
+  return tag ? host(tag) : 'Direct';
 }
 
 /** Groups events by a key, keeping each group in time order. */
@@ -198,6 +220,9 @@ export function buildSessions(events: UmamiEvent[], config: ReportConfig): Sessi
         region: first.region,
         city: first.city,
         flag: first.flag,
+        timeZone: first.timeZone,
+        ipTimeZone: first.ipTimeZone,
+        network: first.network,
         ...arrivalOf(sorted),
       };
     })

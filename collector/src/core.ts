@@ -37,6 +37,8 @@ export const LIMIT = {
   key: 50,
   value: 300,
   properties: 10,
+  zone: 64,
+  network: 100,
 } as const;
 
 /**
@@ -59,6 +61,22 @@ export interface Payload {
   name: string | null;
   data: Record<string, string | number>;
   flag: ClientFlag | null;
+  /** The device's IANA time zone, "America/Chicago". */
+  timeZone: string | null;
+}
+
+/**
+ * An IANA time zone the runtime knows, or null. Checked by asking Intl to use it, so a
+ * stored zone is always one the dashboard can format times in.
+ */
+export function zoneOf(value: unknown) {
+  if (typeof value !== 'string' || !value || value.length > LIMIT.zone) return null;
+  try {
+    new Intl.DateTimeFormat('en', { timeZone: value });
+    return value;
+  } catch {
+    return null;
+  }
 }
 
 const text = (value: unknown, max: number) =>
@@ -96,8 +114,14 @@ export function validate(body: unknown): Payload | null {
   // An unknown flag is no flag, not a reason to drop the event: a bad value can only
   // make a visit look ordinary, which is what it would have looked like anyway.
   const flag = CLIENT_FLAGS.find((known) => known === raw.flag) ?? null;
-  return { type, url, referrer: text(raw.referrer, LIMIT.referrer), title: text(raw.title, LIMIT.title), screen, language, name, data, flag };
+  return {
+    type, url, referrer: text(raw.referrer, LIMIT.referrer), title: text(raw.title, LIMIT.title), screen, language, name, data, flag,
+    timeZone: zoneOf(raw.timeZone),
+  };
 }
+
+/** Who runs the IP's network, as Cloudflare names it, cut to size. */
+export const networkNameOf = (value: unknown) => text(value, LIMIT.network);
 
 const bareHost = (host: string) => host.toLowerCase().replace(/^www\./, '');
 

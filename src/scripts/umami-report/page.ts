@@ -34,7 +34,8 @@ import {
 } from '../../lib/umami-report/explore.ts';
 import { heatmapChart, legend, rankList, stackedColumns, visitStrip } from './charts.ts';
 import { faArrowUpRightFromSquare, faCheck, faCopy, faXmark } from '@fortawesome/free-solid-svg-icons';
-import { clockTime, day, duration, el, hideTip, icon, key, kindNames, moment, number, percent, segmented, shortDay, type Child } from './dom.ts';
+import { offsetLabel, offsetOf, otherClock, vpnHints } from '../../lib/umami-report/zones.ts';
+import { clockTime, day, duration, el, hideTip, icon, key, localMoment, kindNames, moment, number, percent, segmented, shortDay, type Child } from './dom.ts';
 import { table, type SortState } from './table.ts';
 
 const TZ = reportConfig.timeZone;
@@ -280,6 +281,35 @@ function viewedPage(path: string, query: string | null) {
   });
 
   return el('span', { class: 'event-page' }, filter, open, copy);
+}
+
+/**
+ * A moment in my time, with the visitor's own time after it when their clock read
+ * differently: "24 Nov 2026, 02:44 · 23 Nov, 23:44 their time".
+ */
+function momentFor(value: Date, session: Session) {
+  const zone = otherClock(value, session, TZ);
+  return el(
+    'span',
+    {},
+    moment(value, TZ),
+    // A real space, not only a margin, so the two times read apart when copied or spoken.
+    zone && ' ',
+    zone && el('span', { class: 'their-time', title: `The visitor's own clock, in ${zone}` }, `${localMoment(value, zone)} their time`)
+  );
+}
+
+/** "America/Chicago (UTC−06:00)", and the IP's zone after it when it's a different one. */
+function zoneFact(session: Session) {
+  const describe = (zone: string) => {
+    const offset = offsetOf(session.start, zone);
+    return offset === null ? zone : `${zone} (${offsetLabel(offset)})`;
+  };
+  const { timeZone, ipTimeZone } = session;
+  if (!timeZone && !ipTimeZone) return 'Not recorded';
+  if (!timeZone) return `${describe(ipTimeZone!)}, from the IP`;
+  if (!ipTimeZone || ipTimeZone === timeZone) return describe(timeZone);
+  return `${describe(timeZone)} on the device, ${describe(ipTimeZone)} from the IP`;
 }
 
 const kindTag = (kind: Kind) => el('span', { class: 'kind-tag' }, key(kind), kindNames[kind]);
@@ -948,6 +978,7 @@ function profile(session: ClassifiedSession) {
   const t = totals(rows);
   const clicks = rows.flatMap((r) => r.visit.events.filter((e) => e.eventType === 2));
   const longest = Math.max(1, ...rows.flatMap((r) => r.steps.map((s) => s.timeOnPage ?? 0)));
+  const hints = vpnHints(session, reportConfig);
 
   const fact = (label: string, value: Child) => el('div', { class: 'fact' }, el('dt', {}, label), el('dd', {}, value));
   const filterTo = el('button', { type: 'button', class: 'button' }, 'Filter the report to this person');
@@ -961,7 +992,7 @@ function profile(session: ClassifiedSession) {
         'div',
         { class: 'visit-head' },
         el('strong', {}, `Visit ${rows.length - i}`),
-        el('span', {}, moment(row.visit.start, TZ)),
+        momentFor(row.visit.start, session),
         el('span', { class: 'muted' }, `from ${row.visit.source}${row.visit.referrer && row.visit.referrer !== row.visit.source ? ` (${row.visit.referrer})` : ''} · ${number(row.visit.pageviews.length)} ${row.visit.pageviews.length === 1 ? 'page' : 'pages'} · ${duration(row.duration)}`)
       ),
       el(
@@ -1002,7 +1033,13 @@ function profile(session: ClassifiedSession) {
       'header',
       { class: 'profile-head' },
       el('span', { class: 'avatar big' }, `#${numbers.get(session.id)}`),
-      el('div', {}, el('h2', {}, personLabel(session)), el('p', { class: 'muted small' }, session.reason)),
+      el(
+        'div',
+        {},
+        el('h2', {}, personLabel(session)),
+        el('p', { class: 'muted small' }, session.reason),
+        hints.length > 0 && el('p', { class: 'vpn-hint small' }, el('strong', {}, 'Possibly a VPN or proxy. '), hints.join(' '))
+      ),
       typePicker(session)
     ),
     el(
@@ -1012,8 +1049,10 @@ function profile(session: ClassifiedSession) {
       fact('Device', deviceOf(session)),
       fact('Screen · language', `${session.screen ?? '?'} · ${session.language ?? '?'}`),
       fact('Came from', [...new Set(rows.map((r) => r.visit.source))].join(', ')),
-      fact('First seen', moment(session.start, TZ)),
-      fact('Last seen', moment(session.end, TZ)),
+      fact('Time zone', zoneFact(session)),
+      fact('Network', session.network ?? 'Not recorded'),
+      fact('First seen', momentFor(session.start, session)),
+      fact('Last seen', momentFor(session.end, session)),
       fact('Visits · pages', `${number(t.visits)} · ${number(t.views)}`),
       fact('Time measured', duration(t.measuredTime)),
       fact('Clicks', clicks.length ? number(clicks.length) : 'None recorded')
@@ -1111,7 +1150,7 @@ function visitsTab(rows: VisitRow[]) {
         },
         rowClass: (r) => (open.has(r.visit.id) ? 'open' : ''),
         columns: [
-          { key: 'start', label: 'Start', sort: (r) => r.visit.start.getTime(), cell: (r) => el('span', {}, el('span', { class: 'disclosure', 'aria-hidden': 'true' }, open.has(r.visit.id) ? '▾ ' : '▸ '), moment(r.visit.start, TZ)) },
+          { key: 'start', label: 'Start', sort: (r) => r.visit.start.getTime(), cell: (r) => el('span', {}, el('span', { class: 'disclosure', 'aria-hidden': 'true' }, open.has(r.visit.id) ? '▾ ' : '▸ '), momentFor(r.visit.start, r.session)) },
           { key: 'kind', label: 'Type', sort: (r) => r.kind, cell: (r) => kindTag(r.kind) },
           { key: 'person', label: 'Person', sort: (r) => numbers.get(r.session.id) ?? 0, cell: (r) => personLink(r.session) },
           { key: 'source', label: 'Source', sort: (r) => r.visit.source, cell: (r) => filterLink('source', r.visit.source) },

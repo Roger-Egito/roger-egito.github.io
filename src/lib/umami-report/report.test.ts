@@ -12,6 +12,7 @@ import {
 } from './explore.ts';
 import { reportConfig } from './config.ts';
 import { collectorEventCsv, eventDataCsv, websiteEventCsv } from './fixtures.ts';
+import { offsetLabel, offsetOf, otherClock, vpnHints } from './zones.ts';
 
 const zone = reportConfig.timeZone;
 const sessionsFrom = (csv: string, overrides = {}) =>
@@ -104,6 +105,43 @@ test('a flagged session can still be moved by hand', () => {
   assert.match(moved.reason, /^Set by hand\. The rules said Bot: Flagged by the collector/);
 });
 
+/* --- the visitor's clock ---------------------------------------------------------- */
+
+const afterCollector = () => Object.fromEntries(sessionsFrom(collectorEventCsv).map((s) => [s.id, s]));
+
+test('offsets come from the zone at that moment, daylight saving included', () => {
+  assert.equal(offsetOf(new Date('2026-11-24T05:44:04Z'), 'America/Chicago'), -360);
+  assert.equal(offsetOf(new Date('2026-07-01T12:00:00Z'), 'America/Chicago'), -300);
+  assert.equal(offsetOf(new Date('2026-11-24T12:00:00Z'), 'Asia/Kolkata'), 330);
+  assert.equal(offsetOf(new Date('2026-11-24T12:00:00Z'), 'UTC'), 0);
+  assert.equal(offsetOf(new Date('2026-11-24T12:00:00Z'), 'Mars/Olympus_Mons'), null);
+  assert.deepEqual([offsetLabel(-360), offsetLabel(330), offsetLabel(0)], ['UTC−06:00', 'UTC+05:30', 'UTC']);
+});
+
+test('their time is shown only when their clock reads differently from mine', () => {
+  const s = afterCollector();
+  assert.equal(otherClock(s['real-texas'].start, s['real-texas'], zone), 'America/Chicago');
+  assert.equal(otherClock(s['real-bahia'].start, s['real-bahia'], zone), null); // another name, same clock
+  assert.equal(otherClock(s['real-lookalike'].start, s['real-lookalike'], zone), null); // no zone recorded
+  // The device's zone is their clock, not the IP's.
+  assert.equal(otherClock(s['real-vpn'].start, s['real-vpn'], zone), null);
+});
+
+test('a VPN shows as a device clock the IP disagrees with, and a hosting network', () => {
+  const s = afterCollector();
+  assert.deepEqual(vpnHints(s['real-vpn'], reportConfig), [
+    "The device's clock is set to America/Sao_Paulo (UTC−03:00), but the IP is placed in Europe/Amsterdam (UTC+01:00).",
+    'The network is M247 Europe SRL, a hosting company, not a home or mobile provider.',
+  ]);
+  assert.deepEqual(vpnHints(s['real-texas'], reportConfig), []);
+  assert.deepEqual(vpnHints(s['real-bahia'], reportConfig), []);
+  assert.deepEqual(vpnHints(s['real-lookalike'], reportConfig), []);
+});
+
+test('the Texas visit from ChatGPT is sourced to chatgpt.com, not Direct', () => {
+  assert.equal(afterCollector()['real-texas'].source, 'chatgpt.com');
+});
+
 test('a hand override wins and keeps what the rules said', () => {
   const moved = sessionsFrom(websiteEventCsv, { 'bot-iowa': 'real' }).find((s) => s.id === 'bot-iowa')!;
   assert.equal(moved.kind, 'real');
@@ -118,6 +156,13 @@ test('sources: LinkedIn by referrer, app or utm, other sites by host, else direc
   assert.equal(sourceOf(null, 'linkedin', reportConfig), 'LinkedIn');
   assert.equal(sourceOf('www.google.com', null, reportConfig), 'google.com');
   assert.equal(sourceOf(null, null, reportConfig), 'Direct');
+});
+
+test('sources: with no referrer the utm_source tag names it, and a referrer beats a tag', () => {
+  assert.equal(sourceOf(null, 'chatgpt.com', reportConfig), 'chatgpt.com');
+  assert.equal(sourceOf(null, 'www.ChatGPT.com', reportConfig), 'chatgpt.com');
+  assert.equal(sourceOf(null, '  ', reportConfig), 'Direct');
+  assert.equal(sourceOf('mail.google.com', 'newsletter', reportConfig), 'mail.google.com');
 });
 
 /* --- visits ---------------------------------------------------------------------- */

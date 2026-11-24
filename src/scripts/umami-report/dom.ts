@@ -73,6 +73,10 @@ const formatter = (timeZone: string, options: Intl.DateTimeFormatOptions) => {
 export const moment = (value: Date, timeZone: string) =>
   formatter(timeZone, { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(value);
 
+/** "22 Nov, 23:44": a visitor's own time, which needs its day, since it may not be mine. */
+export const localMoment = (value: Date, timeZone: string) =>
+  formatter(timeZone, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(value);
+
 export const clockTime = (value: Date, timeZone: string) =>
   formatter(timeZone, { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(value);
 

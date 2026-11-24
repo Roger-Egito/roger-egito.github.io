@@ -33,7 +33,14 @@ CREATE TABLE IF NOT EXISTS events (
   -- Roger's, switched with ?no-track), webdriver or no-screen (what the tracker saw),
   -- bot-ua (a crawler's user agent, seen here). Kept rather than dropped, so the
   -- dashboard filters them out and a wrong call can still be undone.
-  flag            TEXT
+  flag            TEXT,
+  -- The device's own time zone, as the tracker read it ("America/Chicago"), and the
+  -- one Cloudflare places the IP in. Apart, they hint at a VPN or a proxy.
+  time_zone       TEXT,
+  ip_time_zone    TEXT,
+  -- Who runs the IP's network, from Cloudflare ("Claro S.A.", "DigitalOcean, LLC").
+  -- A hosting company is another VPN hint. The IP itself is still never kept.
+  network         TEXT
 );
 
 -- The visitor's last event, looked up on every new one to decide the visit.
