@@ -7,7 +7,7 @@
  *     (a game dialog puts /games/<slug>/ in the bar, the filters write ?f= and ?q=)
  *   - a click on anything with data-event="name", with each data-event-* attribute as
  *     a property: data-event="store-click" data-event-game="hotel-77"
- *   - a leave when the page is hidden or closed
+ *   - a leave when the page is hidden or closed, and a back when it's in view again
  *
  * Nothing is stored on the visitor's device and no cookie is set: the collector tells
  * visitors apart by a monthly-salted hash it works out itself.
@@ -50,7 +50,7 @@ const flag = () =>
 const silent = () => !endpoint || location.hostname !== liveHost;
 
 type Body = {
-  type: 'pageview' | 'event' | 'leave';
+  type: 'pageview' | 'event' | 'leave' | 'back';
   url?: string;
   title?: string;
   name?: string;
@@ -140,19 +140,31 @@ document.addEventListener(
   true
 );
 
-/* --- leaving ---------------------------------------------------------------------- */
+/* --- leaving and coming back ------------------------------------------------------ */
 
 // Hidden covers switching tabs, closing the tab and going to another app on a phone.
 // pagehide covers the rest of closing and leaving. Once per hiding, so a tab that's
 // closed while hidden doesn't send it twice.
+//
+// Coming back sends "back", so the dashboard knows how long the page was actually in
+// view, not only how long it stayed open. pageshow covers a page restored from the
+// back/forward cache, which may not count as becoming visible.
 let hidden = false;
 const leave = () => {
   if (hidden) return;
   hidden = true;
   send({ type: 'leave' });
 };
+const back = () => {
+  if (!hidden) return;
+  hidden = false;
+  send({ type: 'back' });
+};
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') leave();
-  else hidden = false;
+  else back();
 });
 window.addEventListener('pagehide', leave);
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted) back();
+});

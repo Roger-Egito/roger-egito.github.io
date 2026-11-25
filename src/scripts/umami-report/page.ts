@@ -23,7 +23,7 @@ import type { CsvRecord } from '../../lib/umami-report/csv.ts';
 import { reportConfig } from '../../lib/umami-report/config.ts';
 import { site } from '../../config/site';
 import {
-  buildSessions, classifyAll, kindLabel, readEvents,
+  BACK, LEAVE, buildSessions, classifyAll, kindLabel, readEvents,
   type ClassifiedSession, type Kind, type Session, type UmamiEvent,
 } from '../../lib/umami-report/sessions.ts';
 import {
@@ -932,7 +932,7 @@ function people(rows: VisitRow[]) {
         'span',
         { class: 'person-main' },
         el('span', { class: 'person-name' }, s.city || s.country || 'Unknown place', el('span', { class: 'muted' }, ` · ${s.browser ?? '?'} on ${s.os ?? '?'}`)),
-        el('span', { class: 'person-meta' }, key(s.kind), `${s.sources.join(', ')} ·${number(v.visits)} ${v.visits === 1 ? 'visit' : 'visits'} · ${number(v.views)} ${v.views === 1 ? 'page' : 'pages'} · ${duration(v.time)}`),
+        el('span', { class: 'person-meta' }, key(s.kind), `${s.sources.join(', ')}${s.ids.length > 1 ? ` · ${s.ids.length} IDs joined` : ''} · ${number(v.visits)} ${v.visits === 1 ? 'visit' : 'visits'} · ${number(v.views)} ${v.views === 1 ? 'page' : 'pages'} · ${duration(v.time)}`),
         visitStrip(own.map((r) => ({ at: r.visit.start.getTime(), pages: r.visit.pageviews.length })), span.from, span.to, s.kind)
       ),
       el('span', { class: 'person-when' }, shortDay(own.at(-1)!.date))
@@ -993,36 +993,9 @@ function profile(session: ClassifiedSession) {
         { class: 'visit-head' },
         el('strong', {}, `Visit ${rows.length - i}`),
         momentFor(row.visit.start, session),
-        el('span', { class: 'muted' }, `from ${row.visit.source}${row.visit.referrer && row.visit.referrer !== row.visit.source ? ` (${row.visit.referrer})` : ''} · ${number(row.visit.pageviews.length)} ${row.visit.pageviews.length === 1 ? 'page' : 'pages'} · ${duration(row.duration)}`)
+        el('span', { class: 'muted' }, `from ${row.visit.source}${row.visit.referrer && row.visit.referrer !== row.visit.source ? ` (${row.visit.referrer})` : ''} · ${number(row.visit.pageviews.length)} ${row.visit.pageviews.length === 1 ? 'page' : 'pages'} · `, openAndInView(row))
       ),
-      el(
-        'ol',
-        { class: 'events' },
-        ...row.steps.flatMap((step, i) => [
-          el(
-            'li',
-            { class: 'event' },
-            el('time', {}, clockTime(step.view.createdAt, TZ)),
-            el('span', { class: 'event-dot', 'aria-hidden': 'true' }),
-            viewedPage(step.view.urlPath, step.view.urlQuery),
-            el(
-              'span',
-              {
-                class: 'stay',
-                title:
-                  step.timeOnPage === null
-                    ? 'A visit imported from Umami, which didn’t record leaving, so how long they stayed is unknown'
-                    : i === row.steps.length - 1 ? 'Until they left the site' : 'Until the next page',
-              },
-              step.timeOnPage === null ? null : el('span', { class: 'stay-bar', style: `width:${Math.max(2, (step.timeOnPage / longest) * 100)}%` }),
-              el('span', { class: 'stay-text' }, step.timeOnPage === null ? 'left here' : duration(step.timeOnPage))
-            )
-          ),
-          ...step.events.map((event) =>
-            el('li', { class: 'event click' }, el('time', {}, clockTime(event.createdAt, TZ)), el('span', { class: 'event-dot click', 'aria-hidden': 'true' }), el('span', { class: 'click-text' }, describeEvent(event)))
-          ),
-        ])
-      )
+      ...timelineOf(row, longest)
     )
   );
 
@@ -1053,8 +1026,10 @@ function profile(session: ClassifiedSession) {
       fact('Network', session.network ?? 'Not recorded'),
       fact('First seen', momentFor(session.start, session)),
       fact('Last seen', momentFor(session.end, session)),
+      session.ids.length > 1 && fact('Visitor IDs', el('span', {}, `${session.ids.length} joined into one person. `, el('span', { class: 'muted' }, JOINED_NOTE))),
       fact('Visits · pages', `${number(t.visits)} · ${number(t.views)}`),
-      fact('Time measured', duration(t.measuredTime)),
+      fact('Time open', duration(rows.reduce((sum, r) => sum + r.duration, 0))),
+      fact('Time in view', inViewTotal(rows)),
       fact('Clicks', clicks.length ? number(clicks.length) : 'None recorded')
     ),
     el('h3', {}, 'Activity'),
@@ -1112,20 +1087,106 @@ function pagesTab(rows: VisitRow[]) {
 }
 
 function stepsOf(row: VisitRow) {
-  return el(
-    'ol',
-    { class: 'steps' },
-    ...row.steps.map((step) =>
-      el(
-        'li',
-        {},
-        el('time', {}, clockTime(step.view.createdAt, TZ)),
-        viewedPage(step.view.urlPath, step.view.urlQuery),
-        el('span', { class: 'muted' }, step.timeOnPage === null ? 'left here' : duration(step.timeOnPage)),
-        ...step.events.map((event) => el('span', { class: 'click-pill' }, describeEvent(event)))
-      )
-    )
+  return el('div', { class: 'steps' }, ...timelineOf(row, Math.max(1, ...row.steps.map((s) => s.timeOnPage ?? 0))));
+}
+
+/** A person's time in view over all their visits, or a note when none of it was recorded. */
+function inViewTotal(rows: VisitRow[]) {
+  const recorded = rows.filter((r) => r.inView);
+  if (recorded.length === 0) return 'Not recorded';
+  const time = recorded.reduce((sum, r) => sum + r.inView!.time, 0);
+  const exact = recorded.length === rows.length && recorded.every((r) => r.inView!.exact);
+  return exact ? duration(time) : el('span', { class: 'floor', title: FLOOR_NOTE }, `at least ${duration(time)}`);
+}
+
+const FLOOR_NOTE =
+  'Part of the time in view went unrecorded: the page left view and came back without a return being sent (the tracker only sends returns since Nov 25, 2026), or the visit never sent its leave. The real time is higher.';
+
+/** "open 41m · in view 17m", or "in view at least 17m" when some of it went unrecorded. */
+function openAndInView(row: VisitRow): Child {
+  const open = `open ${duration(row.duration)}`;
+  if (!row.inView) return open;
+  const inView = `in view ${row.inView.exact ? '' : 'at least '}${duration(row.inView.time)}`;
+  return el('span', {}, `${open} · `, el('span', row.inView.exact ? {} : { class: 'floor', title: FLOOR_NOTE }, inView));
+}
+
+/** A click in words, from its name and properties: "Clicked Play on covid-35". */
+function clickLabel(event: UmamiEvent) {
+  const props = Object.fromEntries(
+    (loaded?.properties.get(event.eventId) ?? []).map((detail) => {
+      const at = detail.indexOf(': ');
+      return [detail.slice(0, at), detail.slice(at + 2)];
+    })
   );
+  const on = props.game ? ` on ${props.game}` : '';
+  switch (event.eventName) {
+    case 'play-build': return `Clicked Play${on}`;
+    case 'store-click': return `Opened the ${props.store ?? 'store'} page${props.game ? ` for ${props.game}` : ''}`;
+    case 'email-click': return 'Clicked the email address';
+    default: return describeEvent(event);
+  }
+}
+
+const JOINED_NOTE =
+  'Recorded under more than one visitor ID with the same browser, OS, screen, language and city, within half an hour, so it’s shown as one person whose IP changed. It may be two people on the same network.';
+
+/**
+ * Everything that happened in a visit, in order: pages with their time, clicks, and the
+ * page going out of view and coming back. When the visit joined several visitor ids,
+ * it says so, and marks what came under an id other than the person's first.
+ */
+function timelineOf(row: VisitRow, longest: number): Child[] {
+  const { visit } = row;
+  const stepOf = new Map(row.steps.map((step, i) => [step.view.eventId, { step, last: i === row.steps.length - 1 }]));
+  const joined = visit.ids.length > 1;
+  const otherId = (event: UmamiEvent) =>
+    joined && event.sessionId !== row.session.ids[0]
+      ? el('span', { class: 'other-id', title: `Recorded under visitor ID ${event.sessionId.slice(0, 8)}, joined to this person` }, 'other ID')
+      : null;
+  // The tag sits beside what happened, in the same column, so the row keeps its grid.
+  const line = (event: UmamiEvent, kind: string, main: Child, ...rest: Child[]) =>
+    el(
+      'li',
+      { class: `event ${kind}` },
+      el('time', {}, clockTime(event.createdAt, TZ)),
+      el('span', { class: `event-dot ${kind}`, 'aria-hidden': 'true' }),
+      el('span', { class: 'event-main' }, main, otherId(event)),
+      ...rest
+    );
+
+  const items = visit.events.map((event, k) => {
+    if (event.eventType === 1) {
+      const found = stepOf.get(event.eventId)!;
+      const { timeOnPage } = found.step;
+      return line(
+        event,
+        'view',
+        viewedPage(event.urlPath, event.urlQuery),
+        el(
+          'span',
+          {
+            class: 'stay',
+            title:
+              timeOnPage === null
+                ? 'A visit imported from Umami, which didn’t record leaving, so how long they stayed is unknown'
+                : found.last ? 'Until they left the site, background time included' : 'Until the next page, background time included',
+          },
+          timeOnPage === null ? null : el('span', { class: 'stay-bar', style: `width:${Math.max(2, (timeOnPage / longest) * 100)}%` }),
+          el('span', { class: 'stay-text' }, timeOnPage === null ? 'left here' : duration(timeOnPage))
+        )
+      );
+    }
+    if (event.eventType === 2) return line(event, 'click', el('span', { class: 'click-text', title: describeEvent(event) }, clickLabel(event)));
+    if (event.eventType === LEAVE) {
+      // Anything after it means they came back, so it was a switch, not a close.
+      const switched = visit.events.slice(k + 1).length > 0;
+      return line(event, 'away', el('span', { class: 'away-text' }, switched ? 'Switched to another tab or app' : 'Closed the page or switched away'));
+    }
+    if (event.eventType === BACK) return line(event, 'away', el('span', { class: 'away-text' }, 'Came back to the tab'));
+    return line(event, 'away', el('span', { class: 'away-text' }, `Event type ${event.eventType}`));
+  });
+
+  return [joined && el('p', { class: 'joined-note small' }, JOINED_NOTE), el('ol', { class: 'events' }, ...items)];
 }
 
 function visitsTab(rows: VisitRow[]) {

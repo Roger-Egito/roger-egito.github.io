@@ -209,6 +209,78 @@ test('the same tag coming back without a referrer, as when a dialog closes, cont
   assert.deepEqual(roger.visits.map((v) => [v.source, v.pageviews.length]), [['github.com', 4]]);
 });
 
+/* --- joined ids, returns and time in view ----------------------------------------- */
+
+const PAGEVIEW = 1, CLICK = 2, LEAVE = 9, BACK = 10;
+
+/** One event from a visitor in Dubai on a Mac, on Nov 25 at 05:<minute> UTC, from ChatGPT. */
+const dubai = (sessionId: string, visitId: string, minute: number, eventType: number, change: Partial<Parameters<typeof buildSessions>[0][number]> = {}) =>
+  ({
+    sessionId, visitId, eventId: `${sessionId}-${minute}-${eventType}`, createdAt: new Date(Date.UTC(2026, 10, 25, 5, minute)),
+    eventType, eventName: eventType === CLICK ? 'play-build' : null, urlPath: '/games/covid-35/', urlQuery: 'utm_source=chatgpt.com',
+    referrerDomain: null, utmSource: 'chatgpt.com', browser: 'chrome', os: 'Mac OS', device: 'laptop', screen: '1470x956',
+    language: 'en-US', country: 'AE', region: 'AE-DU', city: 'Dubai', flag: null, timeZone: null, ipTimeZone: null, network: null,
+    ...change,
+  }) satisfies Parameters<typeof buildSessions>[0][number];
+
+test('the same device under two ids within half an hour is one person, in one visit', () => {
+  // The real Nov 25 visit: the click arrived under a second id, mid-visit.
+  const people = buildSessions(
+    [dubai('A', 'a1', 43, PAGEVIEW), dubai('B', 'b1', 57, CLICK), dubai('A', 'a1', 60, LEAVE), dubai('A', 'a1', 84, LEAVE)],
+    reportConfig,
+  );
+  assert.equal(people.length, 1);
+  assert.deepEqual(people[0].ids, ['A', 'B']);
+  assert.equal(people[0].visits.length, 1);
+  assert.deepEqual(people[0].visits[0].ids, ['A', 'B']);
+  assert.deepEqual(people[0].visits[0].events.map((e) => e.eventType), [PAGEVIEW, CLICK, LEAVE, LEAVE]);
+});
+
+test('ids stay apart when the device differs or they were active far apart', () => {
+  const language = buildSessions([dubai('A', 'a1', 0, PAGEVIEW), dubai('B', 'b1', 5, PAGEVIEW, { language: 'en-GB' })], reportConfig);
+  assert.equal(language.length, 2);
+  const later = buildSessions(
+    [dubai('A', 'a1', 0, PAGEVIEW), dubai('B', 'b1', 0, PAGEVIEW, { createdAt: new Date(Date.UTC(2026, 10, 25, 7, 0)) })],
+    reportConfig,
+  );
+  assert.equal(later.length, 2);
+  const unknownCity = buildSessions([dubai('A', 'a1', 0, PAGEVIEW, { city: null }), dubai('B', 'b1', 5, PAGEVIEW, { city: null })], reportConfig);
+  assert.equal(unknownCity.length, 2);
+});
+
+test('a hand override on a joined id still applies to the person', () => {
+  const people = buildSessions([dubai('A', 'a1', 43, PAGEVIEW), dubai('B', 'b1', 57, CLICK)], reportConfig);
+  assert.equal(classifyAll(people, reportConfig, { B: 'bot' })[0].kind, 'bot');
+});
+
+test('coming back to a tab after the visit timed out continues the same visit', () => {
+  // Hidden at 05:10, back at 06:00: the collector started a new visit with the return.
+  const [person] = buildSessions(
+    [
+      dubai('A', 'a1', 0, PAGEVIEW),
+      dubai('A', 'a1', 10, LEAVE),
+      dubai('A', 'a2', 60, BACK),
+      dubai('A', 'a2', 70, LEAVE),
+    ],
+    reportConfig,
+  );
+  assert.equal(person.visits.length, 1);
+  const [row] = visitRows(classifyAll([person], reportConfig), zone);
+  assert.equal(row.duration, 70 * 60_000); // open from 05:00 to 06:10
+  assert.deepEqual(row.inView, { time: 20 * 60_000, exact: true }); // 10 minutes, then 10 more
+});
+
+test('time in view is a floor when a return went unrecorded, and unknown with no leave at all', () => {
+  // Before the tracker sent returns: out of view at 05:10, then out of view again at 05:30.
+  const [old] = visitRows(
+    classifyAll(buildSessions([dubai('A', 'a1', 0, PAGEVIEW), dubai('A', 'a1', 10, LEAVE), dubai('A', 'a1', 30, LEAVE)], reportConfig), reportConfig),
+    zone,
+  );
+  assert.deepEqual(old.inView, { time: 10 * 60_000, exact: false });
+  const [umami] = visitRows(classifyAll(buildSessions([dubai('A', 'a1', 0, PAGEVIEW), dubai('A', 'a1', 5, PAGEVIEW)], reportConfig), reportConfig), zone);
+  assert.equal(umami.inView, null);
+});
+
 test('a leave event gives the last page of a visit its time, and is never a view', () => {
   const row = rows.find((r) => r.session.id === 'me-collector')!;
   assert.deepEqual(row.steps.map((s) => s.timeOnPage), [30_000, 90_000]);

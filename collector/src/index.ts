@@ -87,7 +87,8 @@ async function collect(request: Request, env: Env) {
   const cf = (request.cf ?? {}) as { country?: string; regionCode?: string; city?: string; timezone?: string; asOrganization?: string };
   const country = cf.country && cf.country !== 'XX' ? cf.country : null;
   const id = crypto.randomUUID();
-  const type = payload.type === 'pageview' ? EVENT.pageview : payload.type === 'event' ? EVENT.click : EVENT.leave;
+  // The tracker calls a click an "event"; every other type has the same name here.
+  const type = EVENT[payload.type === 'event' ? 'click' : payload.type];
 
   const insert = env.DB.prepare(
     `INSERT INTO events (id, session_id, visit_id, created_at, event_type, event_name, hostname, url_path, url_query,

@@ -60,6 +60,8 @@ const flags: Record<string, Verdict> = {
 export interface Visit {
   id: string;
   sessionId: string;
+  /** The collector's visitor ids this visit's events came under. More than one when ids were joined. */
+  ids: string[];
   start: Date;
   end: Date;
   events: UmamiEvent[];
@@ -71,6 +73,12 @@ export interface Visit {
 
 export interface Session {
   id: string;
+  /**
+   * The collector's visitor ids joined into this person, earliest first, so ids[0] is id.
+   * More than one means the same device showed up under several ids (see mergedIds), and
+   * the dashboard notes that it may be more than one person.
+   */
+  ids: string[];
   start: Date;
   end: Date;
   events: UmamiEvent[];
@@ -183,6 +191,106 @@ function groupBy(events: UmamiEvent[], key: (event: UmamiEvent) => string) {
   return groups;
 }
 
+/** Event types beyond Umami's pageview (1) and click (2): leaving the page's view, and coming back. */
+export const LEAVE = 9;
+export const BACK = 10;
+
+/** A visit ends after this long with nothing from the visitor, as the collector counts it (collector/src/core.ts). */
+const VISIT_GAP_MS = 30 * 60 * 1000;
+
+/**
+ * Everything a visitor id says about the device, which two ids must share in full to be
+ * taken for one person. Null when something's missing: too little to go on.
+ */
+const deviceOf = (event: UmamiEvent) => {
+  const parts = [event.browser, event.os, event.device, event.screen, event.language, event.city, event.flag ?? ''];
+  return parts.some((part) => part === null) ? null : parts.join('|');
+};
+
+/** The shortest time between any event of one sorted list and any of the other. */
+function closest(a: UmamiEvent[], b: UmamiEvent[]) {
+  let best = Infinity;
+  for (let i = 0, j = 0; i < a.length && j < b.length; ) {
+    const gap = a[i].createdAt.getTime() - b[j].createdAt.getTime();
+    best = Math.min(best, Math.abs(gap));
+    if (gap < 0) i++;
+    else j++;
+  }
+  return best;
+}
+
+/**
+ * Visitor ids that are almost certainly one person, joined. The collector's id is a hash
+ * of the IP and the browser, so a person whose IP changes mid-visit (a phone between
+ * networks, a router handing out a new address) becomes two ids, one of them sometimes
+ * holding nothing but a click. Two ids are joined when the device matches in full and
+ * they were active within a visit's 30 minutes of each other. That can also join two
+ * people on one network with identical setups, which is why the dashboard says so
+ * wherever it shows a joined person.
+ *
+ * The earliest id names the joined person, so a person who was never joined keeps the id
+ * they always had.
+ */
+function mergedIds(byId: Map<string, UmamiEvent[]>) {
+  const ids = [...byId.keys()];
+  const parent = new Map(ids.map((id) => [id, id]));
+  const root = (id: string): string => (parent.get(id) === id ? id : root(parent.get(id)!));
+
+  const byDevice = groupBy(ids.map((id) => byId.get(id)![0]), (event) => deviceOf(event) ?? `alone:${event.sessionId}`);
+  for (const firsts of byDevice.values()) {
+    for (let i = 0; i < firsts.length; i++) {
+      for (let j = i + 1; j < firsts.length; j++) {
+        const a = firsts[i].sessionId;
+        const b = firsts[j].sessionId;
+        if (closest(byId.get(a)!, byId.get(b)!) <= VISIT_GAP_MS) parent.set(root(b), root(a));
+      }
+    }
+  }
+
+  const joined = groupBy(
+    ids.flatMap((id) => byId.get(id)!),
+    (event) => root(event.sessionId),
+  );
+  return [...joined.values()].map((sorted) => {
+    const members = [...new Set(sorted.map((event) => event.sessionId))];
+    return { id: members[0], ids: members, sorted };
+  });
+}
+
+/**
+ * A visitor's events as sittings. One id keeps the collector's visits. Joined ids can't,
+ * since each id's visits were cut on its own, so their events are cut again the same way
+ * the collector does it: a new sitting after 30 quiet minutes.
+ *
+ * Either way, a sitting that opens by coming back to the page, or by leaving it, is the
+ * same page load as the sitting before it: the tab sat in the background past the 30
+ * minutes, and the visitor returned to it. It joins that sitting instead of counting as a
+ * visit of its own with no page in it.
+ */
+function sittingsOf(sorted: UmamiEvent[], joined: boolean) {
+  const cut: UmamiEvent[][] = [];
+  if (joined) {
+    for (const event of sorted) {
+      const current = cut.at(-1);
+      const last = current?.at(-1);
+      if (current && last && event.createdAt.getTime() - last.createdAt.getTime() <= VISIT_GAP_MS) current.push(event);
+      else cut.push([event]);
+    }
+  } else {
+    cut.push(...groupBy(sorted, (event) => event.visitId).values());
+    cut.sort((a, b) => a[0].createdAt.getTime() - b[0].createdAt.getTime());
+  }
+
+  const sittings: UmamiEvent[][] = [];
+  for (const part of cut) {
+    const opensMidPage = part[0].eventType === BACK || part[0].eventType === LEAVE;
+    const previous = sittings.at(-1);
+    if (opensMidPage && previous) previous.push(...part);
+    else sittings.push([...part]);
+  }
+  return sittings;
+}
+
 export function buildSessions(events: UmamiEvent[], config: ReportConfig): Session[] {
   const ownHost = (domain: string) =>
     config.siteHosts.some((name) => host(domain) === host(name));
@@ -226,16 +334,17 @@ export function buildSessions(events: UmamiEvent[], config: ReportConfig): Sessi
     return stretches;
   };
 
-  return [...groupBy(events, (event) => event.sessionId).entries()]
-    .map(([id, sorted]) => {
+  return mergedIds(groupBy(events, (event) => event.sessionId))
+    .map(({ id, ids, sorted }) => {
       const first = sorted[0];
-      const visits: Visit[] = [...groupBy(sorted, (event) => event.visitId).entries()]
-        .flatMap(([visitId, inVisit]) =>
+      const visits: Visit[] = sittingsOf(sorted, ids.length > 1)
+        .flatMap((inVisit) =>
           // The first stretch keeps the collector's id, so a visit that wasn't cut is
           // exactly what it was before.
           stretchesOf(inVisit).map(({ events: part, source }, index) => ({
-            id: index === 0 ? visitId : `${visitId}~${index + 1}`,
+            id: index === 0 ? inVisit[0].visitId : `${inVisit[0].visitId}~${index + 1}`,
             sessionId: id,
+            ids: [...new Set(part.map((event) => event.sessionId))],
             start: part[0].createdAt,
             end: part[part.length - 1].createdAt,
             events: part,
@@ -248,6 +357,7 @@ export function buildSessions(events: UmamiEvent[], config: ReportConfig): Sessi
       const places = [...new Set(visits.map((visit) => visit.source))].filter((source) => source !== 'Direct');
       return {
         id,
+        ids,
         start: first.createdAt,
         end: sorted[sorted.length - 1].createdAt,
         events: sorted,
@@ -348,7 +458,8 @@ export function classifyAll(
 ): ClassifiedSession[] {
   return sessions.map((session) => {
     const ruled = classify(session, config);
-    const forced = overrides[session.id];
+    // An override set on any of the joined ids still applies to the person.
+    const forced = session.ids.map((id) => overrides[id]).find(Boolean);
     if (!forced || forced === ruled.kind) return { ...session, ...ruled, ruled };
     return {
       ...session,

@@ -146,7 +146,15 @@ test('timestamps, regions and event types match the export format', () => {
   assert.equal(regionOf('BR', 'RJ'), 'BR-RJ');
   assert.equal(regionOf('US', 'US-NC'), 'US-NC');
   assert.equal(regionOf(null, 'RJ'), null);
-  assert.deepEqual(EVENT, { pageview: 1, click: 2, leave: 9 });
+  assert.deepEqual(EVENT, { pageview: 1, click: 2, leave: 9, back: 10 });
+});
+
+test('leaving the page and coming back are accepted, and need no name', () => {
+  for (const type of ['leave', 'back'] as const) {
+    const ok = validate({ type, url: 'https://roger-egito.github.io/games/covid-35/' });
+    assert.equal(ok?.type, type);
+    assert.equal(ok?.name, null);
+  }
 });
 
 test('the read key compares whole, and an empty key never matches', async () => {

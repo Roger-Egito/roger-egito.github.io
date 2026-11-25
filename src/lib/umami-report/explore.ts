@@ -9,12 +9,9 @@
  * dimensions, all of them must, the same way the portfolio's own filters work.
  */
 import type { CsvRecord } from './csv.ts';
-import type { ClassifiedSession, Kind, UmamiEvent, Visit } from './sessions.ts';
+import { BACK, LEAVE, type ClassifiedSession, type Kind, type UmamiEvent, type Visit } from './sessions.ts';
 
 export const kinds: Kind[] = ['real', 'me', 'bot'];
-
-/** The collector's event type for a visitor leaving a page (collector/src/core.ts). */
-export const LEAVE = 9;
 
 /** Everything a visit can be filtered or broken down by. */
 export type Dimension =
@@ -77,9 +74,54 @@ export interface VisitRow {
   date: string;
   weekday: string;
   hour: string;
-  /** Milliseconds from the first event to the last. */
+  /** Milliseconds from the first event to the last: how long the page stayed open. */
   duration: number;
+  /** How long it was actually in view (inViewOf), or null when that wasn't recorded. */
+  inView: InView | null;
   steps: Step[];
+}
+
+export interface InView {
+  time: number;
+  /** False when some of it went unrecorded, so time is a floor: "at least". */
+  exact: boolean;
+}
+
+/**
+ * How long a visit's page was in view, as opposed to open in a background tab. Counted
+ * from each page load or return to the page going out of view again.
+ *
+ * Exact when every return was recorded and the visit ends by leaving. Before the tracker
+ * sent returns (Nov 25, 2026), a visit shows the page leaving, then more activity with no
+ * return in between: the visitor came back at some unknown moment, so that stretch isn't
+ * counted and the total is a floor. The same goes for a visit whose last event isn't a
+ * leave. Null for a visit with no leave at all, which is every visit from the Umami era.
+ */
+export function inViewOf(visit: Visit): InView | null {
+  const { events } = visit;
+  if (!events.some((event) => event.eventType === LEAVE)) return null;
+  let time = 0;
+  let exact = true;
+  let since: number | null = events[0].createdAt.getTime();
+  for (const event of events) {
+    const at = event.createdAt.getTime();
+    if (event.eventType === LEAVE) {
+      if (since === null) exact = false; // out of view again, with no return recorded
+      else time += at - since;
+      since = null;
+    } else if (event.eventType === BACK) {
+      since ??= at;
+    } else if (since === null) {
+      // A page or a click while out of view: they came back, but when wasn't recorded.
+      exact = false;
+      since = at;
+    }
+  }
+  if (since !== null) {
+    exact = false;
+    time += events[events.length - 1].createdAt.getTime() - since;
+  }
+  return { time, exact };
 }
 
 /** One pageview inside a visit, with how long the next one took to come. */
@@ -150,6 +192,7 @@ export function visitRows(sessions: ClassifiedSession[], timeZone: string): Visi
         kind: session.kind,
         ...clock(visit.start, timeZone),
         duration: visit.end.getTime() - visit.start.getTime(),
+        inView: inViewOf(visit),
         steps,
       });
     }

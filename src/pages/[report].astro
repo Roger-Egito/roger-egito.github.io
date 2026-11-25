@@ -1473,8 +1473,52 @@ export function getStaticPaths() {
     font-variant-numeric: tabular-nums;
   }
 
-  .report .event.click .click-text {
+  /* What happened, plus the "other ID" tag when there is one. Takes the address's place
+     on a page row, and the rest of the row on a click or a tab switch, which have no
+     time on page beside them. */
+  .report .event-main {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .report .event.click .event-main,
+  .report .event.away .event-main {
     grid-column: 3 / -1;
+  }
+
+  /* Leaving and coming back are background facts, quieter than pages and clicks. */
+  .report .away-text {
+    color: var(--ink-3);
+  }
+
+  .report .event-dot.away {
+    width: 5px;
+    height: 5px;
+    border-width: 4px;
+    background: var(--line-strong);
+  }
+
+  .report .other-id {
+    flex: none;
+    padding: 0 6px;
+    border: 1px solid var(--line-strong);
+    border-radius: 100px;
+    color: var(--ink-3);
+    font-size: 11.5px;
+  }
+
+  /* A time that's a floor: hover says why. */
+  .report .floor {
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+    cursor: help;
+  }
+
+  .report .joined-note {
+    margin: 6px 0 4px;
+    color: var(--ink-2);
   }
 
   .report .profile-actions {
@@ -1560,32 +1604,9 @@ export function getStaticPaths() {
     color: var(--ink-3);
   }
 
+  /* An open row in the Visits tab: the same timeline as a person's activity. */
   .report .steps {
-    display: grid;
-    gap: 6px;
     margin: 6px 0 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .report .steps li {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 2px 12px;
-  }
-
-  .report .steps time {
-    color: var(--ink-3);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .report .click-pill {
-    padding: 1px 8px;
-    border: 1px solid var(--line-strong);
-    border-radius: 100px;
-    color: var(--ink);
-    font-size: 12px;
   }
 
   /* --- the tooltip ----------------------------------------------------------------- */

@@ -21,8 +21,11 @@ import { browserName, detectOS } from 'detect-browser';
 import { isbot } from 'isbot';
 import UAParser from 'ua-parser-js';
 
-/** Event types, matching Umami's for the two it shares. 9 is ours. */
-export const EVENT = { pageview: 1, click: 2, leave: 9 } as const;
+/**
+ * Event types, matching Umami's for the two it shares. 9 and 10 are ours: the page
+ * going out of view (hidden or closed), and coming back into view.
+ */
+export const EVENT = { pageview: 1, click: 2, leave: 9, back: 10 } as const;
 
 /** A visit ends after this long with nothing from the visitor. */
 export const VISIT_GAP_MS = 30 * 60 * 1000;
@@ -51,7 +54,7 @@ export type ClientFlag = (typeof CLIENT_FLAGS)[number];
 export type Flag = ClientFlag | 'bot-ua';
 
 export interface Payload {
-  type: 'pageview' | 'event' | 'leave';
+  type: 'pageview' | 'event' | 'leave' | 'back';
   url: string;
   referrer: string | null;
   title: string | null;
@@ -90,7 +93,7 @@ export function validate(body: unknown): Payload | null {
   if (!body || typeof body !== 'object') return null;
   const raw = body as Record<string, unknown>;
   const type = raw.type;
-  if (type !== 'pageview' && type !== 'event' && type !== 'leave') return null;
+  if (type !== 'pageview' && type !== 'event' && type !== 'leave' && type !== 'back') return null;
   const url = text(raw.url, LIMIT.url);
   if (!url) return null;
   const name = type === 'event' ? text(raw.name, LIMIT.name) : null;
