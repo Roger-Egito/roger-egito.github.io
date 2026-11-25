@@ -15,7 +15,7 @@ import {
   yearRange,
   type CategoryId,
 } from "../config/tags";
-import { plainText } from "../config/site";
+import { coverAlt, plainText } from "../config/site";
 
 interface Props {
   game: CollectionEntry<"games">;
@@ -265,7 +265,7 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
   >
     <Image
       src={d.img}
-      alt={d.alt ?? `${plainTitle} key art`}
+      alt={coverAlt(d)}
       widths={[800, 1200]}
       sizes="(min-width: 64rem) 60rem, 90vw"
       loading="lazy"

@@ -14,7 +14,7 @@ import {
   yearRange,
 } from "../config/tags";
 import { buildMenus, filterIdsFor, searchPartsFor } from "../config/filters";
-import { plainText } from "../config/site";
+import { coverAlt, plainText } from "../config/site";
 
 // What the bar over the grid can offer, worked out from the games that exist.
 const menus = buildMenus(await getCollection("games"));
@@ -121,7 +121,7 @@ const showMetrics = false;
                   <div class="shot">
                     <Image
                       src={d.img}
-                      alt={d.alt ?? `${plainText(d.title)} key art`}
+                      alt={coverAlt(d)}
                       widths={[400, 800]}
                       sizes="(min-width: 60rem) 32vw, (min-width: 40rem) 49vw, 100vw"
                       loading="lazy"

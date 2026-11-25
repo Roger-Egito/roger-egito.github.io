@@ -186,7 +186,7 @@ const games = defineCollection({
       /** Can contain <br>. */
       title: z.string(),
       img: image(),
-      /** Defaults to something sensible built from the title. */
+      /** The cover's alt text. Defaults to "<title> key art" (coverAlt in config/site.ts). */
       alt: z.string().optional(),
       /** YouTube embed URL (not the watch one). Shows instead of the image if set. */
       video: z.string().optional(),

@@ -117,6 +117,13 @@ export const plainText = (value: string) =>
     .trim();
 
 /**
+ * What a game's cover shows, for its alt text: the game's own alt when its data gives
+ * one, otherwise "<title> key art". The grid card and the game page show the same
+ * cover, so both read it from here and can't describe it differently.
+ */
+export const coverAlt = (data: { title: string; alt?: string }) => data.alt ?? `${plainText(data.title)} key art`;
+
+/**
  * What search engines need about a client that its tag doesn't say: the full name where
  * the label is a short form, since an organization is matched by its name, and a more
  * specific schema.org type where one fits.
