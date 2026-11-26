@@ -4,7 +4,6 @@ title: All Stars Merge
 img: ./all-stars-merge.webp
 video: https://www.youtube.com/embed/RQ0IyogkOHE?si=JFQXMyRD6ZPqVErC
 tags: [google play, game developer, merge, unity, ludomancer,
-  economy design,
   gameplay programming, ui programming,
   audio implementation,
   english localization]
@@ -22,6 +21,7 @@ madeBy: Hermit Crab Game Studio
 ---
 
 import Media from '../../components/mdx/Media.astro';
+import Work from '../../components/mdx/Work.astro';
 import mergeBoard from './all-stars-merge/merge-board.webp';
 import stadiumUpgrade from './all-stars-merge/stadium-upgrade.webp';
 import dailyMissions from './all-stars-merge/daily-missions.webp';
@@ -34,15 +34,11 @@ import stickerAlbum from './all-stars-merge/sticker-album.webp';
 
 All Stars Merge is a free-to-play merge game that Hermit Crab Game Studio developed and published on Google Play. Hermit Crab later hired my client, Ludomancer Studio, to run its LiveOps and remake much of the game to bring in more players, and that's the work I was part of.
 
-I joined in June 2025, on a codebase that had been in development since 2023, alongside a team of more than 20 people.
+I joined in June 2025, on a codebase that had been in development since 2023, alongside a team of more than 20 people. My job was to build out the game's meta layer around the merge board: the stadiums players rebuild, the quests that drive them, the story cutscenes, the sticker collection, the store, and the onboarding that ties it all together.
 
 </Media>
 
-### My role
-
-My job was to build out the game's meta layer around the merge board: the stadiums players rebuild, the quests that drive them, the story cutscenes, the sticker collection, the store, and the onboarding that ties it all together.
-
-### What I did
+<Work section="developer">
 
 Between June and October 2025 I made 147 commits across 109 C# files.
 
@@ -74,16 +70,21 @@ I also rebuilt the daily tasks screen and its rewards.
 
 </Media>
 
-**Store, economy and onboarding.**
+**Store.** I built the gem store with its info screen, energy refills in the store, the daily offer, selling chests, and the level-up screen with XP rewards, and gated the store behind level 3. I also made small adjustments to economy values: starting energy, request rewards, chest cooldowns, sticker package frequency and ratios, and the daily offer's character pool.
 
-- Built the gem store with its info screen, energy refills in the store, the daily offer, selling chests, and the level-up screen with XP rewards, and gated the store behind level 3.
-- Made small adjustments to economy values: starting energy, request rewards, chest cooldowns, sticker package frequency and ratios, and the daily offer's character pool.
-- Built the onboarding tutorials for quests, the store, the album and the full board, including tutorial GIFs. Quests and the other new mechanics each got a tutorial of their own, placed after the ones the game already had, so new systems are taught once the basics are in place. It's also why quests and the store only open at level 3: the onboarding teaches the merge board first.
+**Onboarding.** I built the onboarding tutorials for quests, the store, the album and the full board, including tutorial GIFs. Each new mechanic got a tutorial of its own, placed after the ones the game already had, so new systems are taught once the basics are in place. It's also why quests and the store only open at level 3: the onboarding teaches the merge board first.
 
-**Audio and localization.**
+**Audio.** I implemented audio across the game: new sound effects, music fade in and fade out, separate music and effects volume sliders and toggles, and saved player settings.
 
-- Implemented audio across the game: new sound effects, music fade in and fade out, separate music and effects volume sliders and toggles, and saved player settings.
-- Helped with the English localization.
+**Result.** All of it shipped in the live game on Google Play.
+
+</Work>
+
+<Work section="writer">
+
+I helped with the game's English localization.
+
+</Work>
 
 ### Outcome
 

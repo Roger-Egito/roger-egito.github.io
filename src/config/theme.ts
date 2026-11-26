@@ -54,8 +54,6 @@ export const colors = {
   accent: '#f1f3f4',
   /** The decorative star rule under each section heading. */
   rule: '#dddddd',
-  /** The line under each contact-form field. */
-  field: '#eeeeee',
 
   /* ── responsibility tags ─────────────────────────────────────────── */
 

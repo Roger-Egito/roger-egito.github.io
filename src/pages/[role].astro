@@ -1,0 +1,17 @@
+---
+/**
+ * The role pages, /designer/, /developer/ and /writer/: the portfolio opened on one
+ * role. Each CV links to the page for its role. The roles, their wording and the tags
+ * behind them are all in src/config/roles.ts, so this file only lists them as paths.
+ */
+import Portfolio from '../layouts/Portfolio.astro';
+import { roleIds, type RoleId } from '../config/roles';
+
+export function getStaticPaths() {
+  return roleIds.map((role) => ({ params: { role } }));
+}
+
+const role = Astro.params.role as RoleId;
+---
+
+<Portfolio role={role} />

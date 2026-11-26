@@ -18,6 +18,7 @@ urlItchIo: <iframe frameborder="0" src="https://itch.io/embed/4304556?bg_color=5
 ---
 
 import Media from '../../components/mdx/Media.astro';
+import Work from '../../components/mdx/Work.astro';
 import movement from './memories-of-war/movement.webp';
 import battlefield from './memories-of-war/battlefield.webp';
 import statsTutorial from './memories-of-war/stats-tutorial.webp';
@@ -25,21 +26,9 @@ import heroStats from './memories-of-war/hero-stats.webp';
 
 ### The project
 
-Memories of War is a squad-based grid tactics game made with YouGo Games by a team of six. YouGo designed its core: a shared action economy, chess-inspired movement and positioning that matters. A previous programmer had already started the code when I joined.
+Memories of War is a squad-based grid tactics game made with YouGo Games by a team of six. YouGo designed its core: a shared action economy, chess-inspired movement and positioning that matters. A previous programmer had already started the code when I joined. I was a game designer and the sole programmer, and my job was to design the game's levels and combat numbers, and take over its development.
 
-### My role
-
-I was a game designer and the sole programmer. My job was to design the game's levels and combat numbers, and take over its development.
-
-### What I did
-
-<Media image={movement} alt="A unit's movement range highlighted in green on the grid, with a Movement tooltip and the skill bar below" caption="Choosing where a unit moves">
-
-**Development.** The code I inherited was tightly coupled, threw frequent exceptions, and made little use of polymorphism. Some data came from ScriptableObjects and the rest didn't. I refactored the entire codebase, then developed the rest of the game in Unity myself.
-
-I reworked the classes so allies and enemies work the same way, built a better turn system, and rebuilt the whole attack and movement preview. I tried to reuse the existing attack and movement patterns, but ended up rewriting those too. Data is now a mix of ScriptableObjects and JSON, and the JSON doubles as the save data.
-
-</Media>
+<Work section="designer">
 
 <Media image={battlefield} alt="Battlefield of dirt paths and bushes with the player's squad in the middle and enemies closing in from both sides" caption="A battlefield mid-fight" side="right">
 
@@ -47,17 +36,31 @@ I reworked the classes so allies and enemies work the same way, built a better t
 
 </Media>
 
-<Media image={statsTutorial} alt="Tutorial overlay explaining the turn panel, stats and map, skills, help and end turn, including the rule Attack minus Defense equals Damage" caption="The tutorial explaining turns, stats and skills">
+<Media image={heroStats} alt="A hooded mage character with a stats panel showing 5 health, 2 attack and 0 defense" caption="A hero's stats: 5 health, 2 attack, 0 defense">
+
+**Small numbers.** Stats used to run to values like 25 and 105, which felt bloated to me. I reworked them into small, simple numbers, so the player can do the math in their head and work out a fight at a glance, the way Hearthstone and Magic: The Gathering do.
+
+</Media>
+
+<Media image={statsTutorial} alt="Tutorial overlay explaining the turn panel, stats and map, skills, help and end turn, including the rule Attack minus Defense equals Damage" caption="The tutorial explaining turns, stats and skills" side="right">
 
 **Balance.** I set the stats for every ally and enemy. They live in JSON, and I tuned them by playtesting the game a lot, making sure each character has its own specialty. Since I designed both the levels and the stats, playtesting let me balance them together. When a character was too strong or a level too hard, I could adjust either side.
 
 </Media>
 
-<Media image={heroStats} alt="A hooded mage character with a stats panel showing 5 health, 2 attack and 0 defense" caption="A hero's stats: 5 health, 2 attack, 0 defense" side="right">
+</Work>
 
-**Small numbers.** Stats used to run to values like 25 and 105, which felt bloated to me. I reworked them into small, simple numbers, so the player can do the math in their head and work out a fight at a glance, the way Hearthstone and Magic: The Gathering do.
+<Work section="developer">
+
+<Media image={movement} alt="A unit's movement range highlighted in green on the grid, with a Movement tooltip and the skill bar below" caption="Choosing where a unit moves">
+
+The code I inherited was tightly coupled, threw frequent exceptions, and made little use of polymorphism. Some data came from ScriptableObjects and the rest didn't. I refactored the entire codebase, then developed the rest of the game in Unity myself.
+
+I reworked the classes so allies and enemies work the same way, built a better turn system, and rebuilt the whole attack and movement preview. I tried to reuse the existing attack and movement patterns, but ended up rewriting those too. Data is now a mix of ScriptableObjects and JSON, and the JSON doubles as the save data.
 
 </Media>
+
+</Work>
 
 ### Outcome
 

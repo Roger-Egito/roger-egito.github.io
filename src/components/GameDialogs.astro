@@ -5,7 +5,14 @@
 import { getCollection } from 'astro:content';
 import GameDetails from './GameDetails.astro';
 import { gameTitle, plainText } from '../config/site';
+import type { RoleId } from '../config/roles';
 
+interface Props {
+  /** The role page these dialogs are on, if any. Passed down for the CV it serves. */
+  role?: RoleId;
+}
+
+const { role } = Astro.props;
 const games = (await getCollection('games')).sort((a, b) => b.data.order - a.data.order);
 ---
 
@@ -45,7 +52,7 @@ const games = (await getCollection('games')).sort((a, b) => b.data.order - a.dat
       */}
       <div class="sheet" tabindex="-1" autofocus>
         <div class="panel">
-          <GameDetails game={game} deferVideo>
+          <GameDetails game={game} deferVideo role={role}>
             <button slot="action" type="button" class="btn" data-close>
               Close
             </button>

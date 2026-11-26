@@ -1,0 +1,73 @@
+---
+/**
+ * The portfolio page: hero, grid and everything around it. The homepage is this with
+ * nothing filtered, and each role page (/designer/, /developer/, /writer/) is this with
+ * its role already on, so the two can't drift apart.
+ */
+import { getImage } from 'astro:assets';
+import { getCollection } from 'astro:content';
+import Base from './Base.astro';
+import Header from '../components/Header.astro';
+import PortfolioGrid from '../components/PortfolioGrid.astro';
+import BeyondGames from '../components/BeyondGames.astro';
+import Footer from '../components/Footer.astro';
+import GameDialogs from '../components/GameDialogs.astro';
+import AboutDialog from '../components/AboutDialog.astro';
+import ScrollTop from '../components/ScrollTop.astro';
+import SiteNav from '../components/SiteNav.astro';
+import StructuredData from '../components/StructuredData.astro';
+import ContactCard from '../components/ContactCard.astro';
+// The hero itself, captured by scripts/make-og.mjs. Rerun it when the hero changes.
+import ogPreview from '../assets/og-preview.jpg';
+import { site, pageTitle } from '../config/site';
+import { checkWork, roleLenses, type RoleId } from '../config/roles';
+
+interface Props {
+  /** A role page's role. Left off, it's the homepage. */
+  role?: RoleId;
+}
+
+const { role } = Astro.props;
+const lens = role ? roleLenses[role] : undefined;
+
+// Every portfolio page builds through here, so this is where a role page linking to a
+// section a game doesn't have stops the build.
+checkWork(await getCollection('games'));
+
+// Preview card for when the page gets shared. 1200x630 is the size LinkedIn, Facebook
+// and X all crop to. It used to be banner.webp, the sky behind the hero, which on its
+// own is an empty picture: the name and the footage that make it the hero are drawn
+// over it by the page, not baked into it.
+const preview = await getImage({ src: ogPreview, width: 1200, height: 630, format: 'jpg' });
+---
+
+<Base
+  title={pageTitle(lens?.title ?? site.skills)}
+  description={lens?.description}
+  image={preview.src}
+>
+  <SiteNav />
+  <Header role={role} />
+  <PortfolioGrid role={role} />
+  {/* Hidden for now. Put it back by uncommenting this line. */}
+  {/* <BeyondGames /> */}
+  {/* After the grid, so it asks once the work has been shown. The header's Contact
+      link jumps here. */}
+  <section id="contact" class="container contact-section">
+    <ContactCard place={role ?? 'home'} role={role} />
+  </section>
+  <Footer role={role} />
+  <ScrollTop />
+  <GameDialogs role={role} />
+  <AboutDialog />
+  <StructuredData />
+</Base>
+
+<style>
+  /* The card brings its own top margin. This keeps it the width of a game page's
+     panel rather than the whole container. */
+  .contact-section {
+    max-width: 900px;
+    padding-bottom: var(--space-section);
+  }
+</style>

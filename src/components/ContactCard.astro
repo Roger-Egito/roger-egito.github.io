@@ -1,0 +1,250 @@
+---
+/**
+ * The ways to reach me, at the end of a page: my email, shown and copyable, LinkedIn,
+ * and the CV for the page's role (src/config/cvs.ts).
+ *
+ * The address is shown as text with a copy button rather than only as a mailto link.
+ * On a desktop where someone uses Gmail or Outlook in the browser, a mailto link opens
+ * a mail app they never set up, or nothing at all, and that's where a recruiter gives
+ * up. The link is still there for phones, where it opens the mail app people do use.
+ *
+ * Every action carries data-event and data-event-place, so the dashboard shows which
+ * way people reach out, and from which page.
+ *
+ * No ids anywhere: the homepage holds every game's dialog at once, so the same card is
+ * on the page many times over, and an id would repeat.
+ */
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import Icon from './Icon.astro';
+import { site } from '../config/site';
+import { cvFor, cvs } from '../config/cvs';
+import type { RoleId } from '../config/roles';
+
+interface Props {
+  /** Where the card is, for the analytics: a game's slug, a role, "home" or "about". */
+  place: string;
+  /** The role page it's on, or that opened its game's dialog. Picks the CV. */
+  role?: RoleId;
+  /** Pre-fills the email's subject, so I know which page made them write. */
+  subject?: string;
+  /** The heading level that fits the page it's on. */
+  heading?: 'h2' | 'h3';
+}
+
+const { place, role, subject, heading: Heading = 'h2' } = Astro.props;
+
+// Every CV listed has to be a file in public/, or the build stops here, naming it.
+// Checked while building, so a missing PDF never reaches the live site as a dead link.
+const missing = Object.entries(cvs).filter(([, url]) => !existsSync(join(process.cwd(), 'public', url)));
+if (missing.length > 0) {
+  throw new Error(
+    `src/config/cvs.ts lists CVs that aren't in public/: ${missing.map(([version, url]) => `${version} (${url})`).join(', ')}`
+  );
+}
+
+const linkedin = site.social.find((link) => link.icon === 'linkedin')!;
+const cv = cvFor(role);
+const mailto = `mailto:${site.email}${subject ? `?subject=${encodeURIComponent(subject)}` : ''}`;
+---
+
+<aside class="contact" aria-label="Contact me">
+  <Heading class="title">Working on a game? Let's talk.</Heading>
+  {/* Two lines on purpose: what kind of work, then where and how fast. The hyphens are
+      non-breaking (U+2011) and so is the space in "24 hours", so none of those phrases
+      splits across lines. */}
+  <p class="pitch">
+    I'm open to full‑time roles, freelance, and contract work.<br />
+    Remote or on‑site, open to relocation. I reply within 24&nbsp;hours.
+  </p>
+
+  <div class="email">
+    <Icon name="envelope" class="email-icon" />
+    <a class="address" href={mailto} data-event="email-click" data-event-place={place}>{site.email}</a>
+    <button
+      type="button"
+      class="copy"
+      data-copy-email={site.email}
+      data-event="email-copy"
+      data-event-place={place}
+      aria-label={`Copy ${site.email}`}
+    >
+      <Icon name="copy" class="when-idle" />
+      <Icon name="check" class="when-done" />
+      <span class="copy-label">Copy</span>
+    </button>
+  </div>
+  {/* Says "Copied" out loud for screen readers, and what to do if copying wasn't allowed. */}
+  <p class="status" aria-live="polite"></p>
+
+  <div class="actions">
+    <a
+      class="btn"
+      href={linkedin.url}
+      target="_blank"
+      rel="noopener"
+      data-event="linkedin-click"
+      data-event-place={place}
+    >
+      <Icon name="linkedin" />
+      Message me on LinkedIn
+    </a>
+    <a
+      class="btn"
+      href={cv.url}
+      target="_blank"
+      rel="noopener"
+      data-event="cv-open"
+      data-event-place={place}
+      data-event-cv={cv.version}
+    >
+      <Icon name="file-arrow-down" />
+      Download my CV
+    </a>
+  </div>
+</aside>
+
+<script>
+  import '../scripts/contact-copy';
+</script>
+
+<style>
+  .contact {
+    margin: var(--space-section) auto var(--space-gap);
+    padding: 2.25rem 1.5rem 2rem;
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    background-color: var(--color-raised);
+    text-align: center;
+  }
+
+  .title {
+    font-size: min(2em, 7vw);
+  }
+
+  .pitch {
+    max-width: 34em;
+    margin: 0.9em auto 1.4em;
+    color: var(--color-txt);
+    font-size: 18px;
+  }
+
+  /* The address and its copy button read as one control: a pill with the button
+     set into its right end. */
+  .email {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75em;
+    max-width: 100%;
+    padding: 6px 6px 6px 1.1em;
+    border: 2px solid var(--color-txt);
+    border-radius: 999px;
+    background-color: var(--color-bg);
+    font-size: 19px;
+  }
+
+  /* The icons are Icon.astro's <svg>s, which this component's scoped styles don't
+     reach on their own, hence :global() under the card's own classes. */
+  .email :global(.email-icon) {
+    flex: none;
+    width: 1em;
+    height: 1em;
+    color: var(--color-muted);
+  }
+
+  .address {
+    overflow: hidden;
+    text-decoration: none;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .address:hover,
+  .address:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .copy {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 0.45em;
+    padding: 0.55em 1em;
+    border: 0;
+    border-radius: 999px;
+    background-color: var(--color-surface);
+    color: var(--color-on-surface);
+    font-family: inherit;
+    font-size: 16px;
+    cursor: var(--cursor-default);
+    transition: filter var(--transition);
+  }
+
+  .copy:hover,
+  .copy:focus-visible {
+    filter: brightness(1.6);
+  }
+
+  .copy :global(svg) {
+    width: 0.95em;
+    height: 0.95em;
+  }
+
+  .copy :global(.when-done),
+  .copy[data-state='done'] :global(.when-idle) {
+    display: none;
+  }
+
+  .copy[data-state='done'] :global(.when-done) {
+    display: inline;
+  }
+
+  .status {
+    min-height: 1.5em;
+    margin: 0.5em 0 0.6em;
+    color: var(--color-muted);
+    font-size: var(--text-base);
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 14px;
+  }
+
+  .actions .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6em;
+    padding: 14px 22px;
+    font-size: 17px;
+  }
+
+  .actions :global(svg) {
+    width: 1.05em;
+    height: 1.05em;
+  }
+
+  /* On a phone the address gets the whole pill, and the button drops under it. */
+  @media (max-width: 30rem) {
+    .email {
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 12px 14px;
+      border-radius: 18px;
+      font-size: 17px;
+    }
+
+    .copy {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .actions .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>

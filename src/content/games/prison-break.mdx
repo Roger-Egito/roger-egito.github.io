@@ -19,6 +19,7 @@ urlItchIo: <iframe frameborder="0" src="https://itch.io/embed/2827746?bg_color=2
 ---
 
 import Media from '../../components/mdx/Media.astro';
+import Work from '../../components/mdx/Work.astro';
 import hanging from './prison-break/hanging.webp';
 import spotted from './prison-break/spotted.webp';
 import hearing from './prison-break/hearing.webp';
@@ -26,17 +27,31 @@ import level from './prison-break/level.webp';
 
 ### The project
 
-Prison Break: Escape Big Sister is a 2D stealth platformer I made in 2024 with Cauã Bassin for a university course. The course asked for PPlay, but I chose Pygame to have more features at my disposal, and for the chance to build something closer to from scratch. There's no game engine, so every system had to be written by hand.
+Prison Break: Escape Big Sister is a 2D stealth platformer I made in 2024 with Cauã Bassin for a university course. The course asked for PPlay, but I chose Pygame to have more features at my disposal, and for the chance to build something closer to from scratch. There's no game engine, so every system had to be written by hand. My job was to design the game and build its core: the player, the enemies, the stealth rules, the look and the sound.
 
-### My role
+<Work section="designer">
 
-My job was to design the game and build its core: the player, the enemies, the stealth rules, the look and the sound.
+<Media image={hearing} alt="Soldiers with question marks over their heads inside overlapping sound circles, one of them spreading from the player" caption="Soldiers drawn toward a sound">
 
-### What I did
+**Hearing.** I added parkour and speed, and wanted something to balance them and make the stealth more interesting. So the faster you go, the more noise you make, which turns speed into a risk and reward choice. I designed and built the hearing system. Whistling sends out an expanding sound sphere that draws soldiers toward where it came from, and a soldier who is already chasing sends out spheres of its own that alert the others.
+
+</Media>
+
+<Media image={level} alt="A dim prison level of metal crates, ladders and hanging lamps, with soldiers on patrol" caption="A prison level" side="right">
+
+**Levels.** I designed and built stages, reworked the first one, and added the title screen and the ending.
+
+**Painless deaths.** When you die, you respawn almost instantly. Dying and trying again should feel like part of the game, not a failure state, the way it does in fast platformers like Super Meat Boy and Celeste.
+
+</Media>
+
+</Work>
+
+<Work section="developer">
 
 I made 18 of the project's 33 commits between May and July 2024. The finished game is about 4,300 lines of Python across 28 modules.
 
-<Media image={hanging} alt="The red-haired player character hanging from the underside of a metal block while a soldier patrols the floor above" caption="Hanging out of a soldier's sight">
+<Media image={hanging} alt="The red-haired player character hanging from the underside of a metal block while a soldier patrols the floor above" caption="Hanging out of a soldier's sight" side="right">
 
 **Player controller.** I built the player controller with 19 states, including walking, running, crouch walking and crouch running, hanging, rolling, a backflip, and slide jumps.
 
@@ -48,29 +63,19 @@ I also wrote the collision system and integrated the Tiled maps.
 
 </Media>
 
-<Media image={spotted} alt="A soldier with a red exclamation mark over his head grabbing the player" caption="Spotted" side="right">
+<Media image={spotted} alt="A soldier with a red exclamation mark over his head grabbing the player" caption="Spotted">
 
 **Soldier AI.** Soldiers see through a vision area and two line-of-sight checks, one to the player's head and one to their feet, that tiles can block, and they give chase once they spot the player. Two checks because the player can cling to ceilings, where sometimes only their feet are in view.
 
-</Media>
-
-<Media image={hearing} alt="Soldiers with question marks over their heads inside overlapping sound circles, one of them spreading from the player" caption="Soldiers drawn toward a sound">
-
-**Hearing.** I added parkour and speed, and wanted something to balance them and make the stealth more interesting. So the faster you go, the more noise you make, which turns speed into a risk and reward choice. I designed and built the hearing system. Whistling sends out an expanding sound sphere that draws soldiers toward where it came from, and a soldier who is already chasing sends out spheres of its own that alert the others.
-
-</Media>
-
-<Media image={level} alt="A dim prison level of metal crates, ladders and hanging lamps, with soldiers on patrol" caption="A prison level" side="right">
-
 **Look and sound.** I added atmospheric lighting and an animated noise overlay generated with Pillow. I wrote the audio module, with music fades, sound effect channels and stingers, and added the music and sound effects.
-
-**Levels.** I designed and built stages, reworked the first one, and added the title screen and the ending.
-
-**Painless deaths.** When you die, you respawn almost instantly. Dying and trying again should feel like part of the game, not a failure state, the way it does in fast platformers like Super Meat Boy and Celeste.
 
 </Media>
 
 Cauã built the first maps, the stage transition system and its memory cleanup, the crouch walking sprite, and several bug fixes.
+
+**Result.** With no engine to lean on, the game shipped as a playable prototype with every one of these systems written by hand.
+
+</Work>
 
 ### Outcome
 

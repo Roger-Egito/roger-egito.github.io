@@ -14,6 +14,10 @@
  * grid something you can send to someone, and what makes the browser's own Back button
  * undo a filter rather than leave the page.
  *
+ * A role page (/designer/) opens with its role already on. The address only carries ?f=
+ * once the filters differ from that, so the page's own URL stays clean, and taking the
+ * role off reads ?f= with nothing after it: every game, by choice.
+ *
  * Menus open on click rather than hover: a hover menu can't be opened on a touch
  * screen without a tap that also counts as a click on whatever is underneath.
  */
@@ -32,14 +36,23 @@ if (bar && grid) {
   /** Every option button in the bar, so a filter can be toggled from either end. */
   const optionButtons = [...bar.querySelectorAll<HTMLButtonElement>('[data-filter]')];
 
-  /** id -> { label, category }, read off the menus rather than shipped twice. */
-  const known = new Map<string, { label: string; category: string }>();
+  /**
+   * id -> { label, category }, read off the menus rather than shipped twice. The one
+   * exception is a default filter no menu lists, a role, which the bar carries itself.
+   */
+  const known = new Map<string, { label: string; category: string }>(
+    Object.entries(JSON.parse(bar.dataset.extraLabels ?? '{}') as Record<string, { label: string; category: string }>)
+  );
   for (const button of optionButtons) {
     known.set(button.dataset.filter!, {
       label: button.querySelector('.option-label')?.textContent?.trim() ?? button.dataset.filter!,
       category: button.dataset.category ?? '',
     });
   }
+
+  /** What the page opens with: a role page's role, or nothing on the homepage. */
+  const defaults = JSON.parse(bar.dataset.defaultFilters ?? '[]') as string[];
+  const atDefaults = () => active.size === defaults.length && defaults.every((id) => active.has(id));
 
   /** What each card answers to, parsed once. */
   const cardFilters = new Map<HTMLElement, Set<string>>();
@@ -178,8 +191,12 @@ if (bar && grid) {
    * so it slides to its new spot. That last part is the FLIP trick: take the position
    * before and after, and animate the difference, since the browser has already done
    * the hard work of deciding where everything lands.
+   *
+   * `instant` skips all of that, for the grid's first state on page load: a role page,
+   * or a shared ?f= link. There's no earlier layout for the visitor to follow from, so
+   * cards fading out on arrival would only show the page correcting itself.
    */
-  const reflow = (keep: Set<Element>, order: Element[]) => {
+  const reflow = (keep: Set<Element>, order: Element[], instant = false) => {
     const show = () => {
       for (const li of items) li.toggleAttribute('hidden', !keep.has(li));
       // Moving the elements themselves rather than setting a CSS order, because the
@@ -187,7 +204,7 @@ if (bar && grid) {
       for (const li of order) li.parentElement?.append(li);
     };
 
-    if (still.matches) {
+    if (instant || still.matches) {
       show();
       return;
     }
@@ -245,7 +262,7 @@ if (bar && grid) {
     else settle();
   };
 
-  const apply = () => {
+  const apply = (instant = false) => {
     const keep = new Set<Element>();
     const ranked: { li: Element; rank: number; home: number }[] = [];
     for (const [home, card] of cards.entries()) {
@@ -262,7 +279,7 @@ if (bar && grid) {
     ranked.sort((a, b) => a.rank - b.rank || a.home - b.home);
 
     const shown = keep.size;
-    reflow(keep, ranked.map((entry) => entry.li));
+    reflow(keep, ranked.map((entry) => entry.li), instant);
 
     activeBox.replaceChildren(...[...active].map(chipFor));
     if (active.size > 1) {
@@ -295,7 +312,9 @@ if (bar && grid) {
   const readUrl = () => {
     const params = new URLSearchParams(location.search);
     active.clear();
-    for (const id of params.get('f')?.split(',').filter(Boolean) ?? []) active.add(id);
+    // No ?f= at all means the page's own defaults. ?f= with nothing after it means none.
+    const listed = params.get('f');
+    for (const id of listed === null ? defaults : listed.split(',').filter(Boolean)) active.add(id);
     query = (params.get('q') ?? '').toLowerCase();
     if (searchInput.value.toLowerCase() !== query) searchInput.value = params.get('q') ?? '';
   };
@@ -312,7 +331,7 @@ if (bar && grid) {
     // bare between them is exactly what readUrl splits on.
     const part = (value: string) => encodeURIComponent(value).replace(/%20/g, '+');
     const own = [
-      active.size ? `f=${[...active].map(part).join(',')}` : '',
+      atDefaults() ? '' : `f=${[...active].map(part).join(',')}`,
       query ? `q=${part(searchInput.value.trim())}` : '',
       params.toString(),
     ].filter(Boolean);
@@ -451,6 +470,6 @@ if (bar && grid) {
   });
 
   readUrl();
-  apply();
+  apply(true);
   bar.removeAttribute('hidden');
 }

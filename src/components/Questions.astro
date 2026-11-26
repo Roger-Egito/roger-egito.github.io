@@ -1,0 +1,121 @@
+---
+/**
+ * Open questions about a game's write-up, shown on its page while the site runs in
+ * `astro dev` and nowhere else.
+ *
+ * They live in docs/questions/<slug>.md, which is gitignored: the repo is public, and
+ * these are notes for me, not for visitors. A production build never renders them, even
+ * when the files are sitting on the machine running it, and a checkout without them
+ * (like the deploy) simply has nothing to show.
+ *
+ * The file is plain Markdown, kept to three kinds of line so it can be read here
+ * without a Markdown parser:
+ *
+ *     ## Game Design Work        a heading, usually the section the questions are about
+ *     - Why that order?          a question
+ *     Because the board...       anything else: my answer, shown under the question
+ *
+ * Answering is just typing under a bullet. Once the answer is in the write-up itself,
+ * delete the bullet, and the whole file once it's empty.
+ */
+interface Props {
+  slug: string;
+}
+
+const { slug } = Astro.props;
+
+// Read at build time from the project root. A missing folder is an empty object, so a
+// machine without any question files builds exactly as before.
+const files = import.meta.glob<string>('/docs/questions/*.md', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+
+const text = import.meta.env.DEV ? files[`/docs/questions/${slug}.md`] : undefined;
+
+type Group = { heading?: string; items: { question: string; answer: string[] }[] };
+
+const groups: Group[] = [];
+for (const raw of (text ?? '').split(/\r?\n/)) {
+  const line = raw.trim();
+  if (!line) continue;
+  if (line.startsWith('## ')) {
+    groups.push({ heading: line.slice(3), items: [] });
+    continue;
+  }
+  if (groups.length === 0) groups.push({ items: [] });
+  const group = groups[groups.length - 1];
+  if (line.startsWith('- ')) group.items.push({ question: line.slice(2), answer: [] });
+  else group.items.at(-1)?.answer.push(line);
+}
+
+const count = groups.reduce((sum, group) => sum + group.items.length, 0);
+---
+
+{
+  count > 0 && (
+    <aside class="questions" aria-label="Open questions">
+      <p class="label">
+        {count} open question{count === 1 ? '' : 's'} · only shown in dev · docs/questions/{slug}.md
+      </p>
+      {/* div, not section: global.css gives every section a page section's padding. */}
+      {groups.map((group) => (
+        <div>
+          {group.heading && <h4>{group.heading}</h4>}
+          <ul>
+            {group.items.map((item) => (
+              <li>
+                {item.question}
+                {item.answer.map((line) => (
+                  <p class="answer">{line}</p>
+                ))}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </aside>
+  )
+}
+
+<style>
+  /* Dashed and tinted, so it can't be mistaken for part of the write-up in a
+     screenshot taken from the dev server. */
+  .questions {
+    margin: var(--space-gap) 0;
+    padding: 1em 1.25em;
+    border: 2px dashed var(--color-accent);
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+    text-align: left;
+  }
+
+  .label {
+    margin: 0 0 0.5em;
+    color: var(--color-accent);
+    font-size: 0.8em;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  h4 {
+    margin: 1em 0 0.3em;
+    font-family: var(--font-heading), sans-serif;
+    text-transform: uppercase;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 1.2em;
+  }
+
+  li + li {
+    margin-top: 0.5em;
+  }
+
+  .answer {
+    margin: 0.25em 0 0;
+    color: var(--color-muted);
+  }
+</style>

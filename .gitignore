@@ -17,3 +17,5 @@ videos-to-convert/
 
 # private working notes, not for the public repo
 docs/*-offsite-drafts.md
+# open questions about the game write-ups, shown on the game pages in dev only
+docs/questions/

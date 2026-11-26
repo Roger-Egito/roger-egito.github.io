@@ -1,14 +1,13 @@
 ---
 // Hidden until asked for. The up key on the hero's d-pad is what reveals it, so it
 // stays out of the way of a page that has never needed navigation to work.
-import { site } from '../config/site';
-
 // About opens its dialog on the homepage and goes to the /about/ page anywhere else.
-// Contact goes straight to the mail client.
+// Contact jumps to the contact card at the end of the page, which has every way to
+// reach me. Going straight to the mail client left anyone without one set up stuck.
 const links = [
   { href: '#portfolio', label: 'Portfolio' },
   { href: '/about/', label: 'About', opens: '#about-dialog' },
-  { href: `mailto:${site.email}`, label: 'Contact', event: 'email-click' },
+  { href: '#contact', label: 'Contact', event: 'contact-click' },
 ];
 ---
 

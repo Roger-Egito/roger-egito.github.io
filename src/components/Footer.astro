@@ -3,12 +3,20 @@
 // credits columns). Dropped it since it was dead markup; `git show b5fba5c` has it.
 import SocialLinks from './SocialLinks.astro';
 import { site } from '../config/site';
+import type { RoleId } from '../config/roles';
+
+interface Props {
+  /** The role page it's on. The CV icon serves that role's CV. */
+  role?: RoleId;
+}
+
+const { role } = Astro.props;
 ---
 
 <footer>
   <div class="container">
     <p>{site.footerNote}</p>
-    <SocialLinks tips />
+    <SocialLinks tips role={role} />
   </div>
 </footer>
 

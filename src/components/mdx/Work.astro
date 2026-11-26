@@ -1,0 +1,161 @@
+---
+// One part of a game's write-up, told from one side of the job. A game can have up to
+// four, in this order: Game Design Work, Game Development Work, Writing & Localization
+// Work and Other Work. The project intro and the outcome sit outside them, since those
+// are the game's and not any one job's.
+//
+//   <Work section="designer">
+//
+//   Markdown and <Media> blocks, as anywhere else in the body. Leave a blank line after
+//   the opening tag, or MDX treats the text as plain inline content.
+//
+//   </Work>
+//
+// `section` is one of the ids in workSections (src/config/roles.ts), which also holds
+// each heading's wording. (Not `as`, which reads better but is a word Astro's type
+// checker trips on: a prop named `as` leaves the whole Props type unread.) The role ids double as section ids, so a card on /designer/ opens
+// its game at the designer section, and the build stops if a game on a role page is
+// missing that role's section (checkWork, same file).
+//
+// Built on <details>, so it opens and closes with no script at all, from the keyboard
+// too, and the browser's find-in-page can still reach the text. Every section is served
+// open. src/scripts/work-sections.ts closes the others when the visitor came from a
+// role page, so the work they came for is the part that's showing.
+import Icon from '../Icon.astro';
+import { workSections, type WorkId } from '../../config/roles';
+
+interface Props {
+  section: WorkId;
+}
+
+const { section } = Astro.props;
+
+if (!(section in workSections)) {
+  throw new Error(`<Work section="${section}"> isn't a section. Use one of ${Object.keys(workSections).join(', ')}.`);
+}
+---
+
+<details class="work" data-work={section} open>
+  {/* Counted, so the dashboard shows which sections people open and close. The game is
+      in the address the event carries, since a dialog puts /games/<slug>/ there. */}
+  <summary data-event="work-toggle" data-event-section={section}>
+    <h3>{workSections[section]}</h3>
+    {/* Decorative, as Icon makes it without a label: <summary> already tells assistive
+        tech whether the section is open. */}
+    <Icon name="chevron-down" class="work-chevron" />
+  </summary>
+  <div class="work-body">
+    <slot />
+  </div>
+</details>
+
+<style>
+  /* A run of sections reads as one list divided by rules. The sections touch, and each
+     header carries the same space above and below its name, so every rule sits halfway
+     between two headers and the last one sits as far under Other Work as the others do
+     under theirs. The run as a whole keeps the write-up's usual gap to what's around it. */
+  .work {
+    --header-space: 1.75rem;
+
+    margin: 0;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .work:not(.work + .work) {
+    margin-top: var(--space-gap);
+  }
+
+  .work:not(:has(+ .work)) {
+    margin-bottom: var(--space-gap);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  /* The whole header is the control, and it has to look like one: the row tints under
+     the pointer, and the chevron sits in a key. The browser's own triangle goes.
+
+     Inset a little each side so the tint has room around the name, then pulled back out
+     by the same amount, so the name still lines up with the text below. */
+  summary {
+    display: flex;
+    align-items: center;
+    gap: 1em;
+    margin-inline: -0.75rem;
+    padding: var(--header-space) 0.75rem;
+    border-radius: var(--radius);
+    list-style: none;
+    cursor: var(--cursor-pointer);
+    transition: background-color var(--transition);
+  }
+
+  summary:hover,
+  summary:focus-visible {
+    background: color-mix(in srgb, var(--color-txt) 6%, transparent);
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  /* The write-up's h3 rule in GameDetails.astro gives every heading a section's worth of
+     space above it. Here the summary's padding does that job, so it's taken back off. */
+  summary h3 {
+    flex: 1;
+    margin: 0;
+    transition: color var(--transition);
+  }
+
+  summary:hover h3,
+  summary:focus-visible h3 {
+    color: var(--color-accent);
+  }
+
+  /* A key in the style of the hero's d-pad and the media tabs: outlined at rest, filled
+     while the header is pointed at. content-box, so the padding and border are added
+     around the glyph instead of shrinking it. */
+  summary :global(.work-chevron) {
+    flex: none;
+    box-sizing: content-box;
+    width: 0.8em;
+    height: 0.8em;
+    padding: 0.55em;
+    border: 2px solid var(--color-txt);
+    border-radius: 8px;
+    fill: currentColor;
+    transition:
+      transform var(--transition),
+      background-color var(--transition),
+      color var(--transition);
+  }
+
+  summary:hover :global(.work-chevron),
+  summary:focus-visible :global(.work-chevron) {
+    background: var(--color-txt);
+    color: var(--color-bg);
+  }
+
+  /* Pointing up while open, the way the filter menus' chevrons do. */
+  .work[open] summary :global(.work-chevron) {
+    transform: rotate(180deg);
+  }
+
+  /* The header's own bottom padding is the space between the name and the text. The
+     body closes with the same space again before the next rule. */
+  .work-body {
+    padding-bottom: var(--header-space);
+  }
+
+  .work-body > :global(:first-child) {
+    margin-top: 0;
+  }
+
+  .work-body > :global(:last-child) {
+    margin-bottom: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    summary,
+    summary :global(.work-chevron) {
+      transition: none;
+    }
+  }
+</style>

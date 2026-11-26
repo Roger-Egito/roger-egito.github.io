@@ -4,7 +4,6 @@ title: Survival Sandbox Prototype
 img: ./survival-sandbox.webp
 alt: "A procedurally generated neighborhood of three furnished houses in a wasteland of dead trees, seen from above, with enemies outside"
 tags: [private, in development, game developer, programmer, survival, sandbox, unity, personal client,
-  systems design,
   ai programming, gameplay programming, tools programming, ui programming,
   testing]
 sole: [programmer]
@@ -14,7 +13,7 @@ metrics:
     value: "196"
   - label: C# scripts
     value: "249"
-roles: "Game developer and systems designer"
+roles: "Game developer"
 blurb: "Survive a procedurally generated wasteland, and build your weapons out of whatever parts you find."
 summary: "Sole programmer on an unannounced 2D survival sandbox in Unity 6: procedural world generation, crafting from parts, enemy AI and the editor tools behind them."
 description: "An unannounced top-down 2D survival sandbox in Unity 6, where every tool and weapon is the sum of the parts it's built from.<br><br>I'm the sole programmer on the prototype, for a private client. I turned the client's documents into one design document, then built the game's systems: procedural world generation, crafting, enemy AI, and the editor tools behind them."
@@ -22,6 +21,7 @@ private: This game is unannounced, so its name and client aren't shown.
 ---
 
 import Media from '../../components/mdx/Media.astro';
+import Work from '../../components/mdx/Work.astro';
 import gameplay from './survival-sandbox/gameplay.mp4?url';
 import world from './survival-sandbox/world.webp';
 import bench from './survival-sandbox/bench.webp';
@@ -34,15 +34,11 @@ import night from './survival-sandbox/night.webp';
 
 This is a top-down 2D survival sandbox in Unity 6, set on an abandoned Earth after an environmental collapse. The player manages health, hunger and thirst in a procedurally generated world, and builds tools and weapons out of the parts they find. It's unannounced, so the client and the game's name stay private.
 
-This page shows the prototype. The art is placeholder, taken from third-party asset packs.
+This page shows the prototype. The art is placeholder, taken from third-party asset packs. I'm the sole programmer, and my job was to turn the client's design into a playable prototype, and to build the systems the full game will grow on.
 
-### My role
+<Work section="developer">
 
-I'm the sole programmer. My job was to turn the client's design into a playable prototype, and to build the systems the full game will grow on.
-
-### What I did
-
-**One design document.** The design lived in many places: the client's GDD, slide decks, diagrams, and recordings of our specification sessions. I consolidated all of it into a single design document where every section names its sources, and I listed the questions the documents left open, so decisions were made before the code depended on them.
+**One design document first.** The design lived in many places: the client's GDD, slide decks, diagrams, and recordings of our specification sessions. Before writing code, I consolidated all of it into a single design document where every section names its sources, and I listed the questions the documents left open, so decisions were made before the code depended on them.
 
 <Media image={bench} alt="The crafting bench screen: a blade, a kitchen knife, a wooden pole and rope in the seven-cell grid, previewing a sword in the output slot, with the upgrade slots on the left and the bag below" caption="A blade, a knife, a pole and rope make a Sword">
 
@@ -71,6 +67,8 @@ I'm the sole programmer. My job was to turn the client's design into a playable 
 **Testing as I go.** The codebase has 196 automated tests. Before handing the prototype over, I tested every task against its acceptance criteria and wrote up what passed, what didn't, and the problems I found outside the tasks.
 
 </Media>
+
+</Work>
 
 ### Outcome
 

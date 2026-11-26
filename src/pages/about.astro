@@ -5,6 +5,7 @@ import Base from '../layouts/Base.astro';
 import Crumb from '../components/Crumb.astro';
 import StarRule from '../components/StarRule.astro';
 import AboutCopy from '../components/AboutCopy.astro';
+import ContactCard from '../components/ContactCard.astro';
 import Footer from '../components/Footer.astro';
 import StructuredData from '../components/StructuredData.astro';
 import { site, pageTitle } from '../config/site';
@@ -26,6 +27,7 @@ const profile = {
       <h1 class="section-heading">About</h1>
       <StarRule />
       <AboutCopy />
+      <ContactCard place="about" />
       <a class="btn" href="/#portfolio">Back to Portfolio</a>
     </article>
   </main>

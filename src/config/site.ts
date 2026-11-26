@@ -2,6 +2,7 @@
 // CSS can use them directly.
 import type { IconName } from '../components/Icon.astro';
 import { labelOf, rolesOf, type TagId } from './tags';
+import { cvs } from './cvs';
 
 export interface Link {
   icon: IconName;
@@ -12,6 +13,8 @@ export interface Link {
   url: string;
   /** Sent to the collector as a click event of this name, for links worth counting. */
   event?: string;
+  /** The CV. Its url is only the default: a role page swaps in its own CV (cvs.ts). */
+  cv?: true;
 }
 
 export const site = {
@@ -57,9 +60,6 @@ export const site = {
   email: 'rogeregito@outlook.com',
   slogan: 'Creating games with heart and soul',
 
-  /** Where the contact form posts to. */
-  contactAction: 'https://formspree.io/f/xldnwyla',
-
   /**
    * Visit counter: the site's own collector, a Cloudflare Worker in collector/. No
    * cookies and nothing personal stored, so there's no consent banner to put up.
@@ -84,18 +84,14 @@ export const site = {
       icon: 'file-lines',
       label: 'Curriculum vitae',
       tip: 'CV',
-      // Served from this domain rather than Google Drive: a Drive link looks
-      // provisional, can hit a permission wall, and takes the reader off the site. The
-      // file lives in public/, which Astro copies through untouched, so the URL stays
-      // put when the PDF is replaced.
-      url: '/Roger_Egito_CV.pdf',
+      // The general CV, which every page without a role gets. The list of CVs, and why
+      // they're served from this domain, is in cvs.ts.
+      url: cvs.general,
       event: 'cv-open',
+      cv: true,
     },
   ] satisfies Link[],
 };
-
-/** Only icon shown above the contact form. */
-export const contactSocial = site.social[1];
 
 /**
  * Browser tab / search result title. "Roger Egito - Portfolio" on the homepage,

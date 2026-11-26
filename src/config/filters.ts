@@ -10,27 +10,33 @@
  */
 import type { CollectionEntry } from 'astro:content';
 import { categories, resolve, tagsIn, type CategoryId, type TagId } from './tags';
+import { roleIds, roleLenses, rolesFor } from './roles';
 
 type GameData = CollectionEntry<'games'>['data'];
 
-/** A filter that isn't a tag. Only Released so far, which no entry writes by hand. */
-export const derivedFilters = {
-  released: { label: 'Released', category: 'platform' as CategoryId },
+/**
+ * Filters that aren't tags, which no entry writes by hand. Released, and the three
+ * roles the role pages open with (src/config/roles.ts). The roles sit in no menu: the
+ * Roles menu already lists the titles they're made of, and the same name twice in one
+ * menu would only confuse. They only ever appear as the chip a role page starts with.
+ */
+export const derivedFilters: Record<string, { label: string; category: CategoryId }> = {
+  released: { label: 'Released', category: 'platform' },
+  ...Object.fromEntries(roleIds.map((id) => [id, { label: roleLenses[id].label, category: 'role' as CategoryId }])),
 };
-
-export type FilterId = TagId | keyof typeof derivedFilters;
 
 /** The stores. A game on any of them is out in the world. */
 const storeTags = ['steam', 'itch', 'google play'];
 
 /**
- * Every filter id a game answers to: its own tags, plus Released when it's on a store.
- * Status needs no ids of its own beyond that, since private, in development and
- * playable are already tags.
+ * Every filter id a game answers to: its own tags, plus Released when it's on a store,
+ * plus each role page it belongs on. Status needs no ids of its own beyond that, since
+ * private, in development and playable are already tags.
  */
 export const filterIdsFor = (data: GameData): string[] => {
   const ids = [...data.tags];
   if (ids.some((tag) => storeTags.includes(tag))) ids.push('released');
+  ids.push(...rolesFor(data.tags));
   return ids;
 };
 
@@ -109,7 +115,7 @@ export const buildMenus = (games: CollectionEntry<'games'>[]): FilterMenu[] => {
       }));
 
   const status: FilterOption[] = [
-    { id: 'released', label: derivedFilters.released.label, category: 'platform' as CategoryId },
+    { id: 'released', ...describeFilter('released') },
     { id: 'in development', label: 'In Development', category: 'platform' as CategoryId },
     { id: 'private', label: 'Private', category: 'platform' as CategoryId },
     { id: 'playable', label: 'Playable Here', category: 'feature' as CategoryId },
@@ -146,10 +152,8 @@ export const buildMenus = (games: CollectionEntry<'games'>[]): FilterMenu[] => {
  * to call itself and which color to wear.
  */
 export const describeFilter = (id: string): { label: string; category: CategoryId } => {
-  if (id in derivedFilters) {
-    const entry = derivedFilters[id as keyof typeof derivedFilters];
-    return { label: entry.label, category: entry.category };
-  }
+  const derived = derivedFilters[id];
+  if (derived) return derived;
   const tag = resolve(id as TagId);
   return { label: tag.label, category: tag.category };
 };

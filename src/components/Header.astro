@@ -12,6 +12,14 @@ import { join } from 'node:path';
 // so one flag ships as markup and nothing is fetched for it. Windows has no country
 // flag glyphs, so the 🇧🇷 emoji would just read "BR" for most desktop visitors.
 import brazilFlag from 'flag-icons/flags/4x3/br.svg?raw';
+import type { RoleId } from '../config/roles';
+
+interface Props {
+  /** The role page it's on. The CV icon serves that role's CV. */
+  role?: RoleId;
+}
+
+const { role } = Astro.props;
 
 // The hero's own clips, separate from the card previews: src/config/hero.ts says which
 // games play here, and `npm run hero:encode` writes every clip at every quality tier.
@@ -113,7 +121,7 @@ const clips = Object.keys(heroClips).map((slug) => {
           clips means no game to credit. */}
       <p class="profession" data-hero-credit>{site.slogan}</p>
 
-      <SocialLinks class="header-social" tips />
+      <SocialLinks class="header-social" tips role={role} />
     </div>
   </div>
 

@@ -3,7 +3,8 @@
  *
  * A normal click opens the dialog over the homepage and puts /games/<slug>/ in the
  * address bar. Ctrl/cmd/middle click falls through to the browser so the link opens
- * the standalone page as usual. Back, Esc, Close and clicking outside all shut the
+ * the standalone page as usual, and so does any click on a phone, where the card has
+ * too little room around it to be worth a dialog. The About dialog works the same way. Back, Esc, Close and clicking outside all shut the
  * dialog and restore the URL.
  *
  * <dialog> handles the focus trap and Esc itself, so what's left here is the history
@@ -11,6 +12,7 @@
  */
 
 import { isGameLoaded, pauseGame, resumeGame, showDefault, unloadMedia } from './game-tabs';
+import { showWork } from './work-sections';
 
 // Whether we're responsible for the current history entry. This has to be tracked
 // explicitly rather than worked out from location.pathname: history.back() applies
@@ -24,6 +26,13 @@ let syncingFromHistory = false;
 
 // Refreshed on every page load, since the view transition router swaps the title.
 let baseTitle = document.title;
+
+// Below the site's tablet breakpoint (the same 767px global.css uses), the dialog's
+// card fills nearly the whole screen anyway, but squeezed by its own margins and
+// border. Every dialog with a data-url has a page of its own that gives the same
+// content the full width, so links to those just go there. Checked per click, so
+// rotating a tablet is honored.
+const phone = window.matchMedia('(max-width: 767px)');
 
 const openDialog = () =>
   document.querySelector<HTMLDialogElement>('dialog[open]:not(#confirm-close)');
@@ -67,11 +76,18 @@ function confirmLosingGame(dialog: HTMLDialogElement): Promise<boolean> {
   });
 }
 
-function open(dialog: HTMLDialogElement) {
+/**
+ * `role` is the section the card asked for, from the #designer on a role page's card
+ * link. It opens that part of the write-up alone and stays in the address, so a link
+ * copied from the dialog opens the game the same way. Without one, every section opens,
+ * which also undoes whatever the last visit left closed.
+ */
+function open(dialog: HTMLDialogElement, role = '') {
   // Frames are left with no src in the HTML so the homepage doesn't boot up a YouTube
   // player for every game. This picks the opening tab and fills in whichever one of
   // them the visitor is about to look at.
   showDefault(dialog);
+  showWork(dialog, role);
 
   dialog.showModal();
 
@@ -81,7 +97,7 @@ function open(dialog: HTMLDialogElement) {
   // first time an element is focused, so reopening needs this done explicitly.
   dialog.querySelector<HTMLElement>('.sheet')?.focus();
 
-  const url = dialog.dataset.url;
+  const url = dialog.dataset.url && (role ? `${dialog.dataset.url}#${role}` : dialog.dataset.url);
   if (url) {
     // Replace rather than push when we already own the entry, so repeatedly opening
     // dialogs can't stack up entries that all need backing out of.
@@ -113,12 +129,13 @@ document.addEventListener(
       // Let the browser handle new-tab/new-window clicks.
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       if (event.button !== 0) return;
+      if (phone.matches) return;
 
       const dialog = document.getElementById(`game-${card.dataset.game}`);
       if (!(dialog instanceof HTMLDialogElement)) return;
 
       event.preventDefault();
-      open(dialog);
+      open(dialog, new URL(card.href).hash.slice(1));
       return;
     }
 
@@ -131,6 +148,7 @@ document.addEventListener(
       if (event.button !== 0) return;
       const dialog = document.querySelector(opener.dataset.opens ?? '');
       if (dialog instanceof HTMLDialogElement) {
+        if (phone.matches && dialog.dataset.url) return;
         event.preventDefault();
         if (dialog.dataset.url) open(dialog);
         else {

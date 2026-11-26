@@ -15,9 +15,27 @@ import {
 } from "../config/tags";
 import { buildMenus, filterIdsFor, searchPartsFor } from "../config/filters";
 import { coverAlt, plainText } from "../config/site";
+import { rolesFor, type RoleId } from "../config/roles";
+
+interface Props {
+  /** On a role page: the role the grid opens filtered by, and the section its cards open at. */
+  role?: RoleId;
+}
+
+const { role } = Astro.props;
 
 // What the bar over the grid can offer, worked out from the games that exist.
 const menus = buildMenus(await getCollection("games"));
+
+/**
+ * A card's link. On a role page it points at that role's section of the write-up, so
+ * the game opens on the work the visitor came for. A game the role doesn't cover (shown
+ * once the role chip comes off) opens as it does on the homepage.
+ */
+const hrefFor = (game: (typeof games)[number]) =>
+  role && rolesFor(game.data.tags).includes(role)
+    ? `/games/${game.id}/#${role}`
+    : `/games/${game.id}/`;
 
 // Highest order first, which matches the order the grid used to show.
 const games = (await getCollection("games")).sort(
@@ -81,7 +99,7 @@ const showMetrics = false;
     <h2 class="section-heading">Portfolio</h2>
     <StarRule />
 
-    <FilterBar menus={menus} total={games.length} />
+    <FilterBar menus={menus} total={games.length} defaults={role ? [role] : []} />
 
     {
       /* Every card is lazy: the hero stands a full screen tall and the grid begins
@@ -178,7 +196,7 @@ const showMetrics = false;
                           modal.ts catches normal clicks and opens the dialog instead. */}
                       <h3 class="title">
                         <a
-                          href={`/games/${game.id}/`}
+                          href={hrefFor(game)}
                           class="card-link"
                           data-game={game.id}
                           aria-haspopup="dialog"

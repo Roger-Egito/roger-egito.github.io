@@ -21,6 +21,7 @@ private: This experience isn't publicly available.
 ---
 
 import Media from '../../components/mdx/Media.astro';
+import Work from '../../components/mdx/Work.astro';
 import coal from './vivenciando-o-passado/coal.webp';
 import poster from './vivenciando-o-passado/sbpc-poster.webp';
 import team from './vivenciando-o-passado/sbpc-team.webp';
@@ -36,23 +37,23 @@ Vivenciando o Passado is a research project at Universidade Federal Fluminense, 
 
 It isn't a game, a film or a tour. The player takes part in scenes from a child's point of view, interacting with characters whose words and surroundings come from historical documentation.
 
-</Media>
-
-### My role
-
 I'm the project lead and one of its developers. My job is to turn the historians' research into an experience that runs on the headset, and to coordinate the programmers building it.
 
-### What I did
-
-<Media image={team} alt="Eleven people posing together in front of the Instituto de História booth at SBPC 2026, with Roger third from the left in a white shirt and glasses" caption="At the Instituto de História booth. I'm third from the left.">
-
-**Stepping up to lead.** I didn't join as project lead. We're all busy people, and keeping the team organized and motivated, the project afloat and the clients satisfied was hard, so I stepped up and started organizing everything. I led four programmers working on Git feature branches, and turned the research team's documentation into 12 scheduled technical milestones.
-
 </Media>
+
+<Work section="designer">
 
 **Making the history work in VR.** The historians are very particular about the experience they want, and I negotiate with them a lot to keep it viable in VR. In one scene the player walks in a line of enslaved people and can only move forward, but it's the player who moves the whole line forward, and their hands are left untied, because in VR the player needs their hands free.
 
-The hardest part is dialogue. Every line has to be true to the period and teach something, so it goes through many people before it reaches us, and very few lines have arrived so far.
+**Dialogue.** The hardest part is dialogue. Every line has to be true to the period and teach something, so it goes through many people before it reaches us, and very few lines have arrived so far.
+
+**Keeping it simple.** I told the team to keep everything as simple as possible, so that anyone could put on the headset and take part without being taught.
+
+**Result.** At SBPC 2026, sessions lasted about a minute, nobody felt any discomfort, and we didn't need to teach teleporting at all.
+
+</Work>
+
+<Work section="developer">
 
 <Media side="right" image={coal} alt='The VR view in the slave shop scene: a girl stands before the player, whose red virtual hands hold a lump of coal, under the text "Pega o carvão da minha mão"' caption="The shop scene: a girl asks the player to take the coal from her hand">
 
@@ -68,7 +69,21 @@ The hardest part is dialogue. Every line has to be true to the period and teach 
 - Scene scripts are data. A sequence is a list of steps edited in the Inspector, built from 12 step types such as Say, MoveTo, PlayGesture, TeleportPlayer and WaitForSignal, with a custom editor for authoring them.
 - Session systems start themselves before any scene loads, so pressing Play in any scene runs the same systems as a real build.
 
-I backed the rewrite with 13 automated tests, and wrote a README in Portuguese that walks the team through everyday tasks without writing new code. Non-programmers now have a much easier time writing sequences and dialogue, which make up the flow of every scene.
+I backed the rewrite with 13 automated tests, and wrote a README in Portuguese that walks the team through everyday tasks without writing new code.
+
+**Result.** Non-programmers now have a much easier time writing sequences and dialogue, which make up the flow of every scene.
+
+</Work>
+
+<Work section="other">
+
+<Media image={team} alt="Eleven people posing together in front of the Instituto de História booth at SBPC 2026, with Roger third from the left in a white shirt and glasses" caption="At the Instituto de História booth. I'm third from the left.">
+
+**Stepping up to lead.** I didn't join as project lead. We're all busy people, and keeping the team organized and motivated, the project afloat and the clients satisfied was hard, so I stepped up and started organizing everything. I led four programmers working on Git feature branches, and turned the research team's documentation into 12 scheduled technical milestones.
+
+</Media>
+
+</Work>
 
 ### Outcome
 
@@ -78,11 +93,7 @@ The experience was exhibited to the public at SBPC 2026, Brazil's national scien
 
 </Media>
 
-<Media image={visitor} alt="A smiling team member seated in the Quest 3 headset, holding a controller out in front of her" caption="A team member trying it at the booth" side="right">
-
-I had told the team to keep everything as simple as possible, and it paid off. Sessions lasted about a minute, nobody felt any discomfort, and we didn't need to teach teleporting at all.
-
-</Media>
+<Media image={visitor} alt="A smiling team member seated in the Quest 3 headset, holding a controller out in front of her" caption="A team member trying it at the booth" side="center" />
 
 <Media image={guiding} alt="Roger, in a white shirt, gesturing as he explains the controls to a team member seated in the headset" caption="Me explaining the controls" side="left">
 

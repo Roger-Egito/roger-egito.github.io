@@ -8,18 +8,33 @@
  * JavaScript sees the full grid instead of controls that do nothing.
  */
 import Icon from "./Icon.astro";
-import type { FilterMenu } from "../config/filters";
+import { describeFilter, type FilterMenu } from "../config/filters";
 
 interface Props {
   menus: FilterMenu[];
   /** How many games the grid holds, for the "showing x of y" line. */
   total: number;
+  /**
+   * Filters already on when the page opens, as a role page's role is. The address bar
+   * only carries ?f= once the visitor has changed them.
+   */
+  defaults?: string[];
 }
 
-const { menus, total } = Astro.props;
+const { menus, total, defaults = [] } = Astro.props;
+
+// The script names a chip from the menu option it matches. A default filter can be one
+// no menu lists (a role), so its label and color travel with the bar instead.
+const extraLabels = Object.fromEntries(defaults.map((id) => [id, describeFilter(id)]));
 ---
 
-<div class="filter-bar" data-filter-bar hidden>
+<div
+  class="filter-bar"
+  data-filter-bar
+  data-default-filters={JSON.stringify(defaults)}
+  data-extra-labels={JSON.stringify(extraLabels)}
+  hidden
+>
   {/* Live region: with the grid changing under them, someone using a screen reader
       gets told what's left rather than having to go and count. */}
   <p class="count" data-filter-count aria-live="polite">

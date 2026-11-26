@@ -28,6 +28,7 @@ urlItchIo: <iframe frameborder="0" src="https://itch.io/embed/4261632?bg_color=0
 ---
 
 import Media from '../../components/mdx/Media.astro';
+import Work from '../../components/mdx/Work.astro';
 import cultists from './cursed-blight/cultists.webp';
 import chest from './cursed-blight/chest.webp';
 import flesh from './cursed-blight/flesh.webp';
@@ -36,15 +37,11 @@ import corridor from './cursed-blight/corridor.webp';
 
 ### The project
 
-Cursed Blight is a short grim-dark dungeon crawler made at Ludomancer Studio by a team of four, with a producer and an artist alongside me. The studio handed me a one-page brief built on Mörk Borg's tabletop rules.
+Cursed Blight is a short grim-dark dungeon crawler made at Ludomancer Studio by a team of four, with a producer and an artist alongside me. The studio handed me a one-page brief built on Mörk Borg's tabletop rules. I was the game's sole designer and programmer, and my job was to design the full game from that brief, build it, and ship it in about a month.
 
-### My role
+<Work section="designer">
 
-I was the game's sole designer and programmer. My job was to design the full game from that brief, build it, and ship it in about a month.
-
-### What I did
-
-I wrote the full GDD from the one-page brief.
+I wrote the full GDD from the one-page brief, and specced every screen.
 
 <Media image={cultists} alt="Two hooded cultists flanking a barred gate in a torchlit catacomb, with the enemy's name and HP shown in the side panel" caption="Cultists guarding a gate">
 
@@ -72,30 +69,49 @@ Flesh is also the price of the true ending. The moment you realize that, the gam
 
 </Media>
 
-<Media image={characterCreation} alt='Character creation screen asking "Is this your flesh?" with rolled Strength, Agility, Presence, Toughness and HP beside a portrait' caption="Character creation" side="right">
+**What I cut.** To ship in a month, we cut more enemy variety, more levels and deeper mechanics. Another month would have brought those back, along with a richer story.
 
-**Words and art.** I wrote the story and every line of in-game text, specced every screen, and directed the art with our artist.
+</Work>
 
-</Media>
+<Work section="developer">
 
 <Media image={corridor} alt="First-person catacomb view with a minimap, a movement log, the controls, the player's stats, possessions and a portrait around it" caption="The HUD: minimap, log, stats and possessions">
 
-**Programming.** I programmed the entire game in Unity, 44 C# scripts and about 3,200 lines. That covers grid step movement, enemy navigation that switches from roaming waypoints to combat, raycast enemy vision that walls block, and weapons, armor, enemies, upgrades and player stats as ScriptableObject data.
+I programmed the entire game in Unity, 44 C# scripts and about 3,200 lines. That covers grid step movement, enemy navigation that switches from roaming waypoints to combat, raycast enemy vision that walls block, and weapons, armor, enemies, upgrades and player stats as ScriptableObject data.
 
 </Media>
 
-It also covers the Flesh system, character creation, the chat log, minimap floor triggers, the HUD with damage flashes and a blood overlay, billboarded sprites driven by a sprite state machine, WebGL-specific handling, and every screen from the splash and title to the credits, game over and ending.
+It also covers the Flesh system, character creation, the chat log, minimap floor triggers, the HUD with damage flashes and a blood overlay, billboarded sprites driven by a sprite state machine, WebGL-specific handling, and every screen from the splash and title to the credits, game over and ending. I also integrated a dithering palette asset to get the game's limited-color look.
 
-- Integrated a dithering palette asset to get the game's limited-color look.
-- Edited and implemented all of the audio, including a separate music controller for the catacombs, and cut the trailer.
+**Result.** The whole game went from design to release in about a month, playable in the browser and on Windows.
 
-**What I cut.** To ship in a month, we cut more enemy variety, more levels and deeper mechanics. Another month would have brought those back, along with a richer story.
+</Work>
+
+<Work section="writer">
+
+<Media image={characterCreation} alt='Character creation screen asking "Is this your flesh?" with rolled Strength, Agility, Presence, Toughness and HP beside a portrait' caption="Character creation">
+
+I wrote the story and every line of in-game text.
+
+**Result.** Players quoted the game back, like "my flesh got harvested", after the line that appears when you die.
+
+</Media>
+
+</Work>
+
+<Work section="other">
+
+**Art direction.** I directed the art with our artist.
+
+**Audio and trailer.** I edited and implemented all of the audio, including a separate music controller for the catacombs, and cut the trailer.
+
+</Work>
 
 ### Outcome
 
 Cursed Blight went from design to release in about a month. It's playable in the browser and on Windows on itch.io, where it has more than 590 browser plays.
 
-The atmosphere was my biggest focus, and it's what players responded to most. They quoted the game back, like "my flesh got harvested", after the line that appears when you die.
+The atmosphere was my biggest focus, and it's what players responded to most.
 
 Looking back, I'd optimize the level better, and make it smaller with more variety packed into it.
 

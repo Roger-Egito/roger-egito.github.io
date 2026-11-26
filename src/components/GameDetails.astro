@@ -6,6 +6,9 @@ import { render, type CollectionEntry } from "astro:content";
 import Icon from "./Icon.astro";
 import { faGamepad } from "@fortawesome/free-solid-svg-icons";
 import StarRule from "./StarRule.astro";
+import Questions from "./Questions.astro";
+import ContactCard from "./ContactCard.astro";
+import type { RoleId } from "../config/roles";
 import {
   categories,
   categoryOrder,
@@ -30,9 +33,11 @@ interface Props {
    * the page's h1. In a dialog the homepage hero already holds the h1, so it stays h2.
    */
   heading?: "h1" | "h2";
+  /** The role page the dialog is on, if any. The contact card serves that role's CV. */
+  role?: RoleId;
 }
 
-const { game, deferVideo = false, heading: Heading = "h2" } = Astro.props;
+const { game, deferVideo = false, heading: Heading = "h2", role } = Astro.props;
 const d = game.data;
 
 // The bullet in the long-form body. A list marker can't be an inline <svg>, so the
@@ -149,6 +154,7 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
 <script>
   import "../scripts/game-tabs";
   import "../scripts/trailer-fullscreen";
+  import "../scripts/work-sections";
 </script>
 
 {/* title and description can contain <br>, so render them as HTML */}
@@ -314,6 +320,9 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
   )
 }
 
+{/* Open questions about this write-up, from docs/questions/. Dev server only. */}
+<Questions slug={game.id} />
+
 {
   storeEmbeds.length > 0 && (
     <div class="store-embeds">
@@ -352,6 +361,15 @@ const shown = d.game ? "cover" : d.video ? "video" : "cover";
     </ul>
   )
 }
+
+{/* After the whole write-up, so it asks once the work has been shown. One level under
+    the title: h2 on a game's own page, h3 in a dialog. */}
+<ContactCard
+  place={game.id}
+  role={role}
+  subject={`About ${plainText(d.title)}`}
+  heading={Heading === "h1" ? "h2" : "h3"}
+/>
 
 <slot name="action" />
 

@@ -2,16 +2,26 @@
 // Social/CV icon row, used by the header and the footer.
 import Icon from './Icon.astro';
 import { site, type Link } from '../config/site';
+import { cvFor, type CvVersion } from '../config/cvs';
+import type { RoleId } from '../config/roles';
 
 interface Props {
   class?: string;
   /** Show the hover label. Only the hero asks for it; the footer stays quiet. */
   tips?: boolean;
+  /** The role page it's on. The CV icon serves that role's CV, like the contact card. */
+  role?: RoleId;
 }
 
-const { class: className, tips = false } = Astro.props;
+const { class: className, tips = false, role } = Astro.props;
 
-const links: Link[] = [...site.social, ...site.links];
+// The CV link points at the page's role's CV, and says which version it is, so the
+// dashboard tells the downloads apart the same way it does for the contact card.
+const cv = cvFor(role);
+const all: Link[] = [...site.social, ...site.links];
+const links: (Link & { cvVersion?: CvVersion })[] = all.map((link) =>
+  link.cv ? { ...link, url: cv.url, cvVersion: cv.version } : link
+);
 ---
 
 <ul class:list={['social-row', className]}>
@@ -26,6 +36,7 @@ const links: Link[] = [...site.social, ...site.links];
           aria-label={link.label}
           data-tip={tips ? (link.tip ?? link.label) : undefined}
           data-event={link.event}
+          data-event-cv={link.cvVersion}
         >
           <Icon name={link.icon} />
         </a>
