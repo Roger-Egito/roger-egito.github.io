@@ -35,8 +35,10 @@ const gamePanel = (scope: ParentNode) => scope.querySelector<HTMLElement>('.game
 const gameFrame = (scope: ParentNode) =>
   scope.querySelector<HTMLIFrameElement>('iframe[data-game-src]');
 
+// data-trailer, not data-video: data-video only means the src is still waiting for its
+// tab, so a trailer served already loaded (a game's own page, with no build) has none.
 const videoFrame = (scope: ParentNode) =>
-  scope.querySelector<HTMLIFrameElement>('iframe[data-video]');
+  scope.querySelector<HTMLIFrameElement>('iframe[data-trailer]');
 
 /** True once someone has actually started a build in this scope. */
 export function isGameLoaded(scope: ParentNode) {

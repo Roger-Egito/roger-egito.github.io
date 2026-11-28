@@ -16,4 +16,4 @@ node_modules/
 videos-to-convert/
 
 # private working notes, not for the public repo
-docs/*-offsite-drafts.md
+docs/

@@ -19,7 +19,7 @@ mkdirSync(outFolder, { recursive: true });
 const wanted = new Set();
 const mb = (bytes) => (bytes / 1048576).toFixed(2).padStart(6) + ' MB';
 
-for (const [slug, { file, start, end, crop }] of Object.entries(heroClips)) {
+for (const [slug, { file, start, end, crop, hold }] of Object.entries(heroClips)) {
   const input = resolve(sourceFolder, file);
   if (!existsSync(input)) {
     console.error(`${slug}: no such file ${input}`);
@@ -34,6 +34,9 @@ for (const [slug, { file, start, end, crop }] of Object.entries(heroClips)) {
 
   // Cropped first, so each tier's scale sizes what's left rather than the whole frame.
   const cropFilter = crop ? `crop=${crop.width}:${crop.height}:${crop.x}:${crop.y},` : '';
+  // The cut above is an input option, so it only limits what's read. The held frames
+  // are added after it and make the output longer than the cut.
+  const holdFilter = hold ? `,tpad=stop_mode=clone:stop_duration=${hold}` : '';
 
   const sizes = [];
   for (const { height, kbps } of heroTiers) {
@@ -51,7 +54,7 @@ for (const [slug, { file, start, end, crop }] of Object.entries(heroClips)) {
         // seconds' worth, the window that cap is measured over.
         '-c:v', 'libx264', '-preset', 'medium', '-crf', '23',
         '-maxrate', `${kbps}k`, '-bufsize', `${kbps * 2}k`,
-        '-vf', `${cropFilter}scale=-2:${height}`,
+        '-vf', `${cropFilter}scale=-2:${height}${holdFilter}`,
         '-pix_fmt', 'yuv420p',
         // Muted in the hero, so the audio would only be weight.
         '-an',

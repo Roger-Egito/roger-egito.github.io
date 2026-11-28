@@ -33,9 +33,10 @@ if (!existsSync(input)) {
   process.exit(1);
 }
 
-const markdown = resolve('src/content/games', `${slug}.md`);
-if (!existsSync(markdown)) {
-  console.error(`no game called "${slug}" (expected ${markdown})`);
+// Same extensions the games collection loads (see src/content.config.ts).
+const entries = ['md', 'mdx'].map((ext) => resolve('src/content/games', `${slug}.${ext}`));
+if (!entries.some((entry) => existsSync(entry))) {
+  console.error(`no game called "${slug}" (expected ${entries.join(' or ')})`);
   process.exit(1);
 }
 

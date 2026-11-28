@@ -136,6 +136,7 @@ export const tags = {
   'solo developer': { category: 'role' },
   'art director': { category: 'role' },
   'english localizer': { category: 'role' },
+  writer: { category: 'role' },
   'project lead': { category: 'role' },
   'quality assurance': { category: 'role' },
 
@@ -279,6 +280,7 @@ export const tags = {
   relay: { category: 'technology', label: 'Unity Relay' },
   'xr interaction toolkit': { category: 'technology', label: 'XR Interaction Toolkit' },
   fmod: { category: 'technology', label: 'FMOD' },
+  naninovel: { category: 'technology', icon: 'naninovel.svg' },
 
   // Features: what this site offers for the game, rather than anything about the game
   // itself. Only add this to an entry that actually carries a `game:` embed, since it's

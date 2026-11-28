@@ -46,6 +46,11 @@ export const heroSourceFolder = '../videos-to-convert';
  * recorded into a 16:9 video. Cropping those to 16:9 lets the game fill the hero
  * instead of showing the bars.
  *
+ * `hold` repeats the clip's last frame for that many seconds. The reel starts fading to
+ * the next clip 1.2 seconds before the end (HANDOVER_AT in hero-reel.ts), so a clip
+ * whose good part ends right before a cut can hold its last frame through the fade
+ * instead of fading out over whatever comes after the cut.
+ *
  * A game left out of this list simply doesn't appear in the hero. Its card is
  * unaffected.
  */
@@ -56,9 +61,11 @@ export const heroClips: Record<
     start?: number;
     end?: number;
     crop?: { width: number; height: number; x: number; y: number };
+    hold?: number;
   }
 > = {
   'all-stars-merge': { file: 'all-stars-merge.mp4', end: 3.8 },
+  'blinc-requiem': { file: 'blinc-requiem-miniature.mp4', end: 4.4, hold: 1.2 },
   'cursed-blight': { file: 'cursed-blight-trailer.mp4', start: 30, end: 37 },
   'hotel-77': { file: 'hotel-77.mp4', end: 7.8 },
   'memories-of-war': { file: 'memories-of-war.mp4', end: 5.8 },

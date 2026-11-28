@@ -1,0 +1,110 @@
+---
+order: 11
+title: "BLINC: Requiem"
+img: ./blinc-requiem.webp
+video: https://www.youtube.com/embed/L2t4TdRyihI
+tags: [steam, writer, game designer, game developer, narrative, horror, unity, naninovel, ludomancer,
+  narrative design, narrative writing, scriptwriting, script editing,
+  gameplay programming, tools programming, ui programming,
+  audio implementation,
+  portuguese localization, trailer production]
+sole: [writer]
+startDate: 2026
+team: "5"
+metrics:
+  - label: Words
+    value: 30,000+
+  - label: Achievements
+    value: "40"
+roles: "Writer, narrative designer and game developer"
+blurb: "Three stories, centuries apart, around the teleportation test that went wrong."
+summary: "I wrote BLINC: Requiem, a dark sci-fi visual novel by Ludomancer Studio, and built it in Unity: three stories and over 30,000 words around one teleportation disaster."
+description: "BLINC: Requiem is a dark sci-fi visual novel told in three stories, centuries apart, around the first teleportation of a crewed capital ship. It's the prequel to BLINC: Quantum Rogue.<br><br>I turned the clients' three short outlines into the full script, over 30,000 words, and built the game in Unity with Naninovel."
+urlSteam: <iframe src="https://store.steampowered.com/widget/4735280/" frameborder="0" width="646" height="190"></iframe>
+---
+
+import Media from '../../components/mdx/Media.astro';
+import whoToTrust from './blinc-requiem/who-to-trust.webp';
+import uOk from './blinc-requiem/u-ok.webp';
+import escape from './blinc-requiem/escape.webp';
+import spokesperson from './blinc-requiem/spokesperson.webp';
+import loth from './blinc-requiem/loth.webp';
+import cockpit from './blinc-requiem/cockpit.webp';
+import remains from './blinc-requiem/remains.webp';
+
+### The project
+
+BLINC: Requiem is a dark sci-fi visual novel made at Ludomancer Studio for Game Space Agency, the publisher behind the BLINC universe. It tells where BLINC, the teleportation drive at the heart of their space roguelite BLINC: Quantum Rogue, came from.
+
+The clients gave me the lore and three short outlines, one per point of view: a woman escaping a disaster, a Synthex (the setting's sentient machines) that is treated like equipment, and a pair of mining pilots. The goal was to tie them into three views of one incident.
+
+### My role
+
+I was the game's sole writer and its developer, credited in game as Writer / Developer. My job was to design the three stories from those outlines, write them, and build the whole visual novel in Unity, from the first script in May 2026 to a Steam-ready build in October.
+
+### What I did
+
+**Outlines and the script.** I summarized the clients' lore document, then wrote the plot of each story chapter by chapter, with character, background and CG lists for the artist. We went through several rounds of feedback in a shared document before I wrote the script. All three chapters come to more than 30,000 words, with 82 choice options.
+
+<Media image={whoToTrust} alt='Mara in the lab with a choice menu reading Daryk, Kaelis and Pulse, over the line: Well, who should I trust?' caption="Mara can only confide in one co-worker per playthrough">
+
+**Chapter 1: Mara.** The game opens on a mystery: the crew of Theseus' Ship vanished on Jump Day, the first teleportation of a crewed capital ship. Mara, a meticulous researcher on board, finds her door unlocked and her things slightly moved, then sees silhouettes in the corridor. The player never knows if someone is really there or if she's losing her mind after nights without sleep. Her spiral breaks with a surprise birthday party, until the experiment starts on its own and the phenomenon brings it all back, worse.
+
+</Media>
+
+<Media image={uOk} alt='Pulse, a white humanoid robot, beside Mara and Kaelis in the cafeteria, saying: U OK?' caption="Pulse, a Synthex who talks like a chat log" side="right">
+
+**Voices.** Each character has a voice of their own. Pulse, a humanoid Synthex, speaks in stiff protocol and then adds "U OK?", "HTH" or "JK" at the end. When the disaster starts, Kaelis is quick to blame Pulse, which shows the setting's prejudice against Synthexes. In fact, Pulse spends his last moments getting the shuttle ready and finding Mara's son.
+
+</Media>
+
+<Media image={escape} alt="Mara, Gord and Kaelis in a warped, red-lit cafeteria, with Kaelis saying: We can look for him while we run away!" caption="Escaping the distorted ship">
+
+The phenomenon warps the ship. Flesh grows over the walls, and the door to the escape shuttle ends up on the ceiling. The survivors get out, only for a Temujin ship to arrive too quickly.
+
+</Media>
+
+<Media image={spokesperson} alt="A glowing orange hologram of Temujin's spokesperson beside Commander Holdwyn, saying: Their purge will please Temujin." caption="Commander Holdwyn reporting to Temujin" side="right">
+
+**Chapter 2: Relay.** Relay is that Temujin ship, and the Synthex that runs it. Relay's story is about suffering in silence. The crew insults them, treats them as equipment, and orders them to throw a dead crewmate's body out with his belongings once they've taken anything worth selling. When the commander orders Relay to fire on the shuttle carrying the survivors from Mara's story, there is no choice to make: Relay says "Understood." and fires.
+
+I built that suffering into the choice system itself. The player can pick what Relay really thinks, like "You weren't even at his birthday.", but a warning reads "Payload against protocol" and Relay says "Understood." anyway. Again and again, the player is stopped, which is why the rare moments when Relay manages to say "No." hit as hard as they do.
+
+</Media>
+
+<Media image={loth} alt="A CG of Loth collapsed on the dining room floor beside a spilled bowl of oatmeal, with the line: Just a small quantity. A quick prank." caption="One of the crew's cruelties, seen by Relay">
+
+I built the crew around the seven deadly sins, with the commander as pride. Their quarrels, pranks and crimes decide who survives.
+
+When Mara comes aboard, she's the only one who treats Relay like a person. Her words start getting through the protocol, until Relay asks themselves "Am I... a person?" In the end, Relay finds a directive they can choose for themselves, and the ending depends on what they choose.
+
+</Media>
+
+<Media image={cockpit} alt="Kyla Frank and JT Woo standing in their mining ship's cockpit, with Kyla saying: Seems about right." caption="Kyla Frank and JT Woo" side="right">
+
+**Chapter 3: Kyla and JT.** Centuries later, Kyla Frank, a veteran pilot, and JT Woo, a talkative recruit she barely trusts, mine Qiyou, the energy behind BLINC, near the site of the old disaster. Their story is about the relationship between them, which keeps changing. It starts with small talk and games of "I spy" to pass the time, and gets tested when Confluence attacks and Kyla has to decide whether to trust JT, as she once trusted the partner she lost. After the battle, they open up about their pasts: what happened to Kyla's last partner, and how long JT has really served Temujin.
+
+A hidden score tracks every one of those moments. It changes how they talk to each other, and together with a space battle where each choice adds or removes damage, it decides who walks away.
+
+</Media>
+
+<Media image={remains} alt="A human skeleton half buried in an asteroid's surface, beside the broken remains of a small round robot, a portable console and a bundle of fresh flowers" caption="Where the three stories meet">
+
+Their crash leaves them on the asteroid where Mara's and Relay's stories ended. That's where the three stories finally meet.
+
+</Media>
+
+**Scope.** The art had to fit the budget. The producer went through my CG and background lists marking what could be reused, and I adapted scenes to it, like a doorway shot that became a white flash and a sound effect, and a cake that became a sprite variation.
+
+**Building it.** I built the game in Unity with Naninovel and scripted all three chapters, about 2,800 commands of staging, music, sound and choices. I set up the layered character sprites with swappable expressions, brows, mouths and arms, and implemented the backgrounds, UI screens, music and sound effects, splash screen and the 40 achievements across the script.
+
+- Wrote the entire script for the game.
+- Wrote an editor tool, about 900 lines of C#, that exports a square icon for every expression of a character, used for the achievement icons.
+- Translated the whole game into Brazilian Portuguese and proofread the entire English script.
+- Edited the clients' trailer into the final cut, and cut the short teaser.
+
+### Outcome
+
+BLINC: Requiem is coming soon to Steam, published by Game Space Agency, in English and Brazilian Portuguese.
+
+*Screenshots from the Steam page.*
