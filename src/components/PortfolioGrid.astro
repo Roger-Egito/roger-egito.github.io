@@ -376,6 +376,38 @@ const showMetrics = false;
     transform: translateY(-3px);
   }
 
+  /* Each card rises into place as it scrolls up into view, driven by the scroll
+     position itself rather than a script watching it, so it tracks the finger exactly
+     and runs backwards if you scroll back down. It plays out until 80% of the card is
+     showing, so most of the movement happens where it can be seen. Finishing at 40%
+     with half the distance was over while the card was still mostly below the screen,
+     and barely registered. The distance is --rise, shared with the dialogs, so a card
+     arriving on scroll and a game's dialog opening read as the same motion.
+
+     translate and scale rather than transform, so they stack with the hover lift above
+     instead of overriding it. On the card rather than its <li>, which the filter
+     animates.
+
+     Browsers without scroll-driven animations get no reveal at all, and every card is
+     simply there, which is also what anyone who asks for reduced motion sees. */
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .card {
+        animation: card-rise linear both;
+        animation-timeline: view();
+        animation-range: entry 0% entry 80%;
+      }
+    }
+  }
+
+  @keyframes card-rise {
+    from {
+      opacity: 0;
+      translate: 0 var(--rise);
+      scale: 0.92;
+    }
+  }
+
   /* Holds the link's own shade and the fade under it. The anchor inside is only as
      big as the game's name, so this is what the stretched link covers. */
   .clickable {
@@ -790,6 +822,24 @@ const showMetrics = false;
 
   .icon-filter[data-match] :global(.tag-icon) {
     opacity: 1;
+  }
+
+  /* Already filtering by this one. A chip says so by filling in with its color, and
+     the icon does the equivalent: full strength, its own colors instead of the gray,
+     and a fifth of the way to its hover size, enough to stand out from the row without
+     looking hovered. Pointing at it still grows it the rest of the way. */
+  .icon-filter[data-on] :global(.tag-icon) {
+    --icon-scale: calc(1 + (var(--icon-hover-scale) - 1) * 0.2);
+    --icon-gray: 0;
+    opacity: 1;
+  }
+
+  /* The press, as on .btn: it dips under the hovered size while held and springs back
+     on release. 0.9 is about the dip .btn takes (1.05 against 1.15), and the short
+     duration only applies on the way down, so it snaps under the finger. */
+  .icon-filter:active :global(.tag-icon) {
+    transform: scale(calc(var(--icon-hover-scale) * 0.9));
+    transition-duration: 0.08s;
   }
 
   /* The discipline's mark, sized to the word beside it and held a little back, so the

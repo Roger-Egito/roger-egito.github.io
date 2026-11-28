@@ -27,6 +27,9 @@
 
   /* motion */
   --transition: 0.3s ease-in-out;
+  /* How far something travels up as it fades in: a dialog opening, a game card scrolling
+     into view. One value, so the two arrivals read as the same gesture. */
+  --rise: 4rem;
 
   /* cursors. The two numbers are the hotspot, the pixel the browser treats as
      the actual pointer position. Both images are 32x32 with transparent padding,

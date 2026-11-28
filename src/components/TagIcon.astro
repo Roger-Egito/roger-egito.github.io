@@ -68,13 +68,23 @@ if (tag.iconIsFile && !src) {
 </span>
 
 <style>
+  /* The sizes and the gray are properties rather than written into transform and
+     filter, so a state the icon is placed in from outside (filtering by it, in
+     PortfolioGrid) can change how it rests without outranking :hover below, and can
+     work its own size out from the hover one instead of repeating the number. */
   .tag-icon {
+    --icon-scale: 1;
+    --icon-hover-scale: 3;
+    /* 1 is fully gray, 0 is the logo's own colors. Inherited by the glyph below. */
+    --icon-gray: 1;
+
     display: inline-flex;
     align-items: center;
     justify-content: center;
     /* Dimmed until pointed at, so a row of them reads as trim beside the date rather
        than competing with the artwork above. */
     opacity: 0.55;
+    transform: scale(var(--icon-scale));
     transition: opacity var(--transition), transform var(--transition);
   }
 
@@ -86,7 +96,7 @@ if (tag.iconIsFile && !src) {
     position: relative;
     z-index: 2;
     opacity: 1;
-    transform: scale(3);
+    transform: scale(var(--icon-hover-scale));
   }
 
   .tag-icon :global(svg),
@@ -96,15 +106,14 @@ if (tag.iconIsFile && !src) {
     /* Color is held back until you point at something. At rest the row reads as one
        set of marks in the card's own ink instead of a strip of competing brand
        palettes; on hover the logo comes up in its real colors. */
-    filter: grayscale(1);
+    filter: grayscale(var(--icon-gray));
     transition: filter var(--transition);
   }
 
   /* Not .is-inline: a chip has no hover state of its own, so lighting up the glyph
      inside it would be the only thing reacting. */
-  .tag-icon:not(.is-inline):hover :global(svg),
-  .tag-icon:not(.is-inline):hover img {
-    filter: grayscale(0);
+  .tag-icon:not(.is-inline):hover {
+    --icon-gray: 0;
   }
 
   .tag-icon :global(svg) {

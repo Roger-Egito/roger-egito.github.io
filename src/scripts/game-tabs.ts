@@ -80,8 +80,14 @@ function openGroup(group: HTMLElement) {
   select(group, fallbackFor(group));
 }
 
-/** Where an entry goes when the build isn't on offer. */
-const fallbackFor = (group: HTMLElement): Tab => (videoFrame(group) ? 'video' : 'cover');
+/**
+ * Where an entry goes when the build isn't on offer: the trailer if it has one.
+ * Asked of data-trailer, which the frame carries however it loads, not of videoFrame(),
+ * which only finds a trailer still waiting for its src. A game page with no build
+ * serves its trailer ready to play, so asking that sent those pages to Cover.
+ */
+const fallbackFor = (group: HTMLElement): Tab =>
+  group.querySelector('iframe[data-trailer]') ? 'video' : 'cover';
 
 // Narrow the window far enough and the Game tab goes away, taking the only visible
 // panel with it and leaving a gap where the media was. Anything sitting on that tab

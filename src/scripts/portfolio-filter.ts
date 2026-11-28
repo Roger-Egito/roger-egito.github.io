@@ -452,11 +452,60 @@ if (bar && grid) {
 
   /* ------------------------------------------- filters clicked on a card ------- */
 
+  /**
+   * Points at what a click on a card just changed up in the bar. Turning a filter on
+   * pulses its new chip, with a ring in the chip's color spreading out from it. Turning
+   * one off leaves no chip to point at, so the count, which just changed, pulses
+   * instead.
+   *
+   * It waits for the scroll to the bar to end when there is one, since a pulse that
+   * plays while the bar is still sliding into view goes unseen. scrollIntoView with
+   * 'nearest' only scrolls when the bar isn't already fully on screen, so that's the
+   * test for whether to wait. A browser without scrollend plays it straight away
+   * rather than never.
+   */
+  const flash = (id: string) => {
+    if (still.matches) return;
+
+    const chip = activeBox.querySelector<HTMLElement>(`[data-filter="${CSS.escape(id)}"]`);
+    const play = () => {
+      if (chip) {
+        chip.animate(
+          [
+            {
+              transform: 'scale(1)',
+              boxShadow: '0 0 0 0 color-mix(in srgb, var(--chip-color) 70%, transparent)',
+            },
+            { transform: 'scale(1.2)', offset: 0.25 },
+            { transform: 'scale(1)', boxShadow: '0 0 0 12px transparent' },
+          ],
+          { duration: 700, easing: 'ease-out' }
+        );
+      } else {
+        countLine.animate(
+          [
+            { transform: 'scale(1)' },
+            { transform: 'scale(1.15)', color: 'var(--color-txt)', offset: 0.25 },
+            { transform: 'scale(1)' },
+          ],
+          { duration: 700, easing: 'ease-out' }
+        );
+      }
+    };
+
+    const box = bar.getBoundingClientRect();
+    const onScreen = box.top >= 0 && box.bottom <= innerHeight;
+    if (onScreen || !('onscrollend' in window)) play();
+    else addEventListener('scrollend', play, { once: true });
+  };
+
   grid.addEventListener('click', (event) => {
     const chip = (event.target as HTMLElement).closest<HTMLElement>('[data-card-filter]');
     if (!chip) return;
     event.preventDefault();
-    toggle(chip.dataset.cardFilter!);
+    const id = chip.dataset.cardFilter!;
+    toggle(id);
+    flash(id);
     // The bar is above the grid and a filtered grid reflows under the reader, so take
     // them to the thing that just changed.
     bar.scrollIntoView({ block: 'nearest', behavior: 'smooth' });

@@ -340,15 +340,29 @@ dialog.overlay::backdrop {
   text-align: center;
 }
 
-/* Fade in, with the card sliding down like the old modal did. @starting-style is
-   what lets an element animate in from display:none. */
-dialog.overlay,
-dialog.overlay::backdrop {
-  transition: opacity 0.3s ease, overlay 0.3s allow-discrete, display 0.3s allow-discrete;
+/* Fade in while the card rises a short way into place, the same arrival a game card
+   makes as it scrolls into view (see --rise). It used to drop in from a quarter of
+   the screen above, the way the old Bootstrap modal did, which read as the dialog
+   coming from somewhere unrelated to the card that was clicked. Closing runs it
+   backwards. @starting-style is what lets an element animate in from display:none.
+
+   The rise moves the whole dialog, not the .sheet inside it. The dialog is the
+   scroll container, and showModal() scrolls it to bring the focused card into view.
+   With the card offset inside it, that scroll followed the offset, and the card then
+   rose past the top of the screen with the game's name cut off. Moving the container
+   keeps the card at its top, so there's nothing to scroll to. It looks the same,
+   since the dialog itself is transparent and the dimming is its ::backdrop, which
+   only fades. */
+dialog.overlay {
+  transition:
+    opacity 0.3s ease,
+    translate 0.3s ease-out,
+    overlay 0.3s allow-discrete,
+    display 0.3s allow-discrete;
 }
 
-.sheet {
-  transition: transform 0.3s ease-out;
+dialog.overlay::backdrop {
+  transition: opacity 0.3s ease, overlay 0.3s allow-discrete, display 0.3s allow-discrete;
 }
 
 dialog.overlay:not([open]),
@@ -356,8 +370,8 @@ dialog.overlay:not([open])::backdrop {
   opacity: 0;
 }
 
-dialog.overlay:not([open]) .sheet {
-  transform: translateY(-25%);
+dialog.overlay:not([open]) {
+  translate: 0 var(--rise);
 }
 
 @starting-style {
@@ -366,8 +380,8 @@ dialog.overlay:not([open]) .sheet {
     opacity: 0;
   }
 
-  dialog.overlay[open] .sheet {
-    transform: translateY(-25%);
+  dialog.overlay[open] {
+    translate: 0 var(--rise);
   }
 }
 
